@@ -1,0 +1,312 @@
+import React from 'react';
+import type { SlotId, Player } from '../types';
+import { slotKey } from '../types';
+import { legalMoves, completedSquares } from '../gameLogic';
+
+interface Props {
+  pieces: Record<string, Player>;
+  currentPlayer: Player;
+  selectedSlot: SlotId | null;
+  onSlotClick: (s: SlotId) => void;
+  /** Whether interaction is disabled (history view, game over, timer expired) */
+  disabled: boolean;
+  phase: 'placement' | 'movement';
+}
+
+/**
+ * Board geometry:
+ * - 6 V lines at columns 1-6 (CSS col-index), 7 slots per V line
+ * - 6 H lines at rows 1-6 (CSS row-index), 7 slots per H line
+ *
+ * Visual grid: 13 columns × 13 rows (alternating "line" and "gap" positions)
+ * - V lines are at odd columns: col 1,3,5,7,9,11  → visual col index 2k-1 for k=1..6
+ * - H lines are at odd rows:    row 1,3,5,7,9,11  → visual row index 2j-1 for j=1..6
+ * - Slot positions on V line k:
+ *   slot 1 = above row 1 → visual row 0 (above grid, so we add a row 0)
+ *   Actually we extend the grid: use rows 0..12
+ *   slot s on kV → visual row: s*2 - 2  (s=1 → row 0, s=7 → row 12)
+ *   Wait: the 6 H lines occupy visual rows 1,3,5,7,9,11 (0-indexed in a 13-row grid)
+ *   Slots between H lines and at edges:
+ *     kV slot 1: above 1H → visual row 0
+ *     kV slot 2: between 1H (row 1) and 2H (row 3) → visual row 2
+ *     kV slot s: visual row (s-1)*2
+ *     kV slot 7: below 6H → visual row 12
+ *
+ *   kV line is at visual col (k-1)*2 + 1 = 2k-1 (1-indexed in 13-col grid → 0-indexed: 2k-2)
+ *   Hmm, let me use 0-indexed for the 13×13 grid (rows 0..12, cols 0..12):
+ *     V line k occupies column 2*(k-1)   for k=1..6  → cols 0,2,4,6,8,10
+ *     H line j occupies row    2*(j-1)   for j=1..6  → rows 0,2,4,6,8,10
+ *
+ *   Slot positions (center of slot):
+ *     kV slot s → col 2*(k-1), row 2*(s-1) - 1  ... hmm this puts slot 1 at row -1
+ *
+ * Let me use a simpler approach with offsets:
+ *   Grid has 13 rows and 13 columns (0..12):
+ *     H lines at visual rows: 1, 3, 5, 7, 9, 11  (j=1..6: row = 2*j-1)
+ *     V lines at visual cols: 1, 3, 5, 7, 9, 11  (k=1..6: col = 2*k-1)
+ *
+ *   V slots on line k (col = 2k-1):
+ *     slot 1: above 1H → between visual row -1 and row 1 → center at row 0
+ *     slot 2: between 1H (row 1) and 2H (row 3) → center at row 2
+ *     slot s: center at visual row 2*(s-1)  (s=1→0, s=2→2, ..., s=7→12)
+ *
+ *   H slots on line j (row = 2j-1):
+ *     slot 1: left of 1V → center at col 0
+ *     slot k: center at visual col 2*(k-1)
+ *
+ * So the visual grid is 13×13 (rows 0..12, cols 0..12)
+ * We'll use a CSS grid with 13 columns and 13 rows, each CELL_SIZE wide/tall.
+ * Intersections (corners of squares) are at odd rows AND odd cols: (2j-1, 2k-1)
+ * V-slot cells are at even rows and odd cols: (2*(s-1), 2*(k)-1)
+ *   → 2*(s-1) is even for s=1..7, and col = 2k-1 is odd for k=1..6
+ * H-slot cells are at odd rows and even cols: (2*(j-1), 2*(k-1))...
+ *   wait: slot center at col 2*(k-1) is even, row 2*(j-1) — but H line is at row 2j-1 (ODD)
+ *
+ * Something's off. Let me redo:
+ *   H line j occupies visual ROW 2j-1 (odd: 1,3,5,7,9,11 for j=1..6)
+ *   H slot k on line j: center at (row = 2j-1, col = 2*(k-1)) [even col]
+ *     slot 1: col 0; slot 7: col 12
+ *
+ *   V line k occupies visual COL 2k-1 (odd: 1,3,5,7,9,11 for k=1..6)
+ *   V slot s on line k: center at (row = 2*(s-1), col = 2k-1) [even row]
+ *     slot 1: row 0; slot 7: row 12
+ *
+ *   Intersections at (row=2j-1, col=2k-1) — odd row AND odd col
+ *   V slots at (row=even, col=odd)
+ *   H slots at (row=odd, col=even)
+ *   Empty corners at (row=even, col=even) — these are "outside" the lines
+ *
+ * This gives us a clean separation!
+ */
+
+const CELL = 40; // px per grid cell
+const SLOT_R = 10; // radius of slot circle
+const LINE_W = 4;  // line stroke width
+
+const GRID_CELLS = 13; // 0..12
+
+function vSlotPos(k: number, s: number) {
+  // col = 2k-1, row = 2*(s-1)
+  return { cx: (2 * k - 1) * CELL + CELL / 2, cy: 2 * (s - 1) * CELL + CELL / 2 };
+}
+
+function hSlotPos(j: number, k: number) {
+  // row = 2j-1, col = 2*(k-1)
+  return { cx: 2 * (k - 1) * CELL + CELL / 2, cy: (2 * j - 1) * CELL + CELL / 2 };
+}
+
+function intersectionPos(j: number, k: number) {
+  // row = 2j-1, col = 2k-1
+  return { x: (2 * k - 1) * CELL + CELL / 2, y: (2 * j - 1) * CELL + CELL / 2 };
+}
+
+const TOTAL = GRID_CELLS * CELL;
+
+export const Board: React.FC<Props> = ({
+  pieces,
+  currentPlayer,
+  selectedSlot,
+  onSlotClick,
+  disabled,
+  phase,
+}) => {
+  const legalDests = React.useMemo(() => {
+    if (!selectedSlot || disabled) return new Set<string>();
+    return new Set(legalMoves(selectedSlot, pieces).map(slotKey));
+  }, [selectedSlot, pieces, disabled]);
+
+  const { red: redSquares, black: blackSquares } = React.useMemo(
+    () => completedSquares(pieces),
+    [pieces]
+  );
+
+  const redSquareKeys = new Set(
+    redSquares.map((sq) => sq.map(slotKey).join('|'))
+  );
+  const blackSquareKeys = new Set(
+    blackSquares.map((sq) => sq.map(slotKey).join('|'))
+  );
+
+  function squareFill(j: number, k: number): string | null {
+    // Square (j,k): top=jH slot k+1, bottom=(j+1)H slot k+1, left=kV slot j+1, right=(k+1)V slot j+1
+    const key = [
+      slotKey({ type: 'H', line: j, slot: k + 1 }),
+      slotKey({ type: 'H', line: j + 1, slot: k + 1 }),
+      slotKey({ type: 'V', line: k, slot: j + 1 }),
+      slotKey({ type: 'V', line: k + 1, slot: j + 1 }),
+    ].join('|');
+    if (redSquareKeys.has(key)) return 'rgba(239,68,68,0.25)';
+    if (blackSquareKeys.has(key)) return 'rgba(55,65,81,0.5)';
+    return null;
+  }
+
+  function renderSlot(slotId: SlotId) {
+    const key = slotKey(slotId);
+    const owner = pieces[key];
+    const isSelected = selectedSlot && slotKey(selectedSlot) === key;
+    const isLegal = legalDests.has(key);
+    const isClickable =
+      !disabled &&
+      (isLegal ||
+        (owner === currentPlayer &&
+          phase === 'movement' &&
+          !selectedSlot) ||
+        (phase === 'placement' && !owner));
+
+    let pos: { cx: number; cy: number };
+    if (slotId.type === 'V') {
+      pos = vSlotPos(slotId.line, slotId.slot);
+    } else {
+      pos = hSlotPos(slotId.line, slotId.slot);
+    }
+
+    let fillColor = '#374151'; // empty slot: dark gray
+    if (isSelected) fillColor = '#f59e0b'; // selected: amber
+    else if (isLegal) fillColor = '#22c55e'; // legal move: green
+    else if (owner === 'red') fillColor = '#ef4444';
+    else if (owner === 'black') fillColor = '#111827';
+
+    let strokeColor = '#6b7280';
+    if (isSelected) strokeColor = '#d97706';
+    else if (isLegal) strokeColor = '#16a34a';
+    else if (owner === 'red') strokeColor = '#b91c1c';
+    else if (owner === 'black') strokeColor = '#374151';
+
+    const r = owner ? SLOT_R + 2 : SLOT_R;
+
+    const label = `${slotId.line}${slotId.type}${slotId.slot}`;
+
+    return (
+      <circle
+        key={key}
+        cx={pos.cx}
+        cy={pos.cy}
+        r={r}
+        fill={fillColor}
+        stroke={strokeColor}
+        strokeWidth={2}
+        style={{ cursor: isClickable ? 'pointer' : 'default' }}
+        onClick={isClickable ? () => onSlotClick(slotId) : undefined}
+      >
+        <title>{label}</title>
+      </circle>
+    );
+  }
+
+  // Collect all slots
+  const slots: SlotId[] = [];
+  for (let line = 1; line <= 6; line++) {
+    for (let slot = 1; slot <= 7; slot++) {
+      slots.push({ type: 'V', line, slot });
+      slots.push({ type: 'H', line, slot });
+    }
+  }
+
+  return (
+    <div className="flex items-start gap-4">
+      {/* H line labels on the left */}
+      <div className="flex flex-col" style={{ width: 40 }}>
+        {/* Top spacer to align with the board */}
+        <div style={{ height: CELL / 2 }} />
+        {Array.from({ length: 6 }, (_, j) => (
+          <div
+            key={j}
+            style={{ height: CELL * 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}
+            className="text-gray-300 text-sm font-mono font-bold"
+          >
+            {j + 1}H
+          </div>
+        ))}
+      </div>
+
+      <div>
+        {/* V line labels on top */}
+        <div className="flex" style={{ paddingLeft: CELL / 2 }}>
+          {Array.from({ length: 6 }, (_, k) => (
+            <div
+              key={k}
+              style={{ width: CELL * 2, textAlign: 'center' }}
+              className="text-gray-300 text-sm font-mono font-bold"
+            >
+              {k + 1}V
+            </div>
+          ))}
+        </div>
+
+        <svg
+          width={TOTAL}
+          height={TOTAL}
+          style={{ display: 'block' }}
+        >
+          {/* Background */}
+          <rect width={TOTAL} height={TOTAL} fill="#0f172a" />
+
+          {/* Squares highlights */}
+          {Array.from({ length: 5 }, (_, jj) =>
+            Array.from({ length: 5 }, (_, kk) => {
+              const j = jj + 1, k = kk + 1;
+              const fill = squareFill(j, k);
+              if (!fill) return null;
+              const topLeft = intersectionPos(j, k);
+              const bottomRight = intersectionPos(j + 1, k + 1);
+              return (
+                <rect
+                  key={`sq-${j}-${k}`}
+                  x={topLeft.x}
+                  y={topLeft.y}
+                  width={bottomRight.x - topLeft.x}
+                  height={bottomRight.y - topLeft.y}
+                  fill={fill}
+                />
+              );
+            })
+          )}
+
+          {/* V lines */}
+          {Array.from({ length: 6 }, (_, ki) => {
+            const k = ki + 1;
+            const x = (2 * k - 1) * CELL + CELL / 2;
+            return (
+              <line
+                key={`vline-${k}`}
+                x1={x} y1={CELL / 2}
+                x2={x} y2={TOTAL - CELL / 2}
+                stroke="#4b5563"
+                strokeWidth={LINE_W}
+              />
+            );
+          })}
+
+          {/* H lines */}
+          {Array.from({ length: 6 }, (_, ji) => {
+            const j = ji + 1;
+            const y = (2 * j - 1) * CELL + CELL / 2;
+            return (
+              <line
+                key={`hline-${j}`}
+                x1={CELL / 2} y1={y}
+                x2={TOTAL - CELL / 2} y2={y}
+                stroke="#4b5563"
+                strokeWidth={LINE_W}
+              />
+            );
+          })}
+
+          {/* Intersection dots */}
+          {Array.from({ length: 6 }, (_, ji) =>
+            Array.from({ length: 6 }, (_, ki) => {
+              const j = ji + 1, k = ki + 1;
+              const { x, y } = intersectionPos(j, k);
+              return (
+                <circle key={`int-${j}-${k}`} cx={x} cy={y} r={3} fill="#6b7280" />
+              );
+            })
+          )}
+
+          {/* Slots */}
+          {slots.map(renderSlot)}
+        </svg>
+      </div>
+    </div>
+  );
+};
