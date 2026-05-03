@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Board } from './components/Board';
 import { PlayerPanel } from './components/PlayerPanel';
+import { FurukooLogo } from './components/FurukooLogo';
 import type { SlotId, Player, BoardState } from './types';
 import { slotKey } from './types';
 import {
@@ -179,7 +180,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center py-6 gap-4">
-      <h1 className="text-3xl font-bold tracking-widest text-gray-200 font-mono">FURUKOO</h1>
+      <FurukooLogo className="text-fuchsia-400" />
 
       {/* Player name inputs */}
       <div className="flex gap-6 items-center">
