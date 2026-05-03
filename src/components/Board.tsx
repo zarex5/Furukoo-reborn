@@ -157,6 +157,7 @@ export const Board: React.FC<Props> = ({
     const isClickable =
       !disabled &&
       (isLegal ||
+        isSelected ||
         (owner === currentPlayer &&
           phase === 'movement' &&
           !selectedSlot) ||
