@@ -80,9 +80,11 @@ interface Props {
  */
 
 const CELL = 28; // px per grid cell
-const LINE_W = 3; // line stroke width
 
 const GRID_CELLS = 13; // 0..12
+
+const LONG = 44;  // slot long side (4:1 ratio)
+const SHORT = 11; // slot short side
 
 function vSlotPos(k: number, s: number) {
   // col = 2k-1, row = 2*(s-1)
@@ -111,12 +113,10 @@ export const Board: React.FC<Props> = ({
   isDark,
 }) => {
   const C = isDark ? {
-    boardBg: '#0f172a', line: '#4b5563', dot: '#6b7280',
-    emptyFill: '#374151', emptyStroke: '#6b7280', labelFill: '#d1d5db',
+    emptyFill: '#4b5563', emptyStroke: '#6b7280', labelFill: '#d1d5db',
     redSquare: 'rgba(239,68,68,0.25)', blackSquare: 'rgba(55,65,81,0.5)',
   } : {
-    boardBg: '#f8fafc', line: '#94a3b8', dot: '#94a3b8',
-    emptyFill: '#cbd5e1', emptyStroke: '#94a3b8', labelFill: '#475569',
+    emptyFill: '#e2e8f0', emptyStroke: '#94a3b8', labelFill: '#475569',
     redSquare: 'rgba(239,68,68,0.18)', blackSquare: 'rgba(15,23,42,0.15)',
   };
   const legalDests = React.useMemo(() => {
@@ -182,14 +182,9 @@ export const Board: React.FC<Props> = ({
     const label = `${slotId.line}${slotId.type}${slotId.slot}`;
     const isV = slotId.type === 'V';
 
-    // Pieces: rounded rect 4:1, oriented by line type
-    // Empty slots: small rounded rect
-    const pieceScale = owner ? 1.15 : 1;
-    const longSide = Math.round(CELL * 0.82 * pieceScale);
-    const shortSide = Math.round(CELL * 0.22 * pieceScale);
-    const rr = Math.round(shortSide / 2);
-    const rw = isV ? shortSide : longSide;
-    const rh = isV ? longSide : shortSide;
+    const rr = Math.round(SHORT / 2);
+    const rw = isV ? SHORT : LONG;
+    const rh = isV ? LONG : SHORT;
 
     return (
       <rect
@@ -293,35 +288,6 @@ export const Board: React.FC<Props> = ({
                 fill={fill}
               />
             );
-          })
-        )}
-
-        {/* V lines */}
-        {Array.from({ length: 6 }, (_, ki) => {
-          const k = ki + 1;
-          const x = (2 * k - 1) * CELL + CELL / 2;
-          return (
-            <line key={`vline-${k}`} x1={x} y1={CELL / 2} x2={x} y2={TOTAL - CELL / 2}
-              stroke={C.line} strokeWidth={LINE_W} />
-          );
-        })}
-
-        {/* H lines */}
-        {Array.from({ length: 6 }, (_, ji) => {
-          const j = ji + 1;
-          const y = (2 * j - 1) * CELL + CELL / 2;
-          return (
-            <line key={`hline-${j}`} x1={CELL / 2} y1={y} x2={TOTAL - CELL / 2} y2={y}
-              stroke={C.line} strokeWidth={LINE_W} />
-          );
-        })}
-
-        {/* Intersection dots */}
-        {Array.from({ length: 6 }, (_, ji) =>
-          Array.from({ length: 6 }, (_, ki) => {
-            const j = ji + 1, k = ki + 1;
-            const { x, y } = intersectionPos(j, k);
-            return <circle key={`int-${j}-${k}`} cx={x} cy={y} r={3} fill={C.dot} />;
           })
         )}
 
