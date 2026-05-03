@@ -205,7 +205,7 @@ export default function App() {
         </span>
       </button>
 
-      <FurukooLogo className={isDark ? 'text-fuchsia-400' : 'text-fuchsia-600'} />
+      <FurukooLogo />
 
       {/* Player name inputs */}
       <div className="flex gap-4 items-center">

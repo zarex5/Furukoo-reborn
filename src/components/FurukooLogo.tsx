@@ -1,52 +1,44 @@
 import React from 'react';
 
-/**
- * Hand-drawn SVG logo in a Kufic/Arabic calligraphy-inspired style.
- * The top bar of the F extends rightward over u, r, u until it meets the k.
- */
-export const FurukooLogo: React.FC<{ className?: string }> = ({ className }) => {
-  const color = 'currentColor';
-  const sw = 5;
-
+export const FurukooLogo: React.FC<{ className?: string }> = () => {
   return (
     <svg
-      viewBox="0 0 330 68"
-      height="52"
+      viewBox="0 0 340 72"
+      height="56"
       fill="none"
-      stroke={color}
-      strokeWidth={sw}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
       aria-label="Furukoo"
+      style={{ overflow: 'visible' }}
     >
-      {/* ── Extended crossbar: top of F spans all the way to the k ── */}
-      <line x1="12" y1="14" x2="196" y2="14" />
-
-      {/* F — vertical stem + middle bar (no separate top bar, it's shared above) */}
-      <line x1="12" y1="14" x2="12" y2="62" />
-      <line x1="12" y1="39" x2="50"  y2="39" />
-
-      {/* u */}
-      <path d="M62,14 L62,50 Q62,64 78,64 Q94,64 94,50 L94,14" />
-
-      {/* r — vertical + curved shoulder */}
-      <line x1="106" y1="14" x2="106" y2="62" />
-      <path d="M106,37 Q118,26 130,14" />
-
-      {/* u */}
-      <path d="M142,14 L142,50 Q142,64 158,64 Q174,64 174,50 L174,14" />
-
-      {/* k — vertical + upper/lower arms meeting at crossbar height */}
-      <line x1="196" y1="14" x2="196" y2="62" />
-      <line x1="196" y1="39" x2="225" y2="14" />
-      <line x1="196" y1="39" x2="225" y2="62" />
-
-      {/* o */}
-      <ellipse cx="258" cy="38" rx="23" ry="25" />
-
-      {/* o */}
-      <ellipse cx="307" cy="38" rx="23" ry="25" />
+      <defs>
+        <linearGradient id="logo-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#e9d5ff" />
+          <stop offset="50%" stopColor="#a855f7" />
+          <stop offset="100%" stopColor="#7e22ce" />
+        </linearGradient>
+        <filter id="logo-shadow" x="-5%" y="-5%" width="120%" height="140%">
+          <feDropShadow dx="2" dy="3" stdDeviation="1.5" floodColor="#581c87" floodOpacity="0.55" />
+        </filter>
+      </defs>
+      {/* 3D layered shadow: offset copies behind the main text */}
+      <text
+        x="170" y="58"
+        textAnchor="middle"
+        fontFamily="'Dancing Script', cursive"
+        fontWeight="700"
+        fontSize="64"
+        fill="#581c87"
+        opacity="0.4"
+        dx="3" dy="4"
+      >Furukoo</text>
+      <text
+        x="170" y="58"
+        textAnchor="middle"
+        fontFamily="'Dancing Script', cursive"
+        fontWeight="700"
+        fontSize="64"
+        fill="url(#logo-grad)"
+        filter="url(#logo-shadow)"
+      >Furukoo</text>
     </svg>
   );
 };
