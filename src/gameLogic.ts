@@ -52,44 +52,40 @@ export function adjacentSlots(s: SlotId): SlotId[] {
 
   if (s.type === 'V') {
     const { line: k, slot: pos } = s;
-    // Slide up
+    // Slide up / down along same V line
     if (pos > 1) result.push({ type: 'V', line: k, slot: pos - 1 });
-    // Slide down
     if (pos < 7) result.push({ type: 'V', line: k, slot: pos + 1 });
-    // Upper junction with (pos-1)H (exists when pos >= 2)
+    // Slide left / right to same slot on adjacent V line
+    if (k > 1) result.push({ type: 'V', line: k - 1, slot: pos });
+    if (k < 6) result.push({ type: 'V', line: k + 1, slot: pos });
+    // Pivot at upper junction (pos-1)H  (exists when pos >= 2)
     if (pos >= 2) {
-      const hLine = pos - 1; // the H line at the upper junction
-      // left H slot: hLine-H slot k  (between (k-1)V and kV)
-      result.push({ type: 'H', line: hLine, slot: k });
-      // right H slot: hLine-H slot k+1 (between kV and (k+1)V)
-      result.push({ type: 'H', line: hLine, slot: k + 1 });
+      result.push({ type: 'H', line: pos - 1, slot: k });
+      result.push({ type: 'H', line: pos - 1, slot: k + 1 });
     }
-    // Lower junction with pos-H (exists when pos <= 6)
+    // Pivot at lower junction pos-H  (exists when pos <= 6)
     if (pos <= 6) {
-      const hLine = pos;
-      result.push({ type: 'H', line: hLine, slot: k });
-      result.push({ type: 'H', line: hLine, slot: k + 1 });
+      result.push({ type: 'H', line: pos, slot: k });
+      result.push({ type: 'H', line: pos, slot: k + 1 });
     }
   } else {
     // Horizontal
     const { line: j, slot: pos } = s;
-    // Slide left
+    // Slide left / right along same H line
     if (pos > 1) result.push({ type: 'H', line: j, slot: pos - 1 });
-    // Slide right
     if (pos < 7) result.push({ type: 'H', line: j, slot: pos + 1 });
-    // Left junction with (pos-1)V (exists when pos >= 2)
+    // Slide up / down to same slot on adjacent H line
+    if (j > 1) result.push({ type: 'H', line: j - 1, slot: pos });
+    if (j < 6) result.push({ type: 'H', line: j + 1, slot: pos });
+    // Pivot at left junction (pos-1)V  (exists when pos >= 2)
     if (pos >= 2) {
-      const vLine = pos - 1;
-      // up V slot: vLine-V slot j  (between (j-1)H and jH)
-      result.push({ type: 'V', line: vLine, slot: j });
-      // down V slot: vLine-V slot j+1 (between jH and (j+1)H)
-      result.push({ type: 'V', line: vLine, slot: j + 1 });
+      result.push({ type: 'V', line: pos - 1, slot: j });
+      result.push({ type: 'V', line: pos - 1, slot: j + 1 });
     }
-    // Right junction with pos-V (exists when pos <= 6)
+    // Pivot at right junction pos-V  (exists when pos <= 6)
     if (pos <= 6) {
-      const vLine = pos;
-      result.push({ type: 'V', line: vLine, slot: j });
-      result.push({ type: 'V', line: vLine, slot: j + 1 });
+      result.push({ type: 'V', line: pos, slot: j });
+      result.push({ type: 'V', line: pos, slot: j + 1 });
     }
   }
 
