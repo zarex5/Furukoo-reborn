@@ -100,7 +100,7 @@ export default function GamePage() {
     };
 
     const onLobby = ({ users }: { users: OnlineUser[] }) => setLobbyUsers(users);
-    const onChat  = (m: { type: 'system' | 'user'; username?: string; text: string }) => addMsg(m);
+    const onChat  = (m: { type: 'system' | 'user'; username?: string; text: string; spectator?: boolean }) => addMsg(m);
     const onError = ({ message }: { message: string }) => { addMsg({ type: 'system', text: `Error: ${message}` }); navigate('/'); };
 
     socket.on('game:started', onStarted);
@@ -118,6 +118,7 @@ export default function GamePage() {
       socket.off('lobby:state',  onLobby);
       socket.off('chat:game',    onChat);
       socket.off('game:error',   onError);
+      socket.emit('game:leave', gameId);
     };
   }, [gameId, addMsg, navigate, user?.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -188,9 +189,10 @@ export default function GamePage() {
 
   const viewedState = (viewIndex !== -1 && stateHistory[viewIndex]) ? stateHistory[viewIndex] : displayedState;
 
-  const handleResign = () => getSocket()?.emit('game:resign', { gameId });
-  const handleSend   = (text: string) => getSocket()?.emit('game:chat', { gameId, text });
-  const handleBack   = () => navigate('/');
+  const handleResign  = () => getSocket()?.emit('game:resign', { gameId });
+  const handleSend    = (text: string) => getSocket()?.emit('game:chat', { gameId, text });
+  const handleBack    = () => navigate('/');
+  const handleSpectate = (gid: string) => navigate(`/game/${gid}`);
 
   if (!gameState || !gameMeta || !displayedState) {
     return (
@@ -202,9 +204,10 @@ export default function GamePage() {
     );
   }
 
-  const redName   = gameMeta.red.username;
-  const blackName = gameMeta.black.username;
-  const boardDisabled = gameState.currentPlayer !== myColor || !!gameOver || viewIndex !== -1;
+  const redName      = gameMeta.red.username;
+  const blackName    = gameMeta.black.username;
+  const isSpectating = myColor === null;
+  const boardDisabled = isSpectating || gameState.currentPlayer !== myColor || !!gameOver || viewIndex !== -1;
 
   const lastRedMove   = [...(viewedState?.moves ?? [])].reverse().find(m => m.player === 'red')   ?? null;
   const lastBlackMove = [...(viewedState?.moves ?? [])].reverse().find(m => m.player === 'black') ?? null;
@@ -224,15 +227,23 @@ export default function GamePage() {
           <span className="text-xs font-mono text-slate-400 dark:text-gray-500">
             {redName} vs {blackName}
           </span>
-          {!gameOver
-            ? <button onClick={handleResign}
-                className="px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
-                Resign
-              </button>
-            : <button onClick={handleBack}
-                className="px-3 py-0.5 rounded text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 transition">
-                Back to Lobby
-              </button>
+          {isSpectating
+            ? <>
+                <span className="text-xs font-mono text-slate-400 dark:text-gray-500 italic">Spectating</span>
+                <button onClick={handleBack}
+                  className="px-3 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 transition">
+                  Back to Lobby
+                </button>
+              </>
+            : !gameOver
+              ? <button onClick={handleResign}
+                  className="px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
+                  Resign
+                </button>
+              : <button onClick={handleBack}
+                  className="px-3 py-0.5 rounded text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 transition">
+                  Back to Lobby
+                </button>
           }
           <button role="switch" aria-checked={isDark} onClick={toggleDark}
             className="flex items-center gap-1.5 focus:outline-none select-none">
@@ -316,7 +327,7 @@ export default function GamePage() {
           </div>
 
           {/* ELO preview */}
-          {!gameOver && myColor && gameMeta.eloInfo && (
+          {!gameOver && !isSpectating && myColor && gameMeta.eloInfo && (
             <div className="text-xs font-mono text-slate-400 dark:text-gray-500 text-center">
               win {fmtDelta(gameMeta.eloInfo[myColor].win)} / draw {fmtDelta(gameMeta.eloInfo[myColor].draw)} / loss {fmtDelta(gameMeta.eloInfo[myColor].loss)}
             </div>
@@ -328,7 +339,7 @@ export default function GamePage() {
           <ResizableSplit
             direction="vertical"
             initialFirstPct={40}
-            first={<PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} />}
+            first={<PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} />}
             second={<ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} />}
           />
         </div>

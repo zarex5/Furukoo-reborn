@@ -6,6 +6,7 @@ export interface OnlineUser {
   elo: number;
   gameId: string | null;
   gameColor: string | null;
+  spectating: boolean;
 }
 
 export interface ChatMsg {
@@ -13,6 +14,7 @@ export interface ChatMsg {
   type: 'system' | 'user';
   username?: string;
   text: string;
+  spectator?: boolean;
 }
 
 // ── PlayersBox ────────────────────────────────────────────────────────────────
@@ -21,9 +23,10 @@ interface PlayersBoxProps {
   users: OnlineUser[];
   myUsername: string;
   gamePlayers?: { red: string; black: string };
+  onSpectate?: (gameId: string) => void;
 }
 
-export function PlayersBox({ users, myUsername, gamePlayers }: PlayersBoxProps) {
+export function PlayersBox({ users, myUsername, gamePlayers, onSpectate }: PlayersBoxProps) {
   const sorted = gamePlayers
     ? [
         ...users.filter(u => u.username === gamePlayers.red || u.username === gamePlayers.black),
@@ -54,9 +57,19 @@ export function PlayersBox({ users, myUsername, gamePlayers }: PlayersBoxProps) 
             <span className="flex-1 truncate">{u.username}</span>
             <span className="w-12 text-center tabular-nums">{u.elo}</span>
             <span className="w-8 flex justify-center">
-              {u.gameId && u.gameColor
-                ? <span className="inline-block w-3 h-3 rounded-full" style={{ background: u.gameColor }} />
-                : <span className="w-3" />}
+              {u.gameId && u.gameColor ? (
+                <span
+                  className="inline-block w-3 h-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-400 dark:hover:ring-slate-500 transition-shadow"
+                  style={{ background: u.gameColor, opacity: u.spectating ? 0.5 : 1 }}
+                  title={u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId}`}
+                  onClick={() => onSpectate?.(u.gameId!)}
+                />
+              ) : (
+                <span
+                  className="inline-block w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-600"
+                  title="Lobby"
+                />
+              )}
             </span>
           </div>
         ))}
@@ -98,10 +111,21 @@ export function ChatBox({ messages, onSend, myUsername }: ChatBoxProps) {
       </div>
       <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5 min-h-0">
         {messages.map(m => (
-          <div key={m.id} className={`text-xs font-mono leading-snug ${m.type === 'system' ? 'text-slate-400 dark:text-gray-500 italic' : 'text-slate-700 dark:text-gray-200'}`}>
+          <div key={m.id} className={`text-xs font-mono leading-snug ${
+            m.type === 'system' ? 'text-slate-400 dark:text-gray-500 italic' :
+            m.spectator ? 'text-slate-400 dark:text-gray-500' :
+            'text-slate-700 dark:text-gray-200'
+          }`}>
             {m.type === 'system'
               ? m.text
-              : <><span className={`font-bold ${m.username === myUsername ? 'text-violet-600 dark:text-violet-400' : 'text-slate-600 dark:text-gray-300'}`}>{m.username}: </span>{m.text}</>}
+              : <>
+                  <span className={`font-bold ${
+                    m.spectator ? 'text-slate-400 dark:text-gray-500' :
+                    m.username === myUsername ? 'text-violet-600 dark:text-violet-400' :
+                    'text-slate-600 dark:text-gray-300'
+                  }`}>{m.username}: </span>
+                  {m.text}
+                </>}
           </div>
         ))}
         <div ref={bottomRef} />
@@ -131,12 +155,13 @@ interface RightPanelProps {
   myUsername: string;
   isDark: boolean;
   gamePlayers?: { red: string; black: string };
+  onSpectate?: (gameId: string) => void;
 }
 
-export function RightPanel({ users, messages, onSend, myUsername, gamePlayers }: RightPanelProps) {
+export function RightPanel({ users, messages, onSend, myUsername, gamePlayers, onSpectate }: RightPanelProps) {
   return (
     <ResizableSplit
-      first={<PlayersBox users={users} myUsername={myUsername} gamePlayers={gamePlayers} />}
+      first={<PlayersBox users={users} myUsername={myUsername} gamePlayers={gamePlayers} onSpectate={onSpectate} />}
       second={<ChatBox messages={messages} onSend={onSend} myUsername={myUsername} />}
       initialFirstPct={45}
     />

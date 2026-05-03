@@ -83,13 +83,15 @@ export default function LobbyPage() {
     if (me && me.elo !== user?.elo) updateElo(me.elo);
   }, [users, user?.username, user?.elo, updateElo]);
 
-  const myGameId = users.find(u => u.username === user?.username)?.gameId ?? null;
+  const myUser   = users.find(u => u.username === user?.username);
+  const myGameId = myUser?.gameId && !myUser.spectating ? myUser.gameId : null;
 
   const handleSend   = (text: string) => getSocket()?.emit('lobby:chat', text);
   const handlePlay   = () => getSocket()?.emit('game:propose');
   const handleRemove = () => { getSocket()?.emit('game:remove'); setHasProposal(false); };
   const handleAccept = (proposerUsername: string) => getSocket()?.emit('game:accept', proposerUsername);
-  const handleRejoin = () => { if (myGameId) navigate(`/game/${myGameId}`); };
+  const handleRejoin   = () => { if (myGameId) navigate(`/game/${myGameId}`); };
+  const handleSpectate = (gameId: string) => navigate(`/game/${gameId}`);
 
   const btn = `px-3 py-0.5 rounded text-xs font-bold transition`;
 
@@ -187,7 +189,7 @@ export default function LobbyPage() {
               <ResizableSplit
                 direction="vertical"
                 initialFirstPct={45}
-                first={<PlayersBox users={users} myUsername={user?.username ?? ''} />}
+                first={<PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} />}
                 second={<ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} />}
               />
             </div>
