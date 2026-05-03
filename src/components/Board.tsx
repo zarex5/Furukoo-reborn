@@ -236,10 +236,10 @@ export const Board: React.FC<Props> = ({
         <svg
           width={TOTAL}
           height={TOTAL}
-          style={{ display: 'block' }}
+          style={{ display: 'block', borderRadius: 10, overflow: 'hidden' }}
         >
           {/* Background */}
-          <rect width={TOTAL} height={TOTAL} fill="#0f172a" />
+          <rect width={TOTAL} height={TOTAL} fill="#0f172a" rx={10} />
 
           {/* Squares highlights */}
           {Array.from({ length: 5 }, (_, jj) =>
