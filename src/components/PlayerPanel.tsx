@@ -12,7 +12,7 @@ interface Props {
 }
 
 function formatMoveInfo(move: Move | null, idx: number): string {
-  if (!move || idx === 0) return '000';
+  if (!move || idx === 0) return '001. -------';
   const n = String(idx).padStart(3, '0');
   const to = `${move.to.line}${move.to.type}${move.to.slot}`;
   if (!move.from) return `${n}. 000-${to}`;
