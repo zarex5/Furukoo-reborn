@@ -275,9 +275,6 @@ export const Board: React.FC<Props> = ({
 
       {/* Board group, offset by (LPAD, TPAD) */}
       <g transform={`translate(${LPAD},${TPAD})`}>
-        {/* Background */}
-        <rect width={TOTAL} height={TOTAL} fill={C.boardBg} rx={10} />
-
         {/* Squares highlights */}
         {Array.from({ length: 5 }, (_, jj) =>
           Array.from({ length: 5 }, (_, kk) => {
