@@ -68,6 +68,8 @@ const connectedUsers = new Map();
 const gameProposals  = new Map();
 // activeGames: Map<gameId, game>
 const activeGames    = new Map();
+// disconnectTimeouts: Map<"gameId:color", NodeJS.Timeout>
+const disconnectTimeouts = new Map();
 
 function lobbySnapshot() {
   return {
@@ -178,6 +180,7 @@ io.on('connection', async (socket) => {
       moves: [], winner: null, resignedBy: null,
       redTimeMs: INITIAL_TIME_MS, blackTimeMs: INITIAL_TIME_MS,
       lastMoveAt: Date.now(),
+      disconnectedColor: null, disconnectedAt: null,
     };
 
     activeGames.set(gameId, game);
@@ -210,11 +213,26 @@ io.on('connection', async (socket) => {
     const isBlack = game.black.username === u.username;
     if (!isRed && !isBlack) { socket.emit('game:error', { message: 'Not a player in this game' }); return; }
 
+    const color = isRed ? 'red' : 'black';
+
     // Keep connectedUsers in sync so lobby shows correct game status
     u.gameId    = gameId;
     u.gameColor = game.color;
 
     socket.join(`game:${gameId}`);
+
+    // Clear reconnect countdown if this player was disconnected
+    if (game.disconnectedColor === color) {
+      const key = `${gameId}:${color}`;
+      const t = disconnectTimeouts.get(key);
+      if (t) { clearTimeout(t); disconnectTimeouts.delete(key); }
+      game.disconnectedColor = null;
+      game.disconnectedAt    = null;
+      sysGame(gameId, `${u.username} reconnected`);
+      io.to(`game:${gameId}`).emit('game:state', { ...game });
+      broadcastLobby();
+    }
+
     socket.emit('game:state', game);
     socket.emit('game:started', {
       gameId, gameColor: game.color,
@@ -292,6 +310,39 @@ io.on('connection', async (socket) => {
     connectedUsers.delete(socket.id);
     sysLobby(`${u.username} just disconnected`);
     broadcastLobby();
+
+    // If the player was in an active game, start a 60-second reconnect window
+    if (u.gameId) {
+      const game = activeGames.get(u.gameId);
+      if (game && !game.winner) {
+        const color    = game.red.username === u.username ? 'red' : 'black';
+        const gameId   = u.gameId;
+        const username = u.username;
+        const key      = `${gameId}:${color}`;
+
+        // Clear any stale timeout for this slot
+        const existing = disconnectTimeouts.get(key);
+        if (existing) { clearTimeout(existing); disconnectTimeouts.delete(key); }
+
+        game.disconnectedColor = color;
+        game.disconnectedAt    = Date.now();
+        io.to(`game:${gameId}`).emit('game:state', { ...game });
+        sysGame(gameId, `${username} disconnected — 60 s to reconnect`);
+
+        const t = setTimeout(() => {
+          disconnectTimeouts.delete(key);
+          const g = activeGames.get(gameId);
+          if (!g || g.winner || g.disconnectedColor !== color) return;
+          // Still disconnected after 60 s → forfeit
+          const winner = color === 'red' ? 'black' : 'red';
+          const next   = { ...g, winner, disconnectedColor: null, disconnectedAt: null };
+          activeGames.set(gameId, next);
+          io.to(`game:${gameId}`).emit('game:state', next);
+          endGame(gameId, winner, 'disconnect');
+        }, 60_000);
+        disconnectTimeouts.set(key, t);
+      }
+    }
   });
 });
 
@@ -319,7 +370,7 @@ async function endGame(gameId, winner, reason) {
   }
 
   const winnerName = winner === 'red' ? game.red.username : game.black.username;
-  const reasonMsg  = reason === 'resign' ? ' (by resignation)' : reason === 'timeout' ? ' (on time)' : '';
+  const reasonMsg  = reason === 'resign' ? ' (by resignation)' : reason === 'timeout' ? ' (on time)' : reason === 'disconnect' ? ' (opponent disconnected)' : '';
 
   io.to(`game:${gameId}`).emit('game:over', {
     winner, reason, winnerName,

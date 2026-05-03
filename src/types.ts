@@ -48,4 +48,7 @@ export interface BoardState {
   moves: Move[];
   winner: Player | null;
   resignedBy: Player | null;
+  /** Set when a player disconnects mid-game, cleared on reconnect */
+  disconnectedColor: Player | null;
+  disconnectedAt: number | null; // ms timestamp
 }

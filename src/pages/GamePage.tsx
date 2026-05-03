@@ -244,12 +244,27 @@ export default function GamePage() {
       {gameOver && (
         <div className="mx-4 mt-2 px-4 py-1.5 rounded-lg bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 text-xs font-mono text-center">
           <span className="font-bold text-green-800 dark:text-green-300">{gameOver.winnerName} wins</span>
-          {gameOver.reason === 'resign' && ' (by resignation)'}
-          {gameOver.reason === 'timeout' && ' (on time)'}
+          {gameOver.reason === 'resign'     && ' (by resignation)'}
+          {gameOver.reason === 'timeout'    && ' (on time)'}
+          {gameOver.reason === 'disconnect' && ' (opponent disconnected)'}
           {'  ·  '}
           {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
           {'  ·  '}
           {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
+        </div>
+      )}
+
+      {/* Disconnect countdown banner */}
+      {!gameOver && displayedState?.disconnectedColor && displayedState.disconnectedAt && (
+        <div className="mx-4 mt-2 px-4 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-xs font-mono text-center animate-pulse">
+          <span className="font-bold text-amber-800 dark:text-amber-300">
+            {displayedState.disconnectedColor === 'red' ? redName : blackName}
+          </span>
+          {' disconnected — '}
+          <span className="font-bold text-amber-700 dark:text-amber-400">
+            {Math.max(0, Math.ceil((60_000 - (Date.now() - displayedState.disconnectedAt)) / 1000))}s
+          </span>
+          {' to reconnect'}
         </div>
       )}
 
