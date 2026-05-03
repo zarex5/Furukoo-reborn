@@ -30,6 +30,48 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model('User', UserSchema);
 
+const M = mongoose.Schema.Types.Mixed;
+const GameSchema = new mongoose.Schema({
+  gameId:        { type: String, unique: true, required: true, index: true },
+  color:         String,
+  red:           { userId: String, username: String, elo: Number },
+  black:         { userId: String, username: String, elo: Number },
+  eloInfo:       M,
+  pieces:        { type: M, default: {} },
+  currentPlayer: { type: String, default: 'red' },
+  redPlaced:     { type: Number, default: 0 },
+  blackPlaced:   { type: Number, default: 0 },
+  phase:         { type: String, default: 'placement' },
+  moves:         { type: M, default: [] },
+  winner:        { type: String, default: null },
+  resignedBy:    { type: String, default: null },
+  redTimeMs:     Number,
+  blackTimeMs:   Number,
+  lastMoveAt:    { type: Number, default: Date.now },
+  status:        { type: String, enum: ['active', 'ended'], default: 'active' },
+}, { timestamps: true });
+
+const Game = mongoose.model('Game', GameSchema);
+
+// Fire-and-forget: persist game state after every move or status change
+function saveGame(game) {
+  Game.findOneAndUpdate(
+    { gameId: game.id },
+    {
+      gameId: game.id, color: game.color,
+      red: game.red, black: game.black, eloInfo: game.eloInfo,
+      pieces: game.pieces, currentPlayer: game.currentPlayer,
+      redPlaced: game.redPlaced, blackPlaced: game.blackPlaced,
+      phase: game.phase, moves: game.moves,
+      winner: game.winner || null, resignedBy: game.resignedBy || null,
+      redTimeMs: game.redTimeMs, blackTimeMs: game.blackTimeMs,
+      lastMoveAt: game.lastMoveAt,
+      status: game.winner ? 'ended' : 'active',
+    },
+    { upsert: true }
+  ).catch(e => console.error('saveGame:', e.message));
+}
+
 const JWT_SECRET = process.env.JWT_SECRET || 'furukoo-dev-secret';
 const sign = (user) => jwt.sign({ userId: user._id.toString(), username: user.username }, JWT_SECRET, { expiresIn: '30d' });
 
@@ -198,6 +240,8 @@ io.on('connection', async (socket) => {
     broadcastLobby();
     sysLobby(`Game started: ${redU.username} vs ${blackU.username}`);
 
+    saveGame(game);
+
     // Emit directly to each socket ID (belt-and-suspenders vs room-join race)
     const startedPayload = { gameId, gameColor, red: game.red, black: game.black, eloInfo: info };
     io.to(redU.socketId).emit('game:started', startedPayload);
@@ -261,6 +305,7 @@ io.on('connection', async (socket) => {
     activeGames.set(gameId, next);
     io.to(`game:${gameId}`).emit('game:state', next);
     if (next.winner) endGame(gameId, next.winner, 'board');
+    else saveGame(next);
   });
 
   // ── Resign ──
@@ -403,6 +448,7 @@ async function endGame(gameId, winner, reason) {
   sysGame(gameId, `${game.black.username}: ${fmt(blackDelta)} ELO → ${newBlackElo}`);
   sysLobby(`${winnerName} won a game${reasonMsg}`);
 
+  Game.findOneAndUpdate({ gameId }, { $set: { status: 'ended', winner } }).catch(console.error);
   activeGames.delete(gameId);
   broadcastLobby();
 }
