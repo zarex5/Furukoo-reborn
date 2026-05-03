@@ -40,7 +40,10 @@ export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, l
 
   return (
     <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border ${borderColor} ${wrapBg}`}>
-      <div className={`w-3 h-3 rounded-full flex-shrink-0 ${isRed ? 'bg-red-500' : 'bg-gray-900 border-2 border-gray-500'}`} />
+      <div
+        className="w-3 h-3 rounded-full flex-shrink-0"
+        style={isRed ? { background: '#ef4444' } : { background: '#1e293b', border: '1.5px solid #475569' }}
+      />
       <div className={`w-28 ${cell} font-bold ${nameCls}`}>{name}</div>
       <div className={`w-40 ${cell} ${moveCls}`}>{formatMoveInfo(lastMove, moveIndex)}</div>
       <div className={`w-24 ${cell} font-bold ${timeCls}`}>{formatTime(timeMs)}</div>

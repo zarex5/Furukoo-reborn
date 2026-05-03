@@ -207,7 +207,7 @@ export default function App() {
         </div>
         <span className="text-slate-400 dark:text-gray-500 text-xs">vs</span>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-slate-900 border-2 border-slate-500 flex-shrink-0 dark:bg-gray-900 dark:border-gray-400" />
+          <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: '#1e293b', border: '1.5px solid #475569' }} />
           <input
             className="bg-white text-slate-800 border border-slate-300 rounded px-2 py-0.5 text-xs font-mono w-28 focus:outline-none focus:border-cyan-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
             value={blackName}
