@@ -281,15 +281,33 @@ io.on('connection', async (socket) => {
   });
 
   // ── Join game room (page load / reload / direct URL / spectating) ──
-  socket.on('game:join', (gameId) => {
-    const game = activeGames.get(gameId);
-    if (!game) { socket.emit('game:error', { message: 'Game not found' }); return; }
+  socket.on('game:join', async (gameId) => {
+    let game = activeGames.get(gameId);
+
+    // Active game not found — try DB (ended games are still viewable)
+    if (!game) {
+      const dbGame = await Game.findOne({ gameId }).lean().catch(() => null);
+      if (!dbGame) { socket.emit('game:error', { message: 'Game not found' }); return; }
+      game = {
+        id: dbGame.gameId, color: dbGame.color,
+        red: dbGame.red, black: dbGame.black, eloInfo: dbGame.eloInfo,
+        pieces: dbGame.pieces || {}, currentPlayer: dbGame.currentPlayer,
+        redPlaced: dbGame.redPlaced, blackPlaced: dbGame.blackPlaced,
+        phase: dbGame.phase, moves: dbGame.moves || [],
+        winner: dbGame.winner || null, resignedBy: dbGame.resignedBy || null,
+        redTimeMs: dbGame.redTimeMs, blackTimeMs: dbGame.blackTimeMs,
+        lastMoveAt: dbGame.lastMoveAt || Date.now(),
+        disconnectedColor: null, disconnectedAt: null,
+      };
+    }
+
     const u = connectedUsers.get(socket.id);
     if (!u) return;
 
     const isRed    = game.red.username   === u.username;
     const isBlack  = game.black.username === u.username;
-    const isPlayer = isRed || isBlack;
+    // Treat as spectator if not a player, or if the game is already over
+    const isPlayer = (isRed || isBlack) && !game.winner;
 
     u.gameId     = gameId;
     u.gameColor  = game.color;
@@ -337,6 +355,8 @@ io.on('connection', async (socket) => {
       }
     }
 
+    // Broadcast state to the room so reconnect/spectate is visible to everyone;
+    // for DB-loaded ended games the socket just joined so the room = only them.
     io.to(`game:${gameId}`).emit('game:state', liveState(game));
     socket.emit('game:started', {
       gameId, gameColor: game.color,
