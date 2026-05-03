@@ -85,6 +85,8 @@ const GRID_CELLS = 13; // 0..12
 
 const LONG = 44;  // slot long side (4:1 ratio)
 const SHORT = 11; // slot short side
+// Slots overhang the board TOTAL by this much on each edge (LONG/2 - CELL/2)
+const OVERHANG = Math.round(LONG / 2 - CELL / 2); // = 8
 
 function vSlotPos(k: number, s: number) {
   // col = 2k-1, row = 2*(s-1)
@@ -217,10 +219,11 @@ export const Board: React.FC<Props> = ({
   }
 
   // Label offsets — board content starts at (LPAD, TPAD) inside the SVG
-  const LPAD = 30; // left padding for H labels
-  const TPAD = 16; // top padding for V labels
-  const SVG_W = LPAD + TOTAL;
-  const SVG_H = TPAD + TOTAL;
+  const LPAD = 38; // left padding: OVERHANG(8) + label area + gap
+  const TPAD = 20; // top padding: OVERHANG(8) + label height + gap
+  // Add OVERHANG on right+bottom so last slots aren't clipped
+  const SVG_W = LPAD + TOTAL + OVERHANG + 2;
+  const SVG_H = TPAD + TOTAL + OVERHANG + 2;
 
   // H-line j slot center y (relative to board origin)
   const hLabelY = (j: number) => (2 * j - 1) * CELL + CELL / 2;
@@ -234,33 +237,40 @@ export const Board: React.FC<Props> = ({
       style={{ display: 'block' }}
     >
       <defs>
-        <radialGradient id="g-empty-l" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#f8fafc" />
+        {/* Empty slots: darker center, lighter edge */}
+        <radialGradient id="g-empty-l" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#94a3b8" />
           <stop offset="100%" stopColor="#e2e8f0" />
         </radialGradient>
-        <radialGradient id="g-empty-d" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#6b7280" />
-          <stop offset="100%" stopColor="#4b5563" />
-        </radialGradient>
-        <radialGradient id="g-red" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#fca5a5" />
-          <stop offset="100%" stopColor="#ef4444" />
-        </radialGradient>
-        <radialGradient id="g-blk-l" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#475569" />
-          <stop offset="100%" stopColor="#1e293b" />
-        </radialGradient>
-        <radialGradient id="g-blk-d" cx="50%" cy="50%" r="60%">
+        <radialGradient id="g-empty-d" cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#374151" />
-          <stop offset="100%" stopColor="#111827" />
+          <stop offset="100%" stopColor="#6b7280" />
         </radialGradient>
-        <radialGradient id="g-sel" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#fde68a" />
-          <stop offset="100%" stopColor="#f59e0b" />
+        {/* Colored pieces: near-white center fading to saturated color */}
+        <radialGradient id="g-red" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#fff0f0" />
+          <stop offset="55%" stopColor="#fca5a5" />
+          <stop offset="100%" stopColor="#dc2626" />
         </radialGradient>
-        <radialGradient id="g-leg" cx="50%" cy="50%" r="60%">
-          <stop offset="0%" stopColor="#86efac" />
-          <stop offset="100%" stopColor="#22c55e" />
+        <radialGradient id="g-blk-l" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#94a3b8" />
+          <stop offset="55%" stopColor="#475569" />
+          <stop offset="100%" stopColor="#0f172a" />
+        </radialGradient>
+        <radialGradient id="g-blk-d" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#6b7280" />
+          <stop offset="55%" stopColor="#374151" />
+          <stop offset="100%" stopColor="#030712" />
+        </radialGradient>
+        <radialGradient id="g-sel" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#fffbeb" />
+          <stop offset="55%" stopColor="#fde68a" />
+          <stop offset="100%" stopColor="#d97706" />
+        </radialGradient>
+        <radialGradient id="g-leg" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#f0fdf4" />
+          <stop offset="55%" stopColor="#86efac" />
+          <stop offset="100%" stopColor="#16a34a" />
         </radialGradient>
       </defs>
 
@@ -270,7 +280,7 @@ export const Board: React.FC<Props> = ({
         return (
           <text
             key={`hlabel-${j}`}
-            x={LPAD - 4}
+            x={LPAD - OVERHANG - 4}
             y={TPAD + hLabelY(j)}
             textAnchor="end"
             dominantBaseline="middle"
@@ -289,7 +299,7 @@ export const Board: React.FC<Props> = ({
           <text
             key={`vlabel-${k}`}
             x={LPAD + vLabelX(k)}
-            y={TPAD - 4}
+            y={TPAD - OVERHANG - 4}
             textAnchor="middle"
             dominantBaseline="auto"
             fontSize={10}
