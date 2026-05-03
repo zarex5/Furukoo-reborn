@@ -179,7 +179,7 @@ export default function App() {
 
   const boardDisabled = !isViewingCurrent || gameOver;
 
-  const btnBase = `px-2 py-0.5 rounded text-base disabled:opacity-30 transition
+  const btnBase = `px-2 py-0.5 rounded text-sm disabled:opacity-30 transition
     bg-slate-200 text-slate-700 hover:bg-slate-300
     dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600`;
 
@@ -235,11 +235,11 @@ export default function App() {
         <button onClick={handleNavNext}    disabled={viewIndex >= history.length - 1} className={btnBase} title="Next move">▶</button>
         <button onClick={handleNavCurrent} disabled={isViewingCurrent}                className={btnBase} title="Current move">⏭</button>
         <button onClick={handleResign} disabled={gameOver}
-          className="px-2 py-0.5 rounded text-xs font-bold disabled:opacity-30 transition ml-3 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200 dark:hover:bg-red-700"
+          className="px-2 py-1 rounded text-xs font-bold disabled:opacity-30 transition ml-3 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200 dark:hover:bg-red-700"
         >Resign</button>
         {gameOver && (
           <button onClick={handleNewGame}
-            className="px-2 py-0.5 rounded text-xs font-bold transition bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200 dark:hover:bg-green-700"
+            className="px-2 py-1 rounded text-xs font-bold transition bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200 dark:hover:bg-green-700"
           >New Game</button>
         )}
       </div>
