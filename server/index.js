@@ -101,37 +101,16 @@ io.use((socket, next) => {
 
 // ── Socket handlers ──────────────────────────────────────────────────────────
 io.on('connection', async (socket) => {
-  // Register immediately — before the async DB lookup — so that game:join and
-  // other events buffered by Socket.io during connection don't race against
-  // connectedUsers and silently get dropped (u would be undefined otherwise).
+  // ── CRITICAL: register placeholder + ALL event handlers BEFORE any await ──
+  // Socket.io buffers client messages that arrive during the connection
+  // handshake and replays them as soon as the socket is registered.  If
+  // socket.on() calls live after an await they simply don't exist yet when
+  // those buffered events fire — and Socket.io drops them silently.
   connectedUsers.set(socket.id, {
     socketId: socket.id, userId: socket.userId,
-    username: socket.username, elo: 1200, // placeholder; updated after DB lookup
+    username: socket.username, elo: 1200, // placeholder; real value set below
     gameId: null, gameColor: null,
   });
-
-  const dbUser = await User.findById(socket.userId).catch(() => null);
-  if (!dbUser) {
-    connectedUsers.delete(socket.id); // clean up placeholder
-    socket.disconnect();
-    return;
-  }
-
-  // Update placeholder with real ELO
-  const entry = connectedUsers.get(socket.id);
-  if (entry) entry.elo = dbUser.elo;
-
-  // Kick any stale entry for same username (reconnect from another tab/page)
-  for (const [sid, u] of connectedUsers) {
-    if (u.username === socket.username && sid !== socket.id) {
-      connectedUsers.delete(sid);
-      break;
-    }
-  }
-
-  socket.emit('lobby:state', lobbySnapshot());
-  sysLobby(`${socket.username} just connected`);
-  broadcastLobby();
 
   // ── Lobby chat ──
   socket.on('lobby:chat', (text) => {
@@ -185,7 +164,6 @@ io.on('connection', async (socket) => {
       red:   { userId: redU.userId,   username: redU.username,   elo: redU.elo },
       black: { userId: blackU.userId, username: blackU.username, elo: blackU.elo },
       eloInfo: info,
-      // board state
       pieces: {}, currentPlayer: 'red',
       redPlaced: 0, blackPlaced: 0, phase: 'placement',
       moves: [], winner: null, resignedBy: null,
@@ -206,15 +184,14 @@ io.on('connection', async (socket) => {
     broadcastLobby();
     sysLobby(`Game started: ${redU.username} vs ${blackU.username}`);
 
-    // Emit directly to each socket ID (belt-and-suspenders: room join above may race)
+    // Emit directly to each socket ID (belt-and-suspenders vs room-join race)
     const startedPayload = { gameId, gameColor, red: game.red, black: game.black, eloInfo: info };
     io.to(redU.socketId).emit('game:started', startedPayload);
     io.to(blackU.socketId).emit('game:started', startedPayload);
     io.to(`game:${gameId}`).emit('game:state', game);
-
   });
 
-  // ── Join game room (on page load/reload) ──
+  // ── Join game room (page load / reload / direct URL) ──
   socket.on('game:join', (gameId) => {
     const game = activeGames.get(gameId);
     if (!game) { socket.emit('game:error', { message: 'Game not found' }); return; }
@@ -226,10 +203,8 @@ io.on('connection', async (socket) => {
 
     const color = isRed ? 'red' : 'black';
 
-    // Keep connectedUsers in sync so lobby shows correct game status
     u.gameId    = gameId;
     u.gameColor = game.color;
-
     socket.join(`game:${gameId}`);
 
     // Clear reconnect countdown if this player was disconnected
@@ -260,7 +235,6 @@ io.on('connection', async (socket) => {
     const color = game.red.username === u.username ? 'red' : game.black.username === u.username ? 'black' : null;
     if (!color || color !== game.currentPlayer) return;
 
-    // Validate
     if (game.phase === 'placement') {
       if (from || game.pieces[slotKey(to)]) return;
     } else {
@@ -327,34 +301,57 @@ io.on('connection', async (socket) => {
       const game = activeGames.get(u.gameId);
       if (game && !game.winner) {
         const color    = game.red.username === u.username ? 'red' : 'black';
-        const gameId   = u.gameId;
+        const gid      = u.gameId;
         const username = u.username;
-        const key      = `${gameId}:${color}`;
+        const key      = `${gid}:${color}`;
 
-        // Clear any stale timeout for this slot
         const existing = disconnectTimeouts.get(key);
         if (existing) { clearTimeout(existing); disconnectTimeouts.delete(key); }
 
         game.disconnectedColor = color;
         game.disconnectedAt    = Date.now();
-        io.to(`game:${gameId}`).emit('game:state', { ...game });
-        sysGame(gameId, `${username} disconnected — 60 s to reconnect`);
+        io.to(`game:${gid}`).emit('game:state', { ...game });
+        sysGame(gid, `${username} disconnected — 60 s to reconnect`);
 
         const t = setTimeout(() => {
           disconnectTimeouts.delete(key);
-          const g = activeGames.get(gameId);
+          const g = activeGames.get(gid);
           if (!g || g.winner || g.disconnectedColor !== color) return;
-          // Still disconnected after 60 s → forfeit
           const winner = color === 'red' ? 'black' : 'red';
           const next   = { ...g, winner, disconnectedColor: null, disconnectedAt: null };
-          activeGames.set(gameId, next);
-          io.to(`game:${gameId}`).emit('game:state', next);
-          endGame(gameId, winner, 'disconnect');
+          activeGames.set(gid, next);
+          io.to(`game:${gid}`).emit('game:state', next);
+          endGame(gid, winner, 'disconnect');
         }, 60_000);
         disconnectTimeouts.set(key, t);
       }
     }
   });
+
+  // ── Async setup: verify user in DB, update real ELO, announce to lobby ──
+  // This runs AFTER all event handlers are registered so no incoming event
+  // can be dropped while we wait for the database.
+  const dbUser = await User.findById(socket.userId).catch(() => null);
+  if (!dbUser) {
+    connectedUsers.delete(socket.id);
+    socket.disconnect();
+    return;
+  }
+
+  const entry = connectedUsers.get(socket.id);
+  if (entry) entry.elo = dbUser.elo;
+
+  // Kick any stale entry for same username (reconnect from another tab/page)
+  for (const [sid, u] of connectedUsers) {
+    if (u.username === socket.username && sid !== socket.id) {
+      connectedUsers.delete(sid);
+      break;
+    }
+  }
+
+  socket.emit('lobby:state', lobbySnapshot());
+  sysLobby(`${socket.username} just connected`);
+  broadcastLobby();
 });
 
 // ── End game ────────────────────────────────────────────────────────────────
