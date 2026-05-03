@@ -24,8 +24,8 @@ export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, l
   const isRed = player === 'red';
   const borderColor = isRed ? 'border-red-400 dark:border-red-500' : 'border-slate-400 dark:border-gray-600';
   const wrapBg = isActive
-    ? 'bg-white dark:bg-gray-800 border-2'
-    : 'bg-slate-50 dark:bg-gray-900';
+    ? 'bg-white dark:bg-gray-800'
+    : 'bg-slate-50 dark:bg-gray-900 opacity-70';
   const cell = 'px-2 py-0.5 rounded text-xs font-mono text-center border';
 
   const nameCls = isActive
@@ -39,7 +39,7 @@ export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, l
     : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600';
 
   return (
-    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border ${borderColor} ${wrapBg}`}>
+    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border-2 ${borderColor} ${wrapBg}`}>
       <div
         className="w-3 h-3 rounded-full flex-shrink-0"
         style={isRed ? { background: '#ef4444' } : { background: '#1e293b', border: '1.5px solid #475569' }}
