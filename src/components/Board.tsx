@@ -167,11 +167,12 @@ export const Board: React.FC<Props> = ({
       pos = hSlotPos(slotId.line, slotId.slot);
     }
 
-    let fillColor = C.emptyFill;
-    if (isSelected) fillColor = '#f59e0b';
-    else if (isLegal) fillColor = '#22c55e';
-    else if (owner === 'red') fillColor = '#ef4444';
-    else if (owner === 'black') fillColor = isDark ? '#111827' : '#1e293b';
+    let fillId: string;
+    if (isSelected) fillId = 'url(#g-sel)';
+    else if (isLegal) fillId = 'url(#g-leg)';
+    else if (owner === 'red') fillId = 'url(#g-red)';
+    else if (owner === 'black') fillId = isDark ? 'url(#g-blk-d)' : 'url(#g-blk-l)';
+    else fillId = isDark ? 'url(#g-empty-d)' : 'url(#g-empty-l)';
 
     let strokeColor = C.emptyStroke;
     if (isSelected) strokeColor = '#d97706';
@@ -195,7 +196,7 @@ export const Board: React.FC<Props> = ({
         height={rh}
         rx={rr}
         ry={rr}
-        fill={fillColor}
+        fill={fillId}
         stroke={strokeColor}
         strokeWidth={1.5}
         style={{ cursor: isClickable ? 'pointer' : 'default' }}
@@ -232,6 +233,37 @@ export const Board: React.FC<Props> = ({
       height={SVG_H}
       style={{ display: 'block' }}
     >
+      <defs>
+        <radialGradient id="g-empty-l" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="#f8fafc" />
+          <stop offset="100%" stopColor="#e2e8f0" />
+        </radialGradient>
+        <radialGradient id="g-empty-d" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="#6b7280" />
+          <stop offset="100%" stopColor="#4b5563" />
+        </radialGradient>
+        <radialGradient id="g-red" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="#fca5a5" />
+          <stop offset="100%" stopColor="#ef4444" />
+        </radialGradient>
+        <radialGradient id="g-blk-l" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="#475569" />
+          <stop offset="100%" stopColor="#1e293b" />
+        </radialGradient>
+        <radialGradient id="g-blk-d" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="#374151" />
+          <stop offset="100%" stopColor="#111827" />
+        </radialGradient>
+        <radialGradient id="g-sel" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="#fde68a" />
+          <stop offset="100%" stopColor="#f59e0b" />
+        </radialGradient>
+        <radialGradient id="g-leg" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stopColor="#86efac" />
+          <stop offset="100%" stopColor="#22c55e" />
+        </radialGradient>
+      </defs>
+
       {/* H labels — right-aligned just before the board */}
       {Array.from({ length: 6 }, (_, ji) => {
         const j = ji + 1;
