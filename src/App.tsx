@@ -188,10 +188,22 @@ export default function App() {
     <div className="min-h-screen bg-slate-100 text-slate-800 dark:bg-gray-950 dark:text-white flex flex-col items-center py-2 gap-1.5 relative">
       {/* Dark mode toggle — top right */}
       <button
+        role="switch"
+        aria-checked={isDark}
         onClick={() => setIsDark((d) => !d)}
-        className="absolute top-2 right-3 text-lg select-none"
         title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      >{isDark ? '☀️' : '🌙'}</button>
+        className="absolute top-2 right-3 flex items-center gap-1.5 select-none focus:outline-none"
+      >
+        {/* Moon icon (dark-colored SVG, not emoji) */}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a78bfa' : '#475569'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+        </svg>
+        {/* Pill track */}
+        <span className={`relative inline-block w-9 h-5 rounded-full transition-colors duration-200 ${isDark ? 'bg-violet-500' : 'bg-slate-300'}`}>
+          {/* Thumb */}
+          <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${isDark ? 'translate-x-4' : 'translate-x-0'}`} />
+        </span>
+      </button>
 
       <FurukooLogo className={isDark ? 'text-fuchsia-400' : 'text-fuchsia-600'} />
 
