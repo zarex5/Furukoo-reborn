@@ -65,7 +65,11 @@ export default function GamePage() {
     const socket = getSocket();
     if (!socket || !gameId) return;
 
-    socket.emit('game:join', gameId);
+    // Emit game:join now if already connected, and again on every (re)connect
+    // so a page refresh or network blip never leaves the player stuck.
+    const joinGame = () => socket.emit('game:join', gameId);
+    socket.on('connect', joinGame);
+    if (socket.connected) joinGame();
 
     const onStarted = (data: { red: GameMeta['red']; black: GameMeta['black']; eloInfo: GameMeta['eloInfo'] }) => {
       setGameMeta({ red: data.red, black: data.black, eloInfo: data.eloInfo });
@@ -106,6 +110,7 @@ export default function GamePage() {
     socket.on('game:error',   onError);
 
     return () => {
+      socket.off('connect',      joinGame);
       socket.off('game:started', onStarted);
       socket.off('game:state',   onState);
       socket.off('game:over',    onOver);

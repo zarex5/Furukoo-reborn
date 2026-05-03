@@ -101,22 +101,33 @@ io.use((socket, next) => {
 
 // ── Socket handlers ──────────────────────────────────────────────────────────
 io.on('connection', async (socket) => {
-  const dbUser = await User.findById(socket.userId).catch(() => null);
-  if (!dbUser) { socket.disconnect(); return; }
+  // Register immediately — before the async DB lookup — so that game:join and
+  // other events buffered by Socket.io during connection don't race against
+  // connectedUsers and silently get dropped (u would be undefined otherwise).
+  connectedUsers.set(socket.id, {
+    socketId: socket.id, userId: socket.userId,
+    username: socket.username, elo: 1200, // placeholder; updated after DB lookup
+    gameId: null, gameColor: null,
+  });
 
-  // Kick any stale entry for same username (reconnect)
+  const dbUser = await User.findById(socket.userId).catch(() => null);
+  if (!dbUser) {
+    connectedUsers.delete(socket.id); // clean up placeholder
+    socket.disconnect();
+    return;
+  }
+
+  // Update placeholder with real ELO
+  const entry = connectedUsers.get(socket.id);
+  if (entry) entry.elo = dbUser.elo;
+
+  // Kick any stale entry for same username (reconnect from another tab/page)
   for (const [sid, u] of connectedUsers) {
     if (u.username === socket.username && sid !== socket.id) {
       connectedUsers.delete(sid);
       break;
     }
   }
-
-  connectedUsers.set(socket.id, {
-    socketId: socket.id, userId: socket.userId,
-    username: socket.username, elo: dbUser.elo,
-    gameId: null, gameColor: null,
-  });
 
   socket.emit('lobby:state', lobbySnapshot());
   sysLobby(`${socket.username} just connected`);
