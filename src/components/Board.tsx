@@ -80,7 +80,6 @@ interface Props {
  */
 
 const CELL = 28; // px per grid cell
-const SLOT_R = 7; // radius of slot circle
 const LINE_W = 3; // line stroke width
 
 const GRID_CELLS = 13; // 0..12
@@ -182,24 +181,35 @@ export const Board: React.FC<Props> = ({
     else if (owner === 'red') strokeColor = '#b91c1c';
     else if (owner === 'black') strokeColor = isDark ? '#374151' : '#334155';
 
-    const r = owner ? SLOT_R + 2 : SLOT_R;
-
     const label = `${slotId.line}${slotId.type}${slotId.slot}`;
+    const isV = slotId.type === 'V';
+
+    // Pieces: rounded rect 4:1, oriented by line type
+    // Empty slots: small rounded rect
+    const pieceScale = owner ? 1.15 : 1;
+    const longSide = Math.round(CELL * 0.82 * pieceScale);
+    const shortSide = Math.round(CELL * 0.22 * pieceScale);
+    const rr = Math.round(shortSide / 2);
+    const rw = isV ? shortSide : longSide;
+    const rh = isV ? longSide : shortSide;
 
     return (
-      <circle
+      <rect
         key={key}
-        cx={pos.cx}
-        cy={pos.cy}
-        r={r}
+        x={pos.cx - rw / 2}
+        y={pos.cy - rh / 2}
+        width={rw}
+        height={rh}
+        rx={rr}
+        ry={rr}
         fill={fillColor}
         stroke={strokeColor}
-        strokeWidth={2}
+        strokeWidth={1.5}
         style={{ cursor: isClickable ? 'pointer' : 'default' }}
         onClick={isClickable ? () => onSlotClick(slotId) : undefined}
       >
         <title>{label}</title>
-      </circle>
+      </rect>
     );
   }
 
