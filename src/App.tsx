@@ -205,7 +205,7 @@ export default function App() {
         </span>
       </button>
 
-      <FurukooLogo />
+      <div className="mb-2"><FurukooLogo /></div>
 
       {/* Player name inputs */}
       <div className="flex gap-4 items-center">
