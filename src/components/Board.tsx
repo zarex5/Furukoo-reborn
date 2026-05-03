@@ -237,19 +237,18 @@ export const Board: React.FC<Props> = ({
       style={{ display: 'block' }}
     >
       <defs>
-        {/* Empty slots: darker center, lighter edge */}
+        {/* Empty slots: gently darker center, lighter edge */}
         <radialGradient id="g-empty-l" cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#94a3b8" />
-          <stop offset="100%" stopColor="#e2e8f0" />
+          <stop offset="0%" stopColor="#c8d5e0" />
+          <stop offset="100%" stopColor="#e8eff5" />
         </radialGradient>
         <radialGradient id="g-empty-d" cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#374151" />
+          <stop offset="0%" stopColor="#4a5568" />
           <stop offset="100%" stopColor="#6b7280" />
         </radialGradient>
-        {/* Colored pieces: near-white center fading to saturated color */}
+        {/* Colored pieces: moderate highlight center */}
         <radialGradient id="g-red" cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#fff0f0" />
-          <stop offset="55%" stopColor="#fca5a5" />
+          <stop offset="0%" stopColor="#fca5a5" />
           <stop offset="100%" stopColor="#dc2626" />
         </radialGradient>
         <radialGradient id="g-blk-l" cx="50%" cy="50%" r="70%">
