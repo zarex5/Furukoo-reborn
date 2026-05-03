@@ -157,9 +157,7 @@ export const Board: React.FC<Props> = ({
       !disabled &&
       (isLegal ||
         isSelected ||
-        (owner === currentPlayer &&
-          phase === 'movement' &&
-          !selectedSlot) ||
+        (owner === currentPlayer && phase === 'movement') ||
         (phase === 'placement' && !owner));
 
     let pos: { cx: number; cy: number };
