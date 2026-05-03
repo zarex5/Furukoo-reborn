@@ -192,25 +192,28 @@ io.on('connection', async (socket) => {
     broadcastLobby();
     sysLobby(`Game started: ${redU.username} vs ${blackU.username}`);
 
-    io.to(`game:${gameId}`).emit('game:started', {
-      gameId, gameColor,
-      red:   game.red,
-      black: game.black,
-      eloInfo: info,
-    });
+    // Emit directly to each socket ID (belt-and-suspenders: room join above may race)
+    const startedPayload = { gameId, gameColor, red: game.red, black: game.black, eloInfo: info };
+    io.to(redU.socketId).emit('game:started', startedPayload);
+    io.to(blackU.socketId).emit('game:started', startedPayload);
     io.to(`game:${gameId}`).emit('game:state', game);
 
-    sysGame(gameId, `${redU.username} (red, ${redU.elo}) — win ${fmt(info.red.win)} / draw ${fmt(info.red.draw)} / loss ${fmt(info.red.loss)}`);
-    sysGame(gameId, `${blackU.username} (black, ${blackU.elo}) — win ${fmt(info.black.win)} / draw ${fmt(info.black.draw)} / loss ${fmt(info.black.loss)}`);
   });
 
   // ── Join game room (on page load/reload) ──
   socket.on('game:join', (gameId) => {
     const game = activeGames.get(gameId);
-    if (!game) { socket.emit('game:error', 'Game not found'); return; }
+    if (!game) { socket.emit('game:error', { message: 'Game not found' }); return; }
     const u = connectedUsers.get(socket.id);
     if (!u) return;
-    if (game.red.username !== u.username && game.black.username !== u.username) return;
+    const isRed   = game.red.username   === u.username;
+    const isBlack = game.black.username === u.username;
+    if (!isRed && !isBlack) { socket.emit('game:error', { message: 'Not a player in this game' }); return; }
+
+    // Keep connectedUsers in sync so lobby shows correct game status
+    u.gameId    = gameId;
+    u.gameColor = game.color;
+
     socket.join(`game:${gameId}`);
     socket.emit('game:state', game);
     socket.emit('game:started', {

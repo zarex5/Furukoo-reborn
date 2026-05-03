@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { getSocket } from '../lib/socket';
 import { Board } from '../components/Board';
 import { PlayerPanel } from '../components/PlayerPanel';
-import { RightPanel, type OnlineUser, type ChatMsg } from '../components/RightPanel';
+import { PlayersBox, ChatBox, type OnlineUser, type ChatMsg } from '../components/RightPanel';
+import { ResizableSplit } from '../components/ResizableSplit';
 import { FurukooLogo } from '../components/FurukooLogo';
 import type { SlotId, Player, BoardState } from '../types';
 import { slotKey } from '../types';
@@ -29,6 +30,7 @@ interface GameOver {
 
 let msgId = 0;
 const mkId = () => String(++msgId);
+const fmtDelta = (n: number) => (n >= 0 ? '+' : '') + n;
 
 export default function GamePage() {
   const { gameId }    = useParams<{ gameId: string }>();
@@ -46,9 +48,13 @@ export default function GamePage() {
   const [lobbyUsers, setLobbyUsers] = useState<OnlineUser[]>([]);
   const [messages,   setMessages]   = useState<ChatMsg[]>([]);
 
-  // Local timer (ticks from last received server state)
+  // History navigation
+  const [stateHistory, setStateHistory] = useState<BoardState[]>([]);
+  const [viewIndex,    setViewIndex]    = useState(-1); // -1 = latest
+
+  // Local timer
   const [displayedState, setDisplayedState] = useState<BoardState | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTickRef = useRef(Date.now());
 
   const addMsg = useCallback((m: Omit<ChatMsg, 'id'>) => {
@@ -59,18 +65,26 @@ export default function GamePage() {
     const socket = getSocket();
     if (!socket || !gameId) return;
 
-    // Join/rejoin the game room
     socket.emit('game:join', gameId);
 
     const onStarted = (data: { red: GameMeta['red']; black: GameMeta['black']; eloInfo: GameMeta['eloInfo'] }) => {
       setGameMeta({ red: data.red, black: data.black, eloInfo: data.eloInfo });
-      if (user?.username === data.red.username)   setMyColor('red');
-      if (user?.username === data.black.username) setMyColor('black');
+      let color: Player | null = null;
+      if (user?.username === data.red.username)   color = 'red';
+      if (user?.username === data.black.username) color = 'black';
+      setMyColor(color);
+      // Show own ELO preview in chat
+      if (color) {
+        const info = data.eloInfo[color];
+        addMsg({ type: 'system', text: `Your ELO: win ${fmtDelta(info.win)} / draw ${fmtDelta(info.draw)} / loss ${fmtDelta(info.loss)}` });
+      }
     };
 
     const onState = (g: BoardState) => {
       setGameState(g);
       setDisplayedState(g);
+      setStateHistory(prev => [...prev, g]);
+      setViewIndex(-1);
       lastTickRef.current = Date.now();
     };
 
@@ -118,7 +132,6 @@ export default function GamePage() {
           redTimeMs:   prev.currentPlayer === 'red'   ? Math.max(0, prev.redTimeMs   - elapsed) : prev.redTimeMs,
           blackTimeMs: prev.currentPlayer === 'black' ? Math.max(0, prev.blackTimeMs - elapsed) : prev.blackTimeMs,
         };
-        // Report own timeout to server
         if (myColor && updated[myColor === 'red' ? 'redTimeMs' : 'blackTimeMs'] <= 0) {
           getSocket()?.emit('game:timeout', { gameId });
         }
@@ -141,7 +154,6 @@ export default function GamePage() {
       return;
     }
 
-    // Movement phase
     if (selectedSlot) {
       const selKey = slotKey(selectedSlot);
       if (selKey === key) { setSelectedSlot(null); return; }
@@ -157,6 +169,18 @@ export default function GamePage() {
     }
     if (gameState.pieces[key] === myColor) setSelectedSlot(slot);
   }, [gameState, myColor, selectedSlot, gameOver, gameId]);
+
+  // History navigation
+  const histLen  = stateHistory.length;
+  const curIdx   = viewIndex === -1 ? histLen - 1 : viewIndex;
+  const navFirst = () => histLen > 0 && setViewIndex(0);
+  const navPrev  = () => setViewIndex(Math.max(0, curIdx - 1));
+  const navNext  = () => { const ni = curIdx + 1; setViewIndex(ni >= histLen ? -1 : ni); };
+  const navLast  = () => setViewIndex(-1);
+  const isAtLatest = viewIndex === -1;
+  const showPulse  = !isAtLatest && gameState?.currentPlayer === myColor && !gameOver;
+
+  const viewedState = (viewIndex !== -1 && stateHistory[viewIndex]) ? stateHistory[viewIndex] : displayedState;
 
   const handleResign = () => getSocket()?.emit('game:resign', { gameId });
   const handleSend   = (text: string) => getSocket()?.emit('game:chat', { gameId, text });
@@ -174,33 +198,33 @@ export default function GamePage() {
 
   const redName   = gameMeta.red.username;
   const blackName = gameMeta.black.username;
-  const boardDisabled = gameState.currentPlayer !== myColor || !!gameOver;
+  const boardDisabled = gameState.currentPlayer !== myColor || !!gameOver || viewIndex !== -1;
 
-  const lastRedMove   = [...gameState.moves].reverse().find(m => m.player === 'red')   ?? null;
-  const lastBlackMove = [...gameState.moves].reverse().find(m => m.player === 'black') ?? null;
-  const redMoveIdx    = gameState.moves.filter(m => m.player === 'red').length;
-  const blackMoveIdx  = gameState.moves.filter(m => m.player === 'black').length;
+  const lastRedMove   = [...(viewedState?.moves ?? [])].reverse().find(m => m.player === 'red')   ?? null;
+  const lastBlackMove = [...(viewedState?.moves ?? [])].reverse().find(m => m.player === 'black') ?? null;
+  const redMoveIdx    = (viewedState?.moves ?? []).filter(m => m.player === 'red').length;
+  const blackMoveIdx  = (viewedState?.moves ?? []).filter(m => m.player === 'black').length;
 
-  const fmt = (n: number) => (n >= 0 ? '+' : '') + n;
+  const navBtnCls = 'px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-30 transition';
 
   return (
     <div className={`${isDark ? 'dark' : ''} min-h-screen`}>
     <div className="min-h-screen bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
 
-      {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-wrap">
+      {/* Top bar — compact */}
+      <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
         <FurukooLogo />
-        <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">
-          {redName} vs {blackName}
-        </span>
         <div className="flex gap-2 ml-auto items-center">
+          <span className="text-xs font-mono text-slate-400 dark:text-gray-500">
+            {redName} vs {blackName}
+          </span>
           {!gameOver
             ? <button onClick={handleResign}
-                className="px-3 py-1 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
+                className="px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
                 Resign
               </button>
             : <button onClick={handleBack}
-                className="px-3 py-1 rounded text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 transition">
+                className="px-3 py-0.5 rounded text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 transition">
                 Back to Lobby
               </button>
           }
@@ -218,28 +242,28 @@ export default function GamePage() {
 
       {/* Game over banner */}
       {gameOver && (
-        <div className="mx-4 mt-3 px-4 py-2 rounded-lg bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 text-sm font-mono text-center">
+        <div className="mx-4 mt-2 px-4 py-1.5 rounded-lg bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 text-xs font-mono text-center">
           <span className="font-bold text-green-800 dark:text-green-300">{gameOver.winnerName} wins</span>
           {gameOver.reason === 'resign' && ' (by resignation)'}
           {gameOver.reason === 'timeout' && ' (on time)'}
           {'  ·  '}
-          {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmt(gameOver.redDelta)}</span> → {gameOver.newRedElo}
+          {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
           {'  ·  '}
-          {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmt(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
+          {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
         </div>
       )}
 
-      {/* Main content */}
-      <div className="flex flex-1 gap-4 p-4 min-h-0 items-start">
+      {/* Main content — board 66% / right panel 34% */}
+      <div className="flex flex-1 min-h-0 p-2 gap-2">
 
-        {/* Left: board */}
+        {/* Board area */}
         <div className="flex flex-col gap-1.5 flex-none">
           <PlayerPanel player="red" name={redName}
-            isActive={displayedState.currentPlayer === 'red' && !gameOver}
-            timeMs={displayedState.redTimeMs}
+            isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
+            timeMs={(viewedState ?? displayedState).redTimeMs}
             lastMove={lastRedMove} moveIndex={redMoveIdx} />
           <Board
-            pieces={displayedState.pieces}
+            pieces={(viewedState ?? displayedState).pieces}
             currentPlayer={gameState.currentPlayer}
             selectedSlot={selectedSlot}
             onSlotClick={handleSlotClick}
@@ -248,26 +272,44 @@ export default function GamePage() {
             isDark={isDark}
           />
           <PlayerPanel player="black" name={blackName}
-            isActive={displayedState.currentPlayer === 'black' && !gameOver}
-            timeMs={displayedState.blackTimeMs}
+            isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
+            timeMs={(viewedState ?? displayedState).blackTimeMs}
             lastMove={lastBlackMove} moveIndex={blackMoveIdx} />
+
+          {/* History nav */}
+          <div className="flex items-center gap-1">
+            <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">⏮</button>
+            <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0} title="Previous move">◀</button>
+            <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">▶</button>
+            <button
+              className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`}
+              onClick={navLast} disabled={isAtLatest} title="Latest move"
+            >⏭</button>
+            {!isAtLatest && (
+              <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">
+                {curIdx + 1}/{histLen}
+              </span>
+            )}
+          </div>
 
           {/* ELO preview */}
           {!gameOver && myColor && gameMeta.eloInfo && (
             <div className="text-xs font-mono text-slate-400 dark:text-gray-500 text-center">
-              You ({myColor === 'red' ? redName : blackName}) · win {fmt(gameMeta.eloInfo[myColor].win)} / draw {fmt(gameMeta.eloInfo[myColor].draw)} / loss {fmt(gameMeta.eloInfo[myColor].loss)}
+              win {fmtDelta(gameMeta.eloInfo[myColor].win)} / draw {fmtDelta(gameMeta.eloInfo[myColor].draw)} / loss {fmtDelta(gameMeta.eloInfo[myColor].loss)}
             </div>
           )}
         </div>
 
-        {/* Right panel */}
-        <div className="flex-1 min-w-0" style={{ minHeight: 460 }}>
-          <RightPanel
-            users={lobbyUsers} messages={messages} onSend={handleSend}
-            myUsername={user?.username ?? ''} isDark={isDark}
-            gamePlayers={{ red: redName, black: blackName }}
+        {/* Right panel: players + chat */}
+        <div className="flex-1 min-w-0 min-h-0">
+          <ResizableSplit
+            direction="vertical"
+            initialFirstPct={40}
+            first={<PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} />}
+            second={<ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} />}
           />
         </div>
+
       </div>
     </div>
     </div>

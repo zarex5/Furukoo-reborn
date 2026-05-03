@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { connectSocket, disconnectSocket, getSocket } from '../lib/socket';
 
 interface AuthUser { username: string; elo: number; token: string; }
@@ -14,14 +14,13 @@ const KEY = 'furukoo_auth';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
-    try { return JSON.parse(localStorage.getItem(KEY) || 'null'); }
-    catch { return null; }
+    try {
+      const data = JSON.parse(localStorage.getItem(KEY) || 'null') as AuthUser | null;
+      // Connect eagerly so getSocket() is non-null before any child effect runs
+      if (data?.token && !getSocket()) connectSocket(data.token);
+      return data;
+    } catch { return null; }
   });
-
-  // Re-connect socket on first mount if we already have a stored session
-  useEffect(() => {
-    if (user && !getSocket()?.connected) connectSocket(user.token);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = (u: AuthUser) => {
     setUser(u);
