@@ -19,7 +19,10 @@ app.use(express.json());
 
 // ── MongoDB ──────────────────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/furukoo')
-  .then(() => console.log('MongoDB connected'))
+  .then(async () => {
+    console.log('MongoDB connected');
+    await loadActiveGames();
+  })
   .catch(e => console.error('MongoDB error:', e.message));
 
 const UserSchema = new mongoose.Schema({
@@ -141,6 +144,26 @@ function liveState(game) {
   };
 }
 
+// Restore activeGames from DB on startup (called after mongoose connects)
+async function loadActiveGames() {
+  const games = await Game.find({ status: 'active' }).lean();
+  for (const g of games) {
+    activeGames.set(g.gameId, {
+      id: g.gameId, color: g.color,
+      red: g.red, black: g.black, eloInfo: g.eloInfo,
+      pieces: g.pieces || {},
+      currentPlayer: g.currentPlayer,
+      redPlaced: g.redPlaced, blackPlaced: g.blackPlaced,
+      phase: g.phase, moves: g.moves || [],
+      winner: g.winner || null, resignedBy: g.resignedBy || null,
+      redTimeMs: g.redTimeMs, blackTimeMs: g.blackTimeMs,
+      lastMoveAt: Date.now(), // reset so downtime doesn't eat the clock
+      disconnectedColor: null, disconnectedAt: null,
+    });
+  }
+  if (games.length) console.log(`Restored ${games.length} active game(s) from DB`);
+}
+
 // ── Socket auth middleware ───────────────────────────────────────────────────
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
@@ -259,13 +282,15 @@ io.on('connection', async (socket) => {
     const isBlack = game.black.username === u.username;
     if (!isRed && !isBlack) { socket.emit('game:error', { message: 'Not a player in this game' }); return; }
 
-    const color = isRed ? 'red' : 'black';
+    const color         = isRed ? 'red' : 'black';
+    const otherColor    = color === 'red' ? 'black' : 'red';
+    const otherUsername = game[otherColor].username;
 
     u.gameId    = gameId;
     u.gameColor = game.color;
     socket.join(`game:${gameId}`);
 
-    // Clear reconnect countdown if this player was disconnected
+    // Clear reconnect countdown if this player was the disconnected one
     if (game.disconnectedColor === color) {
       const key = `${gameId}:${color}`;
       const t = disconnectTimeouts.get(key);
@@ -273,11 +298,34 @@ io.on('connection', async (socket) => {
       game.disconnectedColor = null;
       game.disconnectedAt    = null;
       sysGame(gameId, `${u.username} reconnected`);
-      io.to(`game:${gameId}`).emit('game:state', liveState(game));
       broadcastLobby();
     }
 
-    socket.emit('game:state', liveState(game));
+    // If the other player isn't online and no countdown is running for them,
+    // start one now. Handles server-restart recovery: the first rejoiner kicks
+    // off the 60 s window for the absent player.
+    if (!game.winner) {
+      const otherKey     = `${gameId}:${otherColor}`;
+      const otherOnline  = Array.from(connectedUsers.values()).some(x => x.username === otherUsername);
+      if (!otherOnline && !disconnectTimeouts.has(otherKey)) {
+        game.disconnectedColor = otherColor;
+        game.disconnectedAt    = Date.now();
+        sysGame(gameId, `Waiting for ${otherUsername} — 60 s to reconnect`);
+        const t = setTimeout(() => {
+          disconnectTimeouts.delete(otherKey);
+          const g = activeGames.get(gameId);
+          if (!g || g.winner || g.disconnectedColor !== otherColor) return;
+          const winner = otherColor === 'red' ? 'black' : 'red';
+          const next   = { ...g, winner, disconnectedColor: null, disconnectedAt: null };
+          activeGames.set(gameId, next);
+          io.to(`game:${gameId}`).emit('game:state', next);
+          endGame(gameId, winner, 'disconnect');
+        }, 60_000);
+        disconnectTimeouts.set(otherKey, t);
+      }
+    }
+
+    io.to(`game:${gameId}`).emit('game:state', liveState(game));
     socket.emit('game:started', {
       gameId, gameColor: game.color,
       red: game.red, black: game.black, eloInfo: game.eloInfo,
@@ -355,34 +403,51 @@ io.on('connection', async (socket) => {
     sysLobby(`${u.username} just disconnected`);
     broadcastLobby();
 
-    // If the player was in an active game, start a 60-second reconnect window
+    // If the player was in an active game, handle reconnect window
     if (u.gameId) {
       const game = activeGames.get(u.gameId);
       if (game && !game.winner) {
-        const color    = game.red.username === u.username ? 'red' : 'black';
-        const gid      = u.gameId;
-        const username = u.username;
-        const key      = `${gid}:${color}`;
+        const color         = game.red.username === u.username ? 'red' : 'black';
+        const otherColor    = color === 'red' ? 'black' : 'red';
+        const gid           = u.gameId;
+        const username      = u.username;
+        const key           = `${gid}:${color}`;
 
         const existing = disconnectTimeouts.get(key);
         if (existing) { clearTimeout(existing); disconnectTimeouts.delete(key); }
 
-        game.disconnectedColor = color;
-        game.disconnectedAt    = Date.now();
-        io.to(`game:${gid}`).emit('game:state', liveState(game));
-        sysGame(gid, `${username} disconnected — 60 s to reconnect`);
+        // Check if the other player is still connected
+        const otherUsername = game[otherColor].username;
+        const otherOnline   = Array.from(connectedUsers.values()).some(x => x.username === otherUsername);
 
-        const t = setTimeout(() => {
-          disconnectTimeouts.delete(key);
-          const g = activeGames.get(gid);
-          if (!g || g.winner || g.disconnectedColor !== color) return;
-          const winner = color === 'red' ? 'black' : 'red';
-          const next   = { ...g, winner, disconnectedColor: null, disconnectedAt: null };
-          activeGames.set(gid, next);
-          io.to(`game:${gid}`).emit('game:state', next);
-          endGame(gid, winner, 'disconnect');
-        }, 60_000);
-        disconnectTimeouts.set(key, t);
+        if (!otherOnline) {
+          // Both players are now gone — cancel any running countdown for the
+          // other player and hold the game indefinitely; the first one to
+          // rejoin will start the 60 s window (handled in game:join).
+          const otherKey = `${gid}:${otherColor}`;
+          const otherT   = disconnectTimeouts.get(otherKey);
+          if (otherT) { clearTimeout(otherT); disconnectTimeouts.delete(otherKey); }
+          game.disconnectedColor = null;
+          game.disconnectedAt    = null;
+        } else {
+          // Other player is still watching — start 60 s window for this player
+          game.disconnectedColor = color;
+          game.disconnectedAt    = Date.now();
+          io.to(`game:${gid}`).emit('game:state', liveState(game));
+          sysGame(gid, `${username} disconnected — 60 s to reconnect`);
+
+          const t = setTimeout(() => {
+            disconnectTimeouts.delete(key);
+            const g = activeGames.get(gid);
+            if (!g || g.winner || g.disconnectedColor !== color) return;
+            const winner = color === 'red' ? 'black' : 'red';
+            const next   = { ...g, winner, disconnectedColor: null, disconnectedAt: null };
+            activeGames.set(gid, next);
+            io.to(`game:${gid}`).emit('game:state', next);
+            endGame(gid, winner, 'disconnect');
+          }, 60_000);
+          disconnectTimeouts.set(key, t);
+        }
       }
     }
   });
@@ -398,7 +463,14 @@ io.on('connection', async (socket) => {
   }
 
   const entry = connectedUsers.get(socket.id);
-  if (entry) entry.elo = dbUser.elo;
+  if (entry) {
+    entry.elo = dbUser.elo;
+    // After a server restart, restore gameId for players with an active game
+    const ongoing = Array.from(activeGames.values()).find(
+      g => !g.winner && (g.red.username === socket.username || g.black.username === socket.username)
+    );
+    if (ongoing) { entry.gameId = ongoing.id; entry.gameColor = ongoing.color; }
+  }
 
   // Kick any stale entry for same username (reconnect from another tab/page)
   for (const [sid, u] of connectedUsers) {
