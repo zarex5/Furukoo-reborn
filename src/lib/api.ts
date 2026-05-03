@@ -1,14 +1,21 @@
 const BASE = '/api';
 
 async function post(path: string, body: Record<string, string>) {
-  const res = await fetch(BASE + path, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Request failed');
-  return data as { token: string; username: string; elo: number };
+  let res: Response;
+  try {
+    res = await fetch(BASE + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error('Cannot reach server — is it running on port 3001?');
+  }
+  const text = await res.text();
+  let data: Record<string, string> = {};
+  try { data = JSON.parse(text); } catch { /* server returned non-JSON */ }
+  if (!res.ok) throw new Error(data.error || `Server error (${res.status})`);
+  return data as unknown as { token: string; username: string; elo: number };
 }
 
 export const api = {
