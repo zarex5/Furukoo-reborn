@@ -202,111 +202,117 @@ export const Board: React.FC<Props> = ({
     }
   }
 
+  // Label offsets — board content starts at (LPAD, TPAD) inside the SVG
+  const LPAD = 30; // left padding for H labels
+  const TPAD = 16; // top padding for V labels
+  const SVG_W = LPAD + TOTAL;
+  const SVG_H = TPAD + TOTAL;
+
+  // H-line j slot center y (relative to board origin)
+  const hLabelY = (j: number) => (2 * j - 1) * CELL + CELL / 2;
+  // V-line k slot center x (relative to board origin)
+  const vLabelX = (k: number) => (2 * k - 1) * CELL + CELL / 2;
+
   return (
-    <div className="flex items-start gap-4">
-      {/* H line labels on the left */}
-      <div className="flex flex-col" style={{ width: 40 }}>
-        {/* Top spacer to align with the board */}
-        <div style={{ height: CELL / 2 }} />
-        {Array.from({ length: 6 }, (_, j) => (
-          <div
-            key={j}
-            style={{ height: CELL * 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8 }}
-            className="text-gray-300 text-sm font-mono font-bold"
-          >
-            {j + 1}H
-          </div>
-        ))}
-      </div>
+    <svg
+      width={SVG_W}
+      height={SVG_H}
+      style={{ display: 'block' }}
+    >
+      {/* H labels — right-aligned just before the board */}
+      {Array.from({ length: 6 }, (_, ji) => {
+        const j = ji + 1;
+        return (
+          <text
+            key={`hlabel-${j}`}
+            x={LPAD - 4}
+            y={TPAD + hLabelY(j)}
+            textAnchor="end"
+            dominantBaseline="middle"
+            fontSize={10}
+            fontFamily="monospace"
+            fontWeight="bold"
+            fill="#d1d5db"
+          >{j}H</text>
+        );
+      })}
 
-      <div>
-        {/* V line labels on top */}
-        <div className="flex" style={{ paddingLeft: CELL / 2 }}>
-          {Array.from({ length: 6 }, (_, k) => (
-            <div
-              key={k}
-              style={{ width: CELL * 2, textAlign: 'center' }}
-              className="text-gray-300 text-sm font-mono font-bold"
-            >
-              {k + 1}V
-            </div>
-          ))}
-        </div>
+      {/* V labels — centred above each V line */}
+      {Array.from({ length: 6 }, (_, ki) => {
+        const k = ki + 1;
+        return (
+          <text
+            key={`vlabel-${k}`}
+            x={LPAD + vLabelX(k)}
+            y={TPAD - 4}
+            textAnchor="middle"
+            dominantBaseline="auto"
+            fontSize={10}
+            fontFamily="monospace"
+            fontWeight="bold"
+            fill="#d1d5db"
+          >{k}V</text>
+        );
+      })}
 
-        <svg
-          width={TOTAL}
-          height={TOTAL}
-          style={{ display: 'block', borderRadius: 10, overflow: 'hidden' }}
-        >
-          {/* Background */}
-          <rect width={TOTAL} height={TOTAL} fill="#0f172a" rx={10} />
+      {/* Board group, offset by (LPAD, TPAD) */}
+      <g transform={`translate(${LPAD},${TPAD})`}>
+        {/* Background */}
+        <rect width={TOTAL} height={TOTAL} fill="#0f172a" rx={10} />
 
-          {/* Squares highlights */}
-          {Array.from({ length: 5 }, (_, jj) =>
-            Array.from({ length: 5 }, (_, kk) => {
-              const j = jj + 1, k = kk + 1;
-              const fill = squareFill(j, k);
-              if (!fill) return null;
-              const topLeft = intersectionPos(j, k);
-              const bottomRight = intersectionPos(j + 1, k + 1);
-              return (
-                <rect
-                  key={`sq-${j}-${k}`}
-                  x={topLeft.x}
-                  y={topLeft.y}
-                  width={bottomRight.x - topLeft.x}
-                  height={bottomRight.y - topLeft.y}
-                  fill={fill}
-                />
-              );
-            })
-          )}
-
-          {/* V lines */}
-          {Array.from({ length: 6 }, (_, ki) => {
-            const k = ki + 1;
-            const x = (2 * k - 1) * CELL + CELL / 2;
+        {/* Squares highlights */}
+        {Array.from({ length: 5 }, (_, jj) =>
+          Array.from({ length: 5 }, (_, kk) => {
+            const j = jj + 1, k = kk + 1;
+            const fill = squareFill(j, k);
+            if (!fill) return null;
+            const topLeft = intersectionPos(j, k);
+            const bottomRight = intersectionPos(j + 1, k + 1);
             return (
-              <line
-                key={`vline-${k}`}
-                x1={x} y1={CELL / 2}
-                x2={x} y2={TOTAL - CELL / 2}
-                stroke="#4b5563"
-                strokeWidth={LINE_W}
+              <rect
+                key={`sq-${j}-${k}`}
+                x={topLeft.x}
+                y={topLeft.y}
+                width={bottomRight.x - topLeft.x}
+                height={bottomRight.y - topLeft.y}
+                fill={fill}
               />
             );
-          })}
+          })
+        )}
 
-          {/* H lines */}
-          {Array.from({ length: 6 }, (_, ji) => {
-            const j = ji + 1;
-            const y = (2 * j - 1) * CELL + CELL / 2;
-            return (
-              <line
-                key={`hline-${j}`}
-                x1={CELL / 2} y1={y}
-                x2={TOTAL - CELL / 2} y2={y}
-                stroke="#4b5563"
-                strokeWidth={LINE_W}
-              />
-            );
-          })}
+        {/* V lines */}
+        {Array.from({ length: 6 }, (_, ki) => {
+          const k = ki + 1;
+          const x = (2 * k - 1) * CELL + CELL / 2;
+          return (
+            <line key={`vline-${k}`} x1={x} y1={CELL / 2} x2={x} y2={TOTAL - CELL / 2}
+              stroke="#4b5563" strokeWidth={LINE_W} />
+          );
+        })}
 
-          {/* Intersection dots */}
-          {Array.from({ length: 6 }, (_, ji) =>
-            Array.from({ length: 6 }, (_, ki) => {
-              const j = ji + 1, k = ki + 1;
-              const { x, y } = intersectionPos(j, k);
-              return (
-                <circle key={`int-${j}-${k}`} cx={x} cy={y} r={3} fill="#6b7280" />
-              );
-            })
-          )}
+        {/* H lines */}
+        {Array.from({ length: 6 }, (_, ji) => {
+          const j = ji + 1;
+          const y = (2 * j - 1) * CELL + CELL / 2;
+          return (
+            <line key={`hline-${j}`} x1={CELL / 2} y1={y} x2={TOTAL - CELL / 2} y2={y}
+              stroke="#4b5563" strokeWidth={LINE_W} />
+          );
+        })}
 
-          {/* Slots */}
-          {slots.map(renderSlot)}
-        </svg>
-      </div>
-    </div>
+        {/* Intersection dots */}
+        {Array.from({ length: 6 }, (_, ji) =>
+          Array.from({ length: 6 }, (_, ki) => {
+            const j = ji + 1, k = ki + 1;
+            const { x, y } = intersectionPos(j, k);
+            return <circle key={`int-${j}-${k}`} cx={x} cy={y} r={3} fill="#6b7280" />;
+          })
+        )}
+
+        {/* Slots */}
+        {slots.map(renderSlot)}
+      </g>
+    </svg>
   );
 };
