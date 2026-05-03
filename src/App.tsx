@@ -178,25 +178,27 @@ export default function App() {
 
   const boardDisabled = !isViewingCurrent || gameOver;
 
+  const btnBase = 'px-2 py-0.5 rounded text-base disabled:opacity-30 transition';
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center py-6 gap-4">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center py-2 gap-1.5">
       <FurukooLogo className="text-fuchsia-400" />
 
       {/* Player name inputs */}
-      <div className="flex gap-6 items-center">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-red-500" />
+      <div className="flex gap-4 items-center">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
           <input
-            className="bg-gray-800 text-white border border-gray-600 rounded px-3 py-1 text-sm font-mono w-32 focus:outline-none focus:border-cyan-500"
+            className="bg-gray-800 text-white border border-gray-600 rounded px-2 py-0.5 text-xs font-mono w-28 focus:outline-none focus:border-cyan-500"
             value={redName}
             onChange={(e) => setRedName(e.target.value)}
           />
         </div>
-        <span className="text-gray-500 text-sm">vs</span>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-gray-400 border border-gray-500" />
+        <span className="text-gray-500 text-xs">vs</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-gray-900 border-2 border-gray-400 flex-shrink-0" />
           <input
-            className="bg-gray-800 text-white border border-gray-600 rounded px-3 py-1 text-sm font-mono w-32 focus:outline-none focus:border-cyan-500"
+            className="bg-gray-800 text-white border border-gray-600 rounded px-2 py-0.5 text-xs font-mono w-28 focus:outline-none focus:border-cyan-500"
             value={blackName}
             onChange={(e) => setBlackName(e.target.value)}
           />
@@ -204,41 +206,14 @@ export default function App() {
       </div>
 
       {/* Navigation + Resign */}
-      <div className="flex gap-2 items-center">
-        <button
-          onClick={handleNavFirst}
-          disabled={viewIndex === 0}
-          className="px-3 py-1 rounded bg-gray-700 text-gray-200 text-lg disabled:opacity-30 hover:bg-gray-600 transition"
-          title="First move"
-        >⏮</button>
-        <button
-          onClick={handleNavPrev}
-          disabled={viewIndex === 0}
-          className="px-3 py-1 rounded bg-gray-700 text-gray-200 text-lg disabled:opacity-30 hover:bg-gray-600 transition"
-          title="Previous move"
-        >◀</button>
-        <button
-          onClick={handleNavNext}
-          disabled={viewIndex >= history.length - 1}
-          className="px-3 py-1 rounded bg-gray-700 text-gray-200 text-lg disabled:opacity-30 hover:bg-gray-600 transition"
-          title="Next move"
-        >▶</button>
-        <button
-          onClick={handleNavCurrent}
-          disabled={isViewingCurrent}
-          className="px-3 py-1 rounded bg-gray-700 text-gray-200 text-lg disabled:opacity-30 hover:bg-gray-600 transition"
-          title="Current move"
-        >⏭</button>
-        <button
-          onClick={handleResign}
-          disabled={gameOver}
-          className="px-4 py-1 rounded bg-red-800 text-red-200 text-sm font-bold disabled:opacity-30 hover:bg-red-700 transition ml-4"
-        >Resign</button>
+      <div className="flex gap-1.5 items-center">
+        <button onClick={handleNavFirst}  disabled={viewIndex === 0}              className={`${btnBase} bg-gray-700 text-gray-200 hover:bg-gray-600`} title="First move">⏮</button>
+        <button onClick={handleNavPrev}   disabled={viewIndex === 0}              className={`${btnBase} bg-gray-700 text-gray-200 hover:bg-gray-600`} title="Previous move">◀</button>
+        <button onClick={handleNavNext}   disabled={viewIndex >= history.length - 1} className={`${btnBase} bg-gray-700 text-gray-200 hover:bg-gray-600`} title="Next move">▶</button>
+        <button onClick={handleNavCurrent} disabled={isViewingCurrent}            className={`${btnBase} bg-gray-700 text-gray-200 hover:bg-gray-600`} title="Current move">⏭</button>
+        <button onClick={handleResign}    disabled={gameOver}                     className={`${btnBase} bg-red-800 text-red-200 text-xs font-bold hover:bg-red-700 ml-3`}>Resign</button>
         {gameOver && (
-          <button
-            onClick={handleNewGame}
-            className="px-4 py-1 rounded bg-green-800 text-green-200 text-sm font-bold hover:bg-green-700 transition ml-2"
-          >New Game</button>
+          <button onClick={handleNewGame} className={`${btnBase} bg-green-800 text-green-200 text-xs font-bold hover:bg-green-700`}>New Game</button>
         )}
       </div>
 
@@ -262,19 +237,6 @@ export default function App() {
         phase={currentState.phase}
       />
 
-      {/* Status */}
-      <div className="text-sm font-mono text-center min-h-6">
-        {!isViewingCurrent ? (
-          <span className="text-yellow-400">
-            Viewing move {viewIndex} of {history.length - 1}
-          </span>
-        ) : (
-          <span className={effectiveWinner ? 'text-green-400 font-bold text-base' : 'text-gray-400'}>
-            {statusMsg}
-          </span>
-        )}
-      </div>
-
       {/* Black player panel */}
       <PlayerPanel
         player="black"
@@ -284,6 +246,15 @@ export default function App() {
         lastMove={blackLastMove.move}
         moveIndex={blackLastMove.idx}
       />
+
+      {/* Status — last element */}
+      <div className="text-xs font-mono text-center min-h-5">
+        {!isViewingCurrent ? (
+          <span className="text-yellow-400">Viewing move {viewIndex} of {history.length - 1}</span>
+        ) : (
+          <span className={effectiveWinner ? 'text-green-400 font-bold' : 'text-gray-400'}>{statusMsg}</span>
+        )}
+      </div>
     </div>
   );
 }

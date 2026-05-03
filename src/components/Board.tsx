@@ -79,9 +79,9 @@ interface Props {
  * This gives us a clean separation!
  */
 
-const CELL = 40; // px per grid cell
-const SLOT_R = 10; // radius of slot circle
-const LINE_W = 4;  // line stroke width
+const CELL = 28; // px per grid cell
+const SLOT_R = 7; // radius of slot circle
+const LINE_W = 3; // line stroke width
 
 const GRID_CELLS = 13; // 0..12
 
