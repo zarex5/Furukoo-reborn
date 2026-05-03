@@ -8,9 +8,9 @@ interface Props {
   currentPlayer: Player;
   selectedSlot: SlotId | null;
   onSlotClick: (s: SlotId) => void;
-  /** Whether interaction is disabled (history view, game over, timer expired) */
   disabled: boolean;
   phase: 'placement' | 'movement';
+  isDark: boolean;
 }
 
 /**
@@ -109,7 +109,17 @@ export const Board: React.FC<Props> = ({
   onSlotClick,
   disabled,
   phase,
+  isDark,
 }) => {
+  const C = isDark ? {
+    boardBg: '#0f172a', line: '#4b5563', dot: '#6b7280',
+    emptyFill: '#374151', emptyStroke: '#6b7280', labelFill: '#d1d5db',
+    redSquare: 'rgba(239,68,68,0.25)', blackSquare: 'rgba(55,65,81,0.5)',
+  } : {
+    boardBg: '#f8fafc', line: '#94a3b8', dot: '#94a3b8',
+    emptyFill: '#cbd5e1', emptyStroke: '#94a3b8', labelFill: '#475569',
+    redSquare: 'rgba(239,68,68,0.18)', blackSquare: 'rgba(15,23,42,0.15)',
+  };
   const legalDests = React.useMemo(() => {
     if (!selectedSlot || disabled) return new Set<string>();
     return new Set(legalMoves(selectedSlot, pieces).map(slotKey));
@@ -128,15 +138,14 @@ export const Board: React.FC<Props> = ({
   );
 
   function squareFill(j: number, k: number): string | null {
-    // Square (j,k): top=jH slot k+1, bottom=(j+1)H slot k+1, left=kV slot j+1, right=(k+1)V slot j+1
     const key = [
       slotKey({ type: 'H', line: j, slot: k + 1 }),
       slotKey({ type: 'H', line: j + 1, slot: k + 1 }),
       slotKey({ type: 'V', line: k, slot: j + 1 }),
       slotKey({ type: 'V', line: k + 1, slot: j + 1 }),
     ].join('|');
-    if (redSquareKeys.has(key)) return 'rgba(239,68,68,0.25)';
-    if (blackSquareKeys.has(key)) return 'rgba(55,65,81,0.5)';
+    if (redSquareKeys.has(key)) return C.redSquare;
+    if (blackSquareKeys.has(key)) return C.blackSquare;
     return null;
   }
 
@@ -160,17 +169,17 @@ export const Board: React.FC<Props> = ({
       pos = hSlotPos(slotId.line, slotId.slot);
     }
 
-    let fillColor = '#374151'; // empty slot: dark gray
-    if (isSelected) fillColor = '#f59e0b'; // selected: amber
-    else if (isLegal) fillColor = '#22c55e'; // legal move: green
+    let fillColor = C.emptyFill;
+    if (isSelected) fillColor = '#f59e0b';
+    else if (isLegal) fillColor = '#22c55e';
     else if (owner === 'red') fillColor = '#ef4444';
-    else if (owner === 'black') fillColor = '#111827';
+    else if (owner === 'black') fillColor = isDark ? '#111827' : '#1e293b';
 
-    let strokeColor = '#6b7280';
+    let strokeColor = C.emptyStroke;
     if (isSelected) strokeColor = '#d97706';
     else if (isLegal) strokeColor = '#16a34a';
     else if (owner === 'red') strokeColor = '#b91c1c';
-    else if (owner === 'black') strokeColor = '#374151';
+    else if (owner === 'black') strokeColor = isDark ? '#374151' : '#334155';
 
     const r = owner ? SLOT_R + 2 : SLOT_R;
 
@@ -232,7 +241,7 @@ export const Board: React.FC<Props> = ({
             fontSize={10}
             fontFamily="monospace"
             fontWeight="bold"
-            fill="#d1d5db"
+            fill={C.labelFill}
           >{j}H</text>
         );
       })}
@@ -250,7 +259,7 @@ export const Board: React.FC<Props> = ({
             fontSize={10}
             fontFamily="monospace"
             fontWeight="bold"
-            fill="#d1d5db"
+            fill={C.labelFill}
           >{k}V</text>
         );
       })}
@@ -258,7 +267,7 @@ export const Board: React.FC<Props> = ({
       {/* Board group, offset by (LPAD, TPAD) */}
       <g transform={`translate(${LPAD},${TPAD})`}>
         {/* Background */}
-        <rect width={TOTAL} height={TOTAL} fill="#0f172a" rx={10} />
+        <rect width={TOTAL} height={TOTAL} fill={C.boardBg} rx={10} />
 
         {/* Squares highlights */}
         {Array.from({ length: 5 }, (_, jj) =>
@@ -287,7 +296,7 @@ export const Board: React.FC<Props> = ({
           const x = (2 * k - 1) * CELL + CELL / 2;
           return (
             <line key={`vline-${k}`} x1={x} y1={CELL / 2} x2={x} y2={TOTAL - CELL / 2}
-              stroke="#4b5563" strokeWidth={LINE_W} />
+              stroke={C.line} strokeWidth={LINE_W} />
           );
         })}
 
@@ -297,7 +306,7 @@ export const Board: React.FC<Props> = ({
           const y = (2 * j - 1) * CELL + CELL / 2;
           return (
             <line key={`hline-${j}`} x1={CELL / 2} y1={y} x2={TOTAL - CELL / 2} y2={y}
-              stroke="#4b5563" strokeWidth={LINE_W} />
+              stroke={C.line} strokeWidth={LINE_W} />
           );
         })}
 
@@ -306,7 +315,7 @@ export const Board: React.FC<Props> = ({
           Array.from({ length: 6 }, (_, ki) => {
             const j = ji + 1, k = ki + 1;
             const { x, y } = intersectionPos(j, k);
-            return <circle key={`int-${j}-${k}`} cx={x} cy={y} r={3} fill="#6b7280" />;
+            return <circle key={`int-${j}-${k}`} cx={x} cy={y} r={3} fill={C.dot} />;
           })
         )}
 

@@ -12,6 +12,7 @@ import {
 } from './gameLogic';
 
 export default function App() {
+  const [isDark, setIsDark] = useState(false);
   const [redName, setRedName] = useState('Player 1');
   const [blackName, setBlackName] = useState('Player 2');
 
@@ -178,27 +179,37 @@ export default function App() {
 
   const boardDisabled = !isViewingCurrent || gameOver;
 
-  const btnBase = 'px-2 py-0.5 rounded text-base disabled:opacity-30 transition';
+  const btnBase = `px-2 py-0.5 rounded text-base disabled:opacity-30 transition
+    bg-slate-200 text-slate-700 hover:bg-slate-300
+    dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600`;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center py-2 gap-1.5">
-      <FurukooLogo className="text-fuchsia-400" />
+    <div className={`${isDark ? 'dark' : ''} min-h-screen`}>
+    <div className="min-h-screen bg-slate-100 text-slate-800 dark:bg-gray-950 dark:text-white flex flex-col items-center py-2 gap-1.5 relative">
+      {/* Dark mode toggle — top right */}
+      <button
+        onClick={() => setIsDark((d) => !d)}
+        className="absolute top-2 right-3 text-lg select-none"
+        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      >{isDark ? '☀️' : '🌙'}</button>
+
+      <FurukooLogo className={isDark ? 'text-fuchsia-400' : 'text-fuchsia-600'} />
 
       {/* Player name inputs */}
       <div className="flex gap-4 items-center">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
           <input
-            className="bg-gray-800 text-white border border-gray-600 rounded px-2 py-0.5 text-xs font-mono w-28 focus:outline-none focus:border-cyan-500"
+            className="bg-white text-slate-800 border border-slate-300 rounded px-2 py-0.5 text-xs font-mono w-28 focus:outline-none focus:border-cyan-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
             value={redName}
             onChange={(e) => setRedName(e.target.value)}
           />
         </div>
-        <span className="text-gray-500 text-xs">vs</span>
+        <span className="text-slate-400 dark:text-gray-500 text-xs">vs</span>
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full bg-gray-900 border-2 border-gray-400 flex-shrink-0" />
+          <div className="w-3 h-3 rounded-full bg-slate-900 border-2 border-slate-500 flex-shrink-0 dark:bg-gray-900 dark:border-gray-400" />
           <input
-            className="bg-gray-800 text-white border border-gray-600 rounded px-2 py-0.5 text-xs font-mono w-28 focus:outline-none focus:border-cyan-500"
+            className="bg-white text-slate-800 border border-slate-300 rounded px-2 py-0.5 text-xs font-mono w-28 focus:outline-none focus:border-cyan-500 dark:bg-gray-800 dark:text-white dark:border-gray-600"
             value={blackName}
             onChange={(e) => setBlackName(e.target.value)}
           />
@@ -207,54 +218,46 @@ export default function App() {
 
       {/* Navigation + Resign */}
       <div className="flex gap-1.5 items-center">
-        <button onClick={handleNavFirst}  disabled={viewIndex === 0}              className={`${btnBase} bg-gray-700 text-gray-200 hover:bg-gray-600`} title="First move">⏮</button>
-        <button onClick={handleNavPrev}   disabled={viewIndex === 0}              className={`${btnBase} bg-gray-700 text-gray-200 hover:bg-gray-600`} title="Previous move">◀</button>
-        <button onClick={handleNavNext}   disabled={viewIndex >= history.length - 1} className={`${btnBase} bg-gray-700 text-gray-200 hover:bg-gray-600`} title="Next move">▶</button>
-        <button onClick={handleNavCurrent} disabled={isViewingCurrent}            className={`${btnBase} bg-gray-700 text-gray-200 hover:bg-gray-600`} title="Current move">⏭</button>
-        <button onClick={handleResign}    disabled={gameOver}                     className={`${btnBase} bg-red-800 text-red-200 text-xs font-bold hover:bg-red-700 ml-3`}>Resign</button>
+        <button onClick={handleNavFirst}   disabled={viewIndex === 0}                 className={btnBase} title="First move">⏮</button>
+        <button onClick={handleNavPrev}    disabled={viewIndex === 0}                 className={btnBase} title="Previous move">◀</button>
+        <button onClick={handleNavNext}    disabled={viewIndex >= history.length - 1} className={btnBase} title="Next move">▶</button>
+        <button onClick={handleNavCurrent} disabled={isViewingCurrent}                className={btnBase} title="Current move">⏭</button>
+        <button onClick={handleResign} disabled={gameOver}
+          className="px-2 py-0.5 rounded text-xs font-bold disabled:opacity-30 transition ml-3 bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-800 dark:text-red-200 dark:hover:bg-red-700"
+        >Resign</button>
         {gameOver && (
-          <button onClick={handleNewGame} className={`${btnBase} bg-green-800 text-green-200 text-xs font-bold hover:bg-green-700`}>New Game</button>
+          <button onClick={handleNewGame}
+            className="px-2 py-0.5 rounded text-xs font-bold transition bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-800 dark:text-green-200 dark:hover:bg-green-700"
+          >New Game</button>
         )}
       </div>
 
       {/* Red player panel */}
-      <PlayerPanel
-        player="red"
-        name={redName}
+      <PlayerPanel player="red" name={redName}
         isActive={isViewingCurrent && currentState.currentPlayer === 'red' && !gameOver}
-        timeMs={currentState.redTimeMs}
-        lastMove={redLastMove.move}
-        moveIndex={redLastMove.idx}
-      />
+        timeMs={currentState.redTimeMs} lastMove={redLastMove.move} moveIndex={redLastMove.idx} />
 
       {/* Board */}
       <Board
-        pieces={viewedState.pieces}
-        currentPlayer={currentState.currentPlayer}
-        selectedSlot={selectedSlot}
-        onSlotClick={handleSlotClick}
-        disabled={boardDisabled}
-        phase={currentState.phase}
+        pieces={viewedState.pieces} currentPlayer={currentState.currentPlayer}
+        selectedSlot={selectedSlot} onSlotClick={handleSlotClick}
+        disabled={boardDisabled} phase={currentState.phase} isDark={isDark}
       />
 
       {/* Black player panel */}
-      <PlayerPanel
-        player="black"
-        name={blackName}
+      <PlayerPanel player="black" name={blackName}
         isActive={isViewingCurrent && currentState.currentPlayer === 'black' && !gameOver}
-        timeMs={currentState.blackTimeMs}
-        lastMove={blackLastMove.move}
-        moveIndex={blackLastMove.idx}
-      />
+        timeMs={currentState.blackTimeMs} lastMove={blackLastMove.move} moveIndex={blackLastMove.idx} />
 
       {/* Status — last element */}
       <div className="text-xs font-mono text-center min-h-5">
         {!isViewingCurrent ? (
-          <span className="text-yellow-400">Viewing move {viewIndex} of {history.length - 1}</span>
+          <span className="text-yellow-600 dark:text-yellow-400">Viewing move {viewIndex} of {history.length - 1}</span>
         ) : (
-          <span className={effectiveWinner ? 'text-green-400 font-bold' : 'text-gray-400'}>{statusMsg}</span>
+          <span className={effectiveWinner ? 'text-green-600 dark:text-green-400 font-bold' : 'text-slate-500 dark:text-gray-400'}>{statusMsg}</span>
         )}
       </div>
+    </div>
     </div>
   );
 }
