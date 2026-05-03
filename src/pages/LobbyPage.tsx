@@ -83,10 +83,13 @@ export default function LobbyPage() {
     if (me && me.elo !== user?.elo) updateElo(me.elo);
   }, [users, user?.username, user?.elo, updateElo]);
 
+  const myGameId = users.find(u => u.username === user?.username)?.gameId ?? null;
+
   const handleSend   = (text: string) => getSocket()?.emit('lobby:chat', text);
   const handlePlay   = () => getSocket()?.emit('game:propose');
   const handleRemove = () => { getSocket()?.emit('game:remove'); setHasProposal(false); };
   const handleAccept = (proposerUsername: string) => getSocket()?.emit('game:accept', proposerUsername);
+  const handleRejoin = () => { if (myGameId) navigate(`/game/${myGameId}`); };
 
   const btn = `px-3 py-0.5 rounded text-xs font-bold transition`;
 
@@ -102,9 +105,11 @@ export default function LobbyPage() {
           <span className="text-xs font-mono text-slate-500 dark:text-gray-400">
             {user?.username} <span className="text-violet-500 font-bold">({user?.elo})</span>
           </span>
-          {hasProposal
-            ? <button onClick={handleRemove} className={`${btn} bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200`}>Remove</button>
-            : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
+          {myGameId
+            ? <button onClick={handleRejoin} className={`${btn} bg-emerald-600 text-white hover:bg-emerald-700`}>Rejoin</button>
+            : hasProposal
+              ? <button onClick={handleRemove} className={`${btn} bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200`}>Remove</button>
+              : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
           }
           <button onClick={logout} className={`${btn} bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300`}>Logout</button>
           {/* Dark toggle */}
