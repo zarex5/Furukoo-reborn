@@ -7,6 +7,7 @@ import { PlayerPanel } from '../components/PlayerPanel';
 import { PlayersBox, ChatBox, type OnlineUser, type ChatMsg } from '../components/RightPanel';
 import { ResizableSplit } from '../components/ResizableSplit';
 import { FurukooLogo } from '../components/FurukooLogo';
+import { ConnectionBanner } from '../components/ConnectionBanner';
 import type { SlotId, Player, BoardState } from '../types';
 import { slotKey } from '../types';
 import { legalMoves } from '../gameLogic';
@@ -244,6 +245,8 @@ export default function GamePage() {
           </button>
         </div>
       </div>
+
+      <ConnectionBanner />
 
       {/* Game over banner */}
       {gameOver && (

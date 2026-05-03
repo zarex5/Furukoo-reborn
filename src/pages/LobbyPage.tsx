@@ -5,6 +5,7 @@ import { getSocket } from '../lib/socket';
 import { PlayersBox, ChatBox, type OnlineUser, type ChatMsg } from '../components/RightPanel';
 import { ResizableSplit } from '../components/ResizableSplit';
 import { FurukooLogo } from '../components/FurukooLogo';
+import { ConnectionBanner } from '../components/ConnectionBanner';
 
 interface Proposal { username: string; elo: number; eloRange: string; }
 
@@ -118,6 +119,8 @@ export default function LobbyPage() {
           </button>
         </div>
       </div>
+
+      <ConnectionBanner />
 
       {/* Main content — horizontal split: 66% left / 34% right */}
       <div className="flex-1 min-h-0">
