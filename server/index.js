@@ -85,6 +85,20 @@ function sysLobby(text) { io.emit('chat:lobby', { type: 'system', text }); }
 function sysGame(gameId, text) { io.to(`game:${gameId}`).emit('chat:game', { type: 'system', text }); }
 function fmt(n) { return (n >= 0 ? '+' : '') + n; }
 
+// Return a copy of game with timer values advanced to "right now".
+// applyMove already does this on each move; we need it for state emissions
+// that aren't triggered by a move (join, disconnect, reconnect) so the client
+// doesn't jump backwards to the stale post-last-move values.
+function liveState(game) {
+  if (game.winner) return game;
+  const elapsed = Date.now() - game.lastMoveAt;
+  return {
+    ...game,
+    redTimeMs:   game.currentPlayer === 'red'   ? Math.max(0, game.redTimeMs   - elapsed) : game.redTimeMs,
+    blackTimeMs: game.currentPlayer === 'black' ? Math.max(0, game.blackTimeMs - elapsed) : game.blackTimeMs,
+  };
+}
+
 // ── Socket auth middleware ───────────────────────────────────────────────────
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token;
@@ -215,11 +229,11 @@ io.on('connection', async (socket) => {
       game.disconnectedColor = null;
       game.disconnectedAt    = null;
       sysGame(gameId, `${u.username} reconnected`);
-      io.to(`game:${gameId}`).emit('game:state', { ...game });
+      io.to(`game:${gameId}`).emit('game:state', liveState(game));
       broadcastLobby();
     }
 
-    socket.emit('game:state', game);
+    socket.emit('game:state', liveState(game));
     socket.emit('game:started', {
       gameId, gameColor: game.color,
       red: game.red, black: game.black, eloInfo: game.eloInfo,
@@ -310,7 +324,7 @@ io.on('connection', async (socket) => {
 
         game.disconnectedColor = color;
         game.disconnectedAt    = Date.now();
-        io.to(`game:${gid}`).emit('game:state', { ...game });
+        io.to(`game:${gid}`).emit('game:state', liveState(game));
         sysGame(gid, `${username} disconnected — 60 s to reconnect`);
 
         const t = setTimeout(() => {
