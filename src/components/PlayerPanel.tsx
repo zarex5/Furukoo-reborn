@@ -14,12 +14,12 @@ interface Props {
 function formatMoveInfo(move: Move | null, idx: number): string {
   if (!move || idx === 0) return '000';
   const n = String(idx).padStart(3, '0');
+  const to = `${move.to.line}${move.to.type}${move.to.slot}`;
   if (!move.from) {
-    return `${n} ${move.to.line}${move.to.type}${move.to.slot}`;
+    return `${n}. 000-${to}`;
   }
   const from = `${move.from.line}${move.from.type}${move.from.slot}`;
-  const to = `${move.to.line}${move.to.type}${move.to.slot}`;
-  return `${n} ${from}-${to}`;
+  return `${n}. ${from}-${to}`;
 }
 
 export const PlayerPanel: React.FC<Props> = ({
