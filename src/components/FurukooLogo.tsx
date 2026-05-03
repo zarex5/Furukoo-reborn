@@ -11,30 +11,29 @@ export const FurukooLogo: React.FC<{ className?: string }> = () => {
     >
       <defs>
         <linearGradient id="logo-grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#e9d5ff" />
-          <stop offset="50%" stopColor="#a855f7" />
-          <stop offset="100%" stopColor="#7e22ce" />
+          <stop offset="0%" stopColor="#f3e8ff" />
+          <stop offset="45%" stopColor="#c084fc" />
+          <stop offset="100%" stopColor="#9333ea" />
         </linearGradient>
         <filter id="logo-shadow" x="-5%" y="-5%" width="120%" height="140%">
-          <feDropShadow dx="2" dy="3" stdDeviation="1.5" floodColor="#581c87" floodOpacity="0.55" />
+          <feDropShadow dx="1.5" dy="2.5" stdDeviation="1" floodColor="#6b21a8" floodOpacity="0.35" />
         </filter>
       </defs>
-      {/* 3D layered shadow: offset copies behind the main text */}
+      {/* Subtle 3D offset layer */}
       <text
         x="170" y="58"
         textAnchor="middle"
-        fontFamily="'Dancing Script', cursive"
-        fontWeight="700"
+        fontFamily="'Rakkas', serif"
         fontSize="64"
-        fill="#581c87"
-        opacity="0.4"
-        dx="3" dy="4"
+        fill="#7e22ce"
+        opacity="0.18"
+        dx="2.5" dy="3.5"
       >Furukoo</text>
+      {/* Main text */}
       <text
         x="170" y="58"
         textAnchor="middle"
-        fontFamily="'Dancing Script', cursive"
-        fontWeight="700"
+        fontFamily="'Rakkas', serif"
         fontSize="64"
         fill="url(#logo-grad)"
         filter="url(#logo-shadow)"
