@@ -14,47 +14,51 @@ const ELO_RANGES = ['2400-3000','2200-2399','2000-2199','1800-1999','1600-1799',
 let msgId = 0;
 const mkId = () => String(++msgId);
 
-/** Mini static board showing a 3×3 square grid with example pieces */
+/** Scaled-down replica of the real game board (6 V-lines × 6 H-lines, 7 slots each) */
 function MiniBoardPreview() {
-  const D = 18;   // dot spacing
-  const R = 4.5;  // segment half-thickness (as rect width/height)
-  const dots: [number, number][] = [];
-  for (let r = 0; r <= 3; r++) for (let c = 0; c <= 3; c++) dots.push([c * D, r * D]);
+  const D = 6;          // px per grid cell (13×13 grid → 78×78 px internal)
+  const G = 12 * D;     // 72 px — board spans visual rows/cols 0..12*D
+  const PAD = 6;        // padding so edge pieces aren't clipped
+  const LONG = 10;      // piece rectangle long side
+  const SHORT = 3;      // piece rectangle short side
 
-  // [r1,c1,r2,c2, color]  — red='#ef4444' black='#1e293b'
-  const segs: [number, number, number, number, string][] = [
-    // completed red square at top-left (rows 0-1, cols 0-1)
-    [0,0, 0,1, '#ef4444'], [1,0, 1,1, '#ef4444'],
-    [0,0, 1,0, '#ef4444'], [0,1, 1,1, '#ef4444'],
-    // some black pieces
-    [1,1, 1,2, '#1e293b'], [0,2, 0,3, '#1e293b'],
-    [1,2, 2,2, '#1e293b'], [2,1, 2,2, '#1e293b'],
-    // more red
-    [2,0, 3,0, '#ef4444'], [2,2, 2,3, '#ef4444'],
-  ];
+  // V line k is at x = (2k-1)*D;  V slot s on line k is at y = 2*(s-1)*D
+  // H line j is at y = (2j-1)*D;  H slot k on line j is at x = 2*(k-1)*D
+  const vX  = (k: number) => (2 * k - 1) * D;
+  const hY  = (j: number) => (2 * j - 1) * D;
+  const vsY = (s: number) => 2 * (s - 1) * D;
+  const hsX = (k: number) => 2 * (k - 1) * D;
 
-  const W = 3 * D; const H = 3 * D;
+  const vp = (k: number, s: number, col: string, key: string) => (
+    <rect key={key} x={vX(k) - SHORT / 2} y={vsY(s) - LONG / 2} width={SHORT} height={LONG} rx={1} fill={col} />
+  );
+  const hp = (j: number, k: number, col: string, key: string) => (
+    <rect key={key} x={hsX(k) - LONG / 2} y={hY(j) - SHORT / 2} width={LONG} height={SHORT} rx={1} fill={col} />
+  );
+
+  const RED = '#ef4444'; const BLK = '#475569';
+  const size = G + 2 * PAD;
+
   return (
-    <svg viewBox={`-6 -6 ${W + 12} ${H + 12}`} width={W + 12} height={H + 12}>
-      {/* completed square highlight */}
-      <rect x={1} y={1} width={D - 2} height={D - 2} fill="#fecaca" rx="2" />
-      {/* grid lines (faint) */}
-      {[0,1,2,3].map(r => [0,1,2,3].map(c => (
-        <circle key={`${r}-${c}`} cx={c*D} cy={r*D} r={2} fill="#94a3b8" />
-      )))}
-      {/* segments */}
-      {segs.map(([r1,c1,r2,c2,col], i) => {
-        const x1 = c1*D, y1 = r1*D, x2 = c2*D, y2 = r2*D;
-        const horiz = r1 === r2;
-        return (
-          <rect key={i}
-            x={horiz ? Math.min(x1,x2)+R : Math.min(x1,x2)-R}
-            y={horiz ? Math.min(y1,y2)-R : Math.min(y1,y2)+R}
-            width={horiz ? Math.abs(x2-x1)-2*R : 2*R}
-            height={horiz ? 2*R : Math.abs(y2-y1)-2*R}
-            fill={col} rx="2" />
-        );
-      })}
+    <svg viewBox={`${-PAD} ${-PAD} ${size} ${size}`} width={size} height={size}>
+      {/* V lines */}
+      {[1,2,3,4,5,6].map(k => <line key={`vl${k}`} x1={vX(k)} y1={0} x2={vX(k)} y2={G} stroke="#cbd5e1" strokeWidth={0.5} />)}
+      {/* H lines */}
+      {[1,2,3,4,5,6].map(j => <line key={`hl${j}`} x1={0} y1={hY(j)} x2={G} y2={hY(j)} stroke="#cbd5e1" strokeWidth={0.5} />)}
+      {/* Completed square highlight at (j=1,k=1) */}
+      <rect x={vX(1)} y={hY(1)} width={vX(2) - vX(1)} height={hY(2) - hY(1)} fill="rgba(239,68,68,0.18)" />
+      {/* Intersection dots */}
+      {[1,2,3,4,5,6].flatMap(j => [1,2,3,4,5,6].map(k =>
+        <circle key={`d${j}${k}`} cx={vX(k)} cy={hY(j)} r={1.5} fill="#64748b" />
+      ))}
+      {/* Red pieces completing the square (top/bottom H slots + left/right V slots) */}
+      {hp(1, 2, RED, 'r1')}  {hp(2, 2, RED, 'r2')}
+      {vp(1, 2, RED, 'r3')}  {vp(2, 2, RED, 'r4')}
+      {/* Black pieces scattered around the board */}
+      {vp(4, 4, BLK, 'b1')}  {hp(3, 5, BLK, 'b2')}
+      {vp(6, 5, BLK, 'b3')}  {hp(5, 3, BLK, 'b4')}
+      {hp(4, 7, BLK, 'b5')}  {vp(3, 6, BLK, 'b6')}
+      {hp(6, 4, BLK, 'b7')}
     </svg>
   );
 }
@@ -69,9 +73,9 @@ function RulesBox() {
         <div className="flex gap-3 items-start">
           <div className="flex-none mt-1"><MiniBoardPreview /></div>
           <div className="space-y-1.5">
-            <p><strong>Goal</strong> — be the first to close all 4 sides of any unit square. The board is a 6×6 grid; pieces sit on the <em>line segments</em>, not on the dots.</p>
-            <p><strong>Placement</strong> — alternate placing one of your 9 pieces on any free segment.</p>
-            <p><strong>Movement</strong> — once all 18 pieces are placed, each turn slide one piece to an adjacent free segment (along the line, or pivot at a dot onto a perpendicular line).</p>
+            <p><strong>Goal</strong> — be the first to own all 4 sides of any unit square. Pieces sit on the <em>line segments</em> of a 6×6 grid, not on the dots.</p>
+            <p><strong>Placement</strong> — alternate placing one of your 7 pieces on any free segment.</p>
+            <p><strong>Movement</strong> — once all 14 pieces are on the board, each turn slide one piece to an adjacent free segment (along the line, or pivot at a dot onto a perpendicular line).</p>
             <p><strong>Winning</strong> — the moment all 4 sides of a square are yours, you win instantly.</p>
             <p><strong>Clock</strong> — each move adds +3 s. Run out of time and you lose. You can also <em>Resign</em> at any time.</p>
           </div>
