@@ -224,25 +224,19 @@ export default function GamePage() {
         <FurukooLogo />
         <div className="flex gap-2 ml-auto items-center">
           <span className="text-xs font-mono text-slate-400 dark:text-gray-500">
-            {redName} vs {blackName}
+            {isSpectating
+              ? `Spectating ${redName} vs ${blackName}`
+              : `Playing against ${myColor === 'red' ? blackName : redName}`}
           </span>
-          {isSpectating
-            ? <>
-                <span className="text-xs font-mono text-slate-400 dark:text-gray-500 italic">Spectating</span>
-                <button onClick={handleBack}
-                  className="px-3 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 transition">
-                  Back to Lobby
-                </button>
-              </>
-            : !gameOver
-              ? <button onClick={handleResign}
-                  className="px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
-                  Resign
-                </button>
-              : <button onClick={handleBack}
-                  className="px-3 py-0.5 rounded text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 transition">
-                  Back to Lobby
-                </button>
+          {isSpectating || gameOver
+            ? <button onClick={handleBack}
+                className="px-3 py-0.5 rounded text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 transition">
+                Back to Lobby
+              </button>
+            : <button onClick={handleResign}
+                className="px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
+                Resign
+              </button>
           }
           <button role="switch" aria-checked={isDark} onClick={toggleDark}
             className="flex items-center gap-1.5 focus:outline-none select-none">
