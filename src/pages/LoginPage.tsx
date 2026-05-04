@@ -41,7 +41,7 @@ export default function LoginPage() {
     try {
       const data = mode === 'login'
         ? await api.login(username, password)
-        : await api.register(username, password, email || undefined);
+        : await api.register(username, password, email);
       login(data);
       navigate('/');
     } catch (err) {
@@ -97,7 +97,7 @@ export default function LoginPage() {
             onChange={e => setPassword(e.target.value)} required />
 
           {mode === 'register' && <>
-            <input className={inp} type="email" placeholder="Email (optional)"
+            <input className={inp} type="email" placeholder="Email" required
               value={email} onChange={e => setEmail(e.target.value)} />
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono text-slate-500 dark:text-gray-400 flex-none">

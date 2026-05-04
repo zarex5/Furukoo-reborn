@@ -19,7 +19,7 @@ async function post(path: string, body: Record<string, string>) {
 }
 
 export const api = {
-  register: (username: string, password: string, email?: string) =>
-    post('/register', { username, password, ...(email ? { email } : {}) }),
+  register: (username: string, password: string, email: string) =>
+    post('/register', { username, password, email }),
   login: (username: string, password: string) => post('/login', { username, password }),
 };

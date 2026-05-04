@@ -94,6 +94,7 @@ app.post('/api/register', async (req, res) => {
     const { username, password, email } = req.body || {};
     if (!username?.trim() || !password) return res.status(400).json({ error: 'Username and password required' });
     if (username.trim().length < 2)      return res.status(400).json({ error: 'Username must be at least 2 characters' });
+    if (!email?.trim())                  return res.status(400).json({ error: 'Email is required' });
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({ username: username.trim(), passwordHash, email: email?.trim() || '' });
     res.json({ token: sign(user), username: user.username, elo: user.elo });
