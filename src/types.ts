@@ -12,15 +12,6 @@ export function slotKey(s: SlotId): string {
   return `${s.line}${s.type}${s.slot}`;
 }
 
-export function slotLabel(s: SlotId): string {
-  return `${s.line}${s.type}${s.slot}`;
-}
-
-export function parseSlotKey(key: string): SlotId {
-  const m = key.match(/^(\d)(V|H)(\d)$/);
-  if (!m) throw new Error('bad key ' + key);
-  return { line: +m[1], type: m[2] as LineType, slot: +m[3] };
-}
 
 export type GamePhase = 'placement' | 'movement';
 

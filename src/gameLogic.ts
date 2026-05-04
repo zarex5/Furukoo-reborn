@@ -5,32 +5,6 @@ export const INITIAL_TIME_MS = 5 * 60 * 1000;
 export const TIME_BONUS_MS = 3 * 1000;
 export const PIECES_PER_PLAYER = 7;
 
-export function createInitialState(): BoardState {
-  return {
-    pieces: {},
-    currentPlayer: 'red',
-    redPlaced: 0,
-    blackPlaced: 0,
-    phase: 'placement',
-    redTimeMs: INITIAL_TIME_MS,
-    blackTimeMs: INITIAL_TIME_MS,
-    moves: [],
-    winner: null,
-    resignedBy: null,
-  };
-}
-
-/** All valid slot IDs on the board */
-export function allSlots(): SlotId[] {
-  const slots: SlotId[] = [];
-  for (let line = 1; line <= 6; line++) {
-    for (let slot = 1; slot <= 7; slot++) {
-      slots.push({ type: 'V', line, slot });
-      slots.push({ type: 'H', line, slot });
-    }
-  }
-  return slots;
-}
 
 /**
  * Returns adjacent slot IDs for movement.
@@ -206,14 +180,3 @@ export function formatTime(ms: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-export function formatMoveLabel(move: Move): string {
-  const num = '000';
-  if (!move.from) {
-    return `${num} ${slotLabel(move.to)}`;
-  }
-  return `${num} ${slotLabel(move.from)}-${slotLabel(move.to)}`;
-}
-
-function slotLabel(s: SlotId): string {
-  return `${s.line}${s.type}${s.slot}`;
-}

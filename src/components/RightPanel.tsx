@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { ResizableSplit } from './ResizableSplit';
 
 export interface OnlineUser {
   username: string;
@@ -146,24 +145,3 @@ export function ChatBox({ messages, onSend, myUsername }: ChatBoxProps) {
   );
 }
 
-// ── RightPanel (combined, for backward compat) ────────────────────────────────
-
-interface RightPanelProps {
-  users: OnlineUser[];
-  messages: ChatMsg[];
-  onSend: (text: string) => void;
-  myUsername: string;
-  isDark: boolean;
-  gamePlayers?: { red: string; black: string };
-  onSpectate?: (gameId: string) => void;
-}
-
-export function RightPanel({ users, messages, onSend, myUsername, gamePlayers, onSpectate }: RightPanelProps) {
-  return (
-    <ResizableSplit
-      first={<PlayersBox users={users} myUsername={myUsername} gamePlayers={gamePlayers} onSpectate={onSpectate} />}
-      second={<ChatBox messages={messages} onSend={onSend} myUsername={myUsername} />}
-      initialFirstPct={45}
-    />
-  );
-}
