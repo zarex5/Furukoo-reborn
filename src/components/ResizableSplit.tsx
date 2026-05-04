@@ -43,8 +43,8 @@ export function ResizableSplit({
   }, [isV, minPct]);
 
   const handleCls = isV
-    ? 'flex-none h-2 w-full cursor-row-resize'
-    : 'flex-none w-2 h-full cursor-col-resize';
+    ? 'flex-none h-3 w-full cursor-row-resize flex items-center justify-center'
+    : 'flex-none w-3 h-full cursor-col-resize flex items-center justify-center';
 
   return (
     <div ref={containerRef}
@@ -55,7 +55,11 @@ export function ResizableSplit({
       <div
         className={`${handleCls} bg-slate-200 dark:bg-gray-700 hover:bg-violet-300 dark:hover:bg-violet-700 active:bg-violet-300 dark:active:bg-violet-700 transition-colors select-none flex-shrink-0`}
         onMouseDown={onMouseDown}
-      />
+      >
+        {isV
+          ? <span className="w-8 h-0.5 rounded bg-slate-400 dark:bg-slate-500 pointer-events-none" />
+          : <span className="h-8 w-0.5 rounded bg-slate-400 dark:bg-slate-500 pointer-events-none" />}
+      </div>
       <div style={{ flex: 100 - firstFlex }} className={isV ? 'min-h-0 overflow-hidden' : 'min-w-0 overflow-hidden'}>
         {second}
       </div>
