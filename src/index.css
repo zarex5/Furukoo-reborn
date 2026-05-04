@@ -4,3 +4,22 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, sans-serif; }
+
+/* ── Custom scrollbars — 50% wider than browser default ── */
+::-webkit-scrollbar        { width: 12px; height: 12px; }
+::-webkit-scrollbar-track  { background: #f1f5f9; }          /* slate-100 */
+::-webkit-scrollbar-thumb  {
+  background: #cbd5e1;                                        /* slate-300 */
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+::-webkit-scrollbar-thumb:hover  { background: #c4b5fd; }    /* violet-300 */
+::-webkit-scrollbar-thumb:active { background: #c4b5fd; }
+
+.dark ::-webkit-scrollbar-track  { background: #111827; }    /* gray-900 */
+.dark ::-webkit-scrollbar-thumb  {
+  background: #374151;                                        /* gray-700 */
+  border-color: #111827;
+}
+.dark ::-webkit-scrollbar-thumb:hover  { background: #6d28d9; } /* violet-700 */
+.dark ::-webkit-scrollbar-thumb:active { background: #6d28d9; }
