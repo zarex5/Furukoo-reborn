@@ -1,13 +1,15 @@
-import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export const FurukooLogo: React.FC<{ className?: string }> = () => {
+export const FurukooLogo: React.FC = () => {
+  const navigate = useNavigate();
   return (
     <svg
-      viewBox="0 0 340 72"
-      height="56"
+      viewBox="40 4 260 64"
+      height="48"
       fill="none"
       aria-label="Furukoo"
-      style={{ overflow: 'visible' }}
+      onClick={() => navigate('/')}
+      style={{ cursor: 'pointer', overflow: 'visible' }}
     >
       <defs>
         <linearGradient id="logo-grad" x1="0" y1="0" x2="0" y2="1">
@@ -19,25 +21,14 @@ export const FurukooLogo: React.FC<{ className?: string }> = () => {
           <feDropShadow dx="1.5" dy="2.5" stdDeviation="1" floodColor="#6b21a8" floodOpacity="0.35" />
         </filter>
       </defs>
-      {/* Subtle 3D offset layer */}
-      <text
-        x="170" y="58"
-        textAnchor="middle"
-        fontFamily="'Rakkas', serif"
-        fontSize="64"
-        fill="#7e22ce"
-        opacity="0.18"
-        dx="2.5" dy="3.5"
-      >Furukoo</text>
-      {/* Main text */}
-      <text
-        x="170" y="58"
-        textAnchor="middle"
-        fontFamily="'Rakkas', serif"
-        fontSize="64"
-        fill="url(#logo-grad)"
-        filter="url(#logo-shadow)"
-      >Furukoo</text>
+      <text x="170" y="58" textAnchor="middle"
+        fontFamily="'Rakkas', serif" fontSize="64"
+        fill="#7e22ce" opacity="0.18" dx="2.5" dy="3.5">Furukoo</text>
+      <text x="170" y="58" textAnchor="middle"
+        fontFamily="'Rakkas', serif" fontSize="64"
+        fill="url(#logo-grad)" filter="url(#logo-shadow)">Furukoo</text>
     </svg>
   );
 };
+
+export default FurukooLogo;
