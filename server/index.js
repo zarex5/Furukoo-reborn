@@ -57,6 +57,13 @@ const GameSchema = new mongoose.Schema({
 
 const Game = mongoose.model('Game', GameSchema);
 
+const LobbyChatSchema = new mongoose.Schema({
+  type:     { type: String, required: true },
+  username: String,
+  text:     { type: String, required: true },
+}, { timestamps: true });
+const LobbyChat = mongoose.model('LobbyChat', LobbyChatSchema);
+
 // Fire-and-forget: persist game state after every move or status change
 function saveGame(game) {
   Game.findOneAndUpdate(
@@ -130,7 +137,11 @@ function lobbySnapshot() {
 }
 function broadcastLobby() { io.emit('lobby:state', lobbySnapshot()); }
 
-function sysLobby(text) { io.emit('chat:lobby', { type: 'system', text }); }
+function sysLobby(text) {
+  const msg = { type: 'system', text };
+  io.emit('chat:lobby', msg);
+  LobbyChat.create(msg).catch(e => console.error('lobbyChat:', e.message));
+}
 function sysGame(gameId, text) {
   const msg = { type: 'system', text };
   io.to(`game:${gameId}`).emit('chat:game', msg);
@@ -204,7 +215,9 @@ io.on('connection', async (socket) => {
   // ── Lobby chat ──
   socket.on('lobby:chat', (text) => {
     if (typeof text !== 'string' || !text.trim()) return;
-    io.emit('chat:lobby', { type: 'user', username: socket.username, text: text.trim().slice(0, 200) });
+    const msg = { type: 'user', username: socket.username, text: text.trim().slice(0, 200) };
+    io.emit('chat:lobby', msg);
+    LobbyChat.create(msg).catch(e => console.error('lobbyChat:', e.message));
   });
 
   // ── Game proposals ──
