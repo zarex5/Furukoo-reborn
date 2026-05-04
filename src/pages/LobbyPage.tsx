@@ -6,6 +6,8 @@ import { PlayersBox, ChatBox, type OnlineUser, type ChatMsg } from '../component
 import { ResizableSplit } from '../components/ResizableSplit';
 import { FurukooLogo } from '../components/FurukooLogo';
 import { ConnectionBanner } from '../components/ConnectionBanner';
+import { DarkToggle } from '../components/DarkToggle';
+import { useDarkMode } from '../lib/darkMode';
 
 interface Proposal { username: string; elo: number; eloRange: string; }
 
@@ -89,7 +91,7 @@ export default function LobbyPage() {
   const { user, logout, updateElo } = useAuth();
   const navigate = useNavigate();
 
-  const [isDark,    setIsDark]    = useState(() => localStorage.getItem('theme') === 'dark');
+  const { isDark, toggleDark } = useDarkMode();
   const [users,     setUsers]     = useState<OnlineUser[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [messages,  setMessages]  = useState<ChatMsg[]>([]);
@@ -98,10 +100,6 @@ export default function LobbyPage() {
   const addMsg = useCallback((m: Omit<ChatMsg, 'id'>) => {
     setMessages(prev => [...prev.slice(-199), { ...m, id: mkId() }]);
   }, []);
-
-  const toggleDark = () => {
-    setIsDark(d => { const n = !d; localStorage.setItem('theme', n ? 'dark' : 'light'); return n; });
-  };
 
   useEffect(() => {
     const socket = getSocket();
@@ -165,16 +163,7 @@ export default function LobbyPage() {
               : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
           }
           <button onClick={logout} className={`${btn} bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300`}>Logout</button>
-          {/* Dark toggle */}
-          <button role="switch" aria-checked={isDark} onClick={toggleDark}
-            className="flex items-center gap-1.5 focus:outline-none select-none">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a78bfa' : '#475569'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-            </svg>
-            <span className={`relative inline-block w-8 h-4 rounded-full transition-colors ${isDark ? 'bg-violet-500' : 'bg-slate-300'}`}>
-              <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${isDark ? 'translate-x-4' : ''}`} />
-            </span>
-          </button>
+          <DarkToggle isDark={isDark} onToggle={toggleDark} />
         </div>
       </div>
 

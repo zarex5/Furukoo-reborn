@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { FurukooLogo } from '../components/FurukooLogo';
+import { DarkToggle } from '../components/DarkToggle';
+import { useDarkMode } from '../lib/darkMode';
 
 function makeCaptcha() {
   const a = Math.floor(Math.random() * 9) + 1;
@@ -14,10 +16,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate  = useNavigate();
 
-  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
-  const toggleDark = () => setIsDark(d => {
-    const n = !d; localStorage.setItem('theme', n ? 'dark' : 'light'); return n;
-  });
+  const { isDark, toggleDark } = useDarkMode();
 
   const [mode,     setMode]     = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
@@ -62,18 +61,8 @@ export default function LoginPage() {
     <div className={`${isDark ? 'dark' : ''} min-h-screen`}>
     <div className="min-h-screen bg-slate-100 dark:bg-gray-950 flex flex-col items-center justify-center gap-6">
 
-      {/* Dark mode toggle — top right */}
       <div className="fixed top-3 right-3">
-        <button role="switch" aria-checked={isDark} onClick={toggleDark}
-          className="flex items-center gap-1.5 focus:outline-none select-none">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-            stroke={isDark ? '#a78bfa' : '#475569'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-          </svg>
-          <span className={`relative inline-block w-8 h-4 rounded-full transition-colors ${isDark ? 'bg-violet-500' : 'bg-slate-300'}`}>
-            <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${isDark ? 'translate-x-4' : ''}`} />
-          </span>
-        </button>
+        <DarkToggle isDark={isDark} onToggle={toggleDark} />
       </div>
 
       <FurukooLogo />

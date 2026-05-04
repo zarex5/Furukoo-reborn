@@ -8,6 +8,8 @@ import { PlayersBox, ChatBox, type OnlineUser, type ChatMsg } from '../component
 import { ResizableSplit } from '../components/ResizableSplit';
 import { FurukooLogo } from '../components/FurukooLogo';
 import { ConnectionBanner } from '../components/ConnectionBanner';
+import { DarkToggle } from '../components/DarkToggle';
+import { useDarkMode } from '../lib/darkMode';
 import type { SlotId, Player, BoardState } from '../types';
 import { slotKey } from '../types';
 import { legalMoves } from '../gameLogic';
@@ -38,8 +40,7 @@ export default function GamePage() {
   const { user, updateElo } = useAuth();
   const navigate      = useNavigate();
 
-  const [isDark, setIsDark] = useState(() => localStorage.getItem('theme') === 'dark');
-  const toggleDark = () => setIsDark(d => { const n = !d; localStorage.setItem('theme', n ? 'dark' : 'light'); return n; });
+  const { isDark, toggleDark } = useDarkMode();
 
   const [gameState,  setGameState]  = useState<BoardState | null>(null);
   const [gameMeta,   setGameMeta]   = useState<GameMeta | null>(null);
@@ -79,10 +80,9 @@ export default function GamePage() {
       if (user?.username === data.black.username) color = 'black';
       setMyColor(color);
       if (data.eloInfo) {
-        const f = (n: number) => (n >= 0 ? '+' : '') + n;
         const { red: r, black: b } = data.eloInfo;
-        const elo1: ChatMsg = { id: 'elo-red',   type: 'system', text: `${data.red.username}: win ${f(r.win)} / draw ${f(r.draw)} / loss ${f(r.loss)}` };
-        const elo2: ChatMsg = { id: 'elo-black', type: 'system', text: `${data.black.username}: win ${f(b.win)} / draw ${f(b.draw)} / loss ${f(b.loss)}` };
+        const elo1: ChatMsg = { id: 'elo-red',   type: 'system', text: `${data.red.username}: win ${fmtDelta(r.win)} / draw ${fmtDelta(r.draw)} / loss ${fmtDelta(r.loss)}` };
+        const elo2: ChatMsg = { id: 'elo-black', type: 'system', text: `${data.black.username}: win ${fmtDelta(b.win)} / draw ${fmtDelta(b.draw)} / loss ${fmtDelta(b.loss)}` };
         const isElo = (m: ChatMsg) => m.id === 'elo-red' || m.id === 'elo-black' ||
           (m.type === 'system' && /^.+: win [+-]?\d+ \/ draw [+-]?\d+ \/ loss [+-]?\d+$/.test(m.text));
         setMessages(prev => [elo1, elo2, ...prev.filter(m => !isElo(m))]);
@@ -247,15 +247,7 @@ export default function GamePage() {
                 Resign
               </button>
           }
-          <button role="switch" aria-checked={isDark} onClick={toggleDark}
-            className="flex items-center gap-1.5 focus:outline-none select-none">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={isDark ? '#a78bfa' : '#475569'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-            </svg>
-            <span className={`relative inline-block w-8 h-4 rounded-full transition-colors ${isDark ? 'bg-violet-500' : 'bg-slate-300'}`}>
-              <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${isDark ? 'translate-x-4' : ''}`} />
-            </span>
-          </button>
+          <DarkToggle isDark={isDark} onToggle={toggleDark} />
         </div>
       </div>
 
