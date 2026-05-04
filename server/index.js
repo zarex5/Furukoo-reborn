@@ -71,6 +71,7 @@ function saveGame(game) {
       redTimeMs: game.redTimeMs, blackTimeMs: game.blackTimeMs,
       lastMoveAt: game.lastMoveAt,
       status: game.winner ? 'ended' : 'active',
+      chat: game.chat || [],
     },
     { upsert: true }
   ).catch(e => console.error('saveGame:', e.message));
@@ -134,10 +135,7 @@ function sysGame(gameId, text) {
   const msg = { type: 'system', text };
   io.to(`game:${gameId}`).emit('chat:game', msg);
   const game = activeGames.get(gameId);
-  if (game) {
-    game.chat.push(msg);
-    Game.findOneAndUpdate({ gameId }, { $push: { chat: msg } }).catch(e => console.error('saveChat:', e.message));
-  }
+  if (game) { game.chat.push(msg); saveGame(game); }
 }
 function fmt(n) { return (n >= 0 ? '+' : '') + n; }
 
@@ -278,6 +276,10 @@ io.on('connection', async (socket) => {
     const blackSock = io.sockets.sockets.get(blackU.socketId);
     if (redSock)   redSock.join(`game:${gameId}`);
     if (blackSock) blackSock.join(`game:${gameId}`);
+
+    // Seed chat with ELO stakes for both players (delivered via game:history)
+    game.chat.push({ type: 'system', text: `${redU.username}: win ${fmt(info.red.win)} / draw ${fmt(info.red.draw)} / loss ${fmt(info.red.loss)}` });
+    game.chat.push({ type: 'system', text: `${blackU.username}: win ${fmt(info.black.win)} / draw ${fmt(info.black.draw)} / loss ${fmt(info.black.loss)}` });
 
     broadcastLobby();
     sysLobby(`Game started: ${redU.username} vs ${blackU.username}`);
@@ -449,10 +451,7 @@ io.on('connection', async (socket) => {
     const msg = { type: 'user', username: socket.username, text: text.trim().slice(0, 200), spectator: u.spectating };
     io.to(`game:${gameId}`).emit('chat:game', msg);
     const game = activeGames.get(gameId);
-    if (game) {
-      game.chat.push(msg);
-      Game.findOneAndUpdate({ gameId }, { $push: { chat: msg } }).catch(e => console.error('saveChat:', e.message));
-    }
+    if (game) { game.chat.push(msg); saveGame(game); }
   });
 
   // ── Disconnect ──

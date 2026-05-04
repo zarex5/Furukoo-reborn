@@ -78,11 +78,6 @@ export default function GamePage() {
       if (user?.username === data.red.username)   color = 'red';
       if (user?.username === data.black.username) color = 'black';
       setMyColor(color);
-      // Show own ELO preview in chat
-      if (color) {
-        const info = data.eloInfo[color];
-        addMsg({ type: 'system', text: `Your ELO: win ${fmtDelta(info.win)} / draw ${fmtDelta(info.draw)} / loss ${fmtDelta(info.loss)}` });
-      }
     };
 
     const onState = (g: BoardState) => {
