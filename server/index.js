@@ -12,7 +12,8 @@ const { slotKey, legalMoves, applyMove, calcEloDelta, eloInfo, getEloRange, INIT
 const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server, {
-  cors: { origin: '*' }, // Vite proxy in dev; set origin explicitly for prod
+  // In production replace '*' with your actual origin, e.g. 'https://furukoo.com'
+  cors: { origin: process.env.ALLOWED_ORIGIN || '*' },
 });
 
 app.use(express.json());
@@ -85,6 +86,9 @@ function saveGame(game) {
   ).catch(e => console.error('saveGame:', e.message));
 }
 
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  JWT_SECRET not set — using insecure default. Set this env var in production.');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'furukoo-dev-secret';
 const sign = (user) => jwt.sign({ userId: user._id.toString(), username: user.username }, JWT_SECRET, { expiresIn: '30d' });
 
@@ -151,6 +155,13 @@ function sysGame(gameId, text) {
   if (game) { game.chat.push(msg); saveGame(game); }
 }
 function fmt(n) { return (n >= 0 ? '+' : '') + n; }
+
+function isValidSlot(s) {
+  return s !== null && typeof s === 'object' &&
+    (s.type === 'V' || s.type === 'H') &&
+    Number.isInteger(s.line) && s.line >= 1 && s.line <= 6 &&
+    Number.isInteger(s.slot) && s.slot >= 1 && s.slot <= 7;
+}
 
 // Return a copy of game with timer values advanced to "right now".
 // applyMove already does this on each move; we need it for state emissions
@@ -397,6 +408,8 @@ io.on('connection', async (socket) => {
 
   // ── Move ──
   socket.on('game:move', ({ gameId, to, from }) => {
+    if (typeof gameId !== 'string' || !isValidSlot(to)) return;
+    if (from !== undefined && from !== null && !isValidSlot(from)) return;
     const game = activeGames.get(gameId);
     if (!game || game.winner) return;
     const u = connectedUsers.get(socket.id);
@@ -421,6 +434,7 @@ io.on('connection', async (socket) => {
 
   // ── Resign ──
   socket.on('game:resign', ({ gameId }) => {
+    if (typeof gameId !== 'string') return;
     const game = activeGames.get(gameId);
     if (!game || game.winner) return;
     const u = connectedUsers.get(socket.id);
@@ -436,6 +450,7 @@ io.on('connection', async (socket) => {
 
   // ── Timeout (client reports own clock hit 0) ──
   socket.on('game:timeout', ({ gameId }) => {
+    if (typeof gameId !== 'string') return;
     const game = activeGames.get(gameId);
     if (!game || game.winner) return;
     const u = connectedUsers.get(socket.id);
@@ -460,7 +475,7 @@ io.on('connection', async (socket) => {
 
   // ── Game chat ──
   socket.on('game:chat', ({ gameId, text }) => {
-    if (typeof text !== 'string' || !text.trim()) return;
+    if (typeof gameId !== 'string' || typeof text !== 'string' || !text.trim()) return;
     const u = connectedUsers.get(socket.id);
     if (!u || u.gameId !== gameId) return;
     const msg = { type: 'user', username: socket.username, text: text.trim().slice(0, 200), spectator: u.spectating };
