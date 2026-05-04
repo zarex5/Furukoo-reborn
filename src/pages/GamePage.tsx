@@ -280,63 +280,58 @@ export default function GamePage() {
         </div>
       )}
 
-      {/* Main content — board 66% / right panel 34% */}
-      <div className="flex flex-1 min-h-0 p-2 gap-2">
-
-        {/* Board area */}
-        <div className="flex flex-col gap-1.5 flex-none">
-          <PlayerPanel player="red" name={redName}
-            isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
-            timeMs={(viewedState ?? displayedState).redTimeMs}
-            lastMove={lastRedMove} moveIndex={redMoveIdx} />
-          <Board
-            pieces={(viewedState ?? displayedState).pieces}
-            currentPlayer={gameState.currentPlayer}
-            selectedSlot={selectedSlot}
-            onSlotClick={handleSlotClick}
-            disabled={boardDisabled}
-            phase={gameState.phase}
-            isDark={isDark}
-          />
-          <PlayerPanel player="black" name={blackName}
-            isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
-            timeMs={(viewedState ?? displayedState).blackTimeMs}
-            lastMove={lastBlackMove} moveIndex={blackMoveIdx} />
-
-          {/* History nav */}
-          <div className="flex items-center gap-1">
-            <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">⏮</button>
-            <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0} title="Previous move">◀</button>
-            <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">▶</button>
-            <button
-              className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`}
-              onClick={navLast} disabled={isAtLatest} title="Latest move"
-            >⏭</button>
-            {!isAtLatest && (
-              <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">
-                {curIdx + 1}/{histLen}
-              </span>
-            )}
-          </div>
-
-          {/* ELO preview */}
-          {!gameOver && !isSpectating && myColor && gameMeta.eloInfo && (
-            <div className="text-xs font-mono text-slate-400 dark:text-gray-500 text-center">
-              win {fmtDelta(gameMeta.eloInfo[myColor].win)} / draw {fmtDelta(gameMeta.eloInfo[myColor].draw)} / loss {fmtDelta(gameMeta.eloInfo[myColor].loss)}
+      {/* Main content — 66% board area / 34% right panel */}
+      <div className="flex-1 min-h-0">
+        <ResizableSplit
+          direction="horizontal"
+          initialFirstPct={66}
+          first={
+            <div className="h-full flex flex-col items-center justify-center gap-1.5 p-2 overflow-y-auto">
+              <PlayerPanel player="red" name={redName}
+                isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
+                timeMs={(viewedState ?? displayedState).redTimeMs}
+                lastMove={lastRedMove} moveIndex={redMoveIdx} />
+              <Board
+                pieces={(viewedState ?? displayedState).pieces}
+                currentPlayer={gameState.currentPlayer}
+                selectedSlot={selectedSlot}
+                onSlotClick={handleSlotClick}
+                disabled={boardDisabled}
+                phase={gameState.phase}
+                isDark={isDark}
+              />
+              <PlayerPanel player="black" name={blackName}
+                isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
+                timeMs={(viewedState ?? displayedState).blackTimeMs}
+                lastMove={lastBlackMove} moveIndex={blackMoveIdx} />
+              {/* History nav — centered */}
+              <div className="flex items-center justify-center gap-1">
+                <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">⏮</button>
+                <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0} title="Previous move">◀</button>
+                <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">▶</button>
+                <button
+                  className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`}
+                  onClick={navLast} disabled={isAtLatest} title="Latest move"
+                >⏭</button>
+                {!isAtLatest && (
+                  <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">
+                    {curIdx + 1}/{histLen}
+                  </span>
+                )}
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* Right panel: players + chat */}
-        <div className="flex-1 min-w-0 min-h-0">
-          <ResizableSplit
-            direction="vertical"
-            initialFirstPct={40}
-            first={<PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} />}
-            second={<ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} />}
-          />
-        </div>
-
+          }
+          second={
+            <div className="h-full p-2 flex flex-col min-h-0">
+              <ResizableSplit
+                direction="vertical"
+                initialFirstPct={40}
+                first={<PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} />}
+                second={<ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} />}
+              />
+            </div>
+          }
+        />
       </div>
     </div>
     </div>
