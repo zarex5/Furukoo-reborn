@@ -78,6 +78,15 @@ export default function GamePage() {
       if (user?.username === data.red.username)   color = 'red';
       if (user?.username === data.black.username) color = 'black';
       setMyColor(color);
+      if (data.eloInfo) {
+        const f = (n: number) => (n >= 0 ? '+' : '') + n;
+        const { red: r, black: b } = data.eloInfo;
+        const elo1: ChatMsg = { id: 'elo-red',   type: 'system', text: `${data.red.username}: win ${f(r.win)} / draw ${f(r.draw)} / loss ${f(r.loss)}` };
+        const elo2: ChatMsg = { id: 'elo-black', type: 'system', text: `${data.black.username}: win ${f(b.win)} / draw ${f(b.draw)} / loss ${f(b.loss)}` };
+        const isElo = (m: ChatMsg) => m.id === 'elo-red' || m.id === 'elo-black' ||
+          (m.type === 'system' && /^.+: win [+-]?\d+ \/ draw [+-]?\d+ \/ loss [+-]?\d+$/.test(m.text));
+        setMessages(prev => [elo1, elo2, ...prev.filter(m => !isElo(m))]);
+      }
     };
 
     const onState = (g: BoardState) => {
