@@ -29,6 +29,7 @@ const UserSchema = new mongoose.Schema({
   username:     { type: String, unique: true, required: true, trim: true },
   passwordHash: { type: String, required: true },
   elo:          { type: Number, default: 1200 },
+  email:        { type: String, trim: true, default: '' },
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
@@ -90,11 +91,11 @@ const sign = (user) => jwt.sign({ userId: user._id.toString(), username: user.us
 // ── Auth REST ────────────────────────────────────────────────────────────────
 app.post('/api/register', async (req, res) => {
   try {
-    const { username, password } = req.body || {};
+    const { username, password, email } = req.body || {};
     if (!username?.trim() || !password) return res.status(400).json({ error: 'Username and password required' });
     if (username.trim().length < 2)      return res.status(400).json({ error: 'Username must be at least 2 characters' });
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ username: username.trim(), passwordHash });
+    const user = await User.create({ username: username.trim(), passwordHash, email: email?.trim() || '' });
     res.json({ token: sign(user), username: user.username, elo: user.elo });
   } catch (e) {
     if (e.code === 11000) return res.status(400).json({ error: 'Username already taken' });
