@@ -14,21 +14,68 @@ const ELO_RANGES = ['2400-3000','2200-2399','2000-2199','1800-1999','1600-1799',
 let msgId = 0;
 const mkId = () => String(++msgId);
 
+/** Mini static board showing a 3×3 square grid with example pieces */
+function MiniBoardPreview() {
+  const D = 18;   // dot spacing
+  const R = 4.5;  // segment half-thickness (as rect width/height)
+  const dots: [number, number][] = [];
+  for (let r = 0; r <= 3; r++) for (let c = 0; c <= 3; c++) dots.push([c * D, r * D]);
+
+  // [r1,c1,r2,c2, color]  — red='#ef4444' black='#1e293b'
+  const segs: [number, number, number, number, string][] = [
+    // completed red square at top-left (rows 0-1, cols 0-1)
+    [0,0, 0,1, '#ef4444'], [1,0, 1,1, '#ef4444'],
+    [0,0, 1,0, '#ef4444'], [0,1, 1,1, '#ef4444'],
+    // some black pieces
+    [1,1, 1,2, '#1e293b'], [0,2, 0,3, '#1e293b'],
+    [1,2, 2,2, '#1e293b'], [2,1, 2,2, '#1e293b'],
+    // more red
+    [2,0, 3,0, '#ef4444'], [2,2, 2,3, '#ef4444'],
+  ];
+
+  const W = 3 * D; const H = 3 * D;
+  return (
+    <svg viewBox={`-6 -6 ${W + 12} ${H + 12}`} width={W + 12} height={H + 12}>
+      {/* completed square highlight */}
+      <rect x={1} y={1} width={D - 2} height={D - 2} fill="#fecaca" rx="2" />
+      {/* grid lines (faint) */}
+      {[0,1,2,3].map(r => [0,1,2,3].map(c => (
+        <circle key={`${r}-${c}`} cx={c*D} cy={r*D} r={2} fill="#94a3b8" />
+      )))}
+      {/* segments */}
+      {segs.map(([r1,c1,r2,c2,col], i) => {
+        const x1 = c1*D, y1 = r1*D, x2 = c2*D, y2 = r2*D;
+        const horiz = r1 === r2;
+        return (
+          <rect key={i}
+            x={horiz ? Math.min(x1,x2)+R : Math.min(x1,x2)-R}
+            y={horiz ? Math.min(y1,y2)-R : Math.min(y1,y2)+R}
+            width={horiz ? Math.abs(x2-x1)-2*R : 2*R}
+            height={horiz ? 2*R : Math.abs(y2-y1)-2*R}
+            fill={col} rx="2" />
+        );
+      })}
+    </svg>
+  );
+}
+
 function RulesBox() {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <div className="text-xs font-bold px-2 py-1 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
         How to play
       </div>
-      <div className="flex-1 overflow-y-auto px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 space-y-1.5 leading-relaxed">
-        <p>🎯 <strong>Goal</strong> — complete more squares than your opponent before time runs out.</p>
-        <p>🟥🔲 <strong>Pieces</strong> — Red and Black each place pieces on the <em>line segments</em> of a 6×6 grid (not on dots).</p>
-        <p>📍 <strong>Placement phase</strong> — players alternate placing pieces on any empty slot until all 9 pieces are on the board.</p>
-        <p>🔀 <strong>Movement phase</strong> — each turn, slide one piece to an adjacent empty slot (along its line, or pivot at a junction to an adjacent perpendicular line).</p>
-        <p>🔲 <strong>Scoring</strong> — you complete a square when all 4 sides (top, bottom, left, right) are occupied by your pieces. Completed squares are highlighted on the board.</p>
-        <p>⏱️ <strong>Clock</strong> — each move adds +3 s to your remaining time. Run out of time and you lose.</p>
-        <p>🏳️ <strong>Resign</strong> — click <em>Resign</em> at any time to concede the game.</p>
-        <p>📈 <strong>ELO</strong> — your rating changes based on game outcome and opponent strength.</p>
+      <div className="flex-1 overflow-y-auto px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
+        <div className="flex gap-3 items-start">
+          <div className="flex-none mt-1"><MiniBoardPreview /></div>
+          <div className="space-y-1.5">
+            <p><strong>Goal</strong> — be the first to close all 4 sides of any unit square. The board is a 6×6 grid; pieces sit on the <em>line segments</em>, not on the dots.</p>
+            <p><strong>Placement</strong> — alternate placing one of your 9 pieces on any free segment.</p>
+            <p><strong>Movement</strong> — once all 18 pieces are placed, each turn slide one piece to an adjacent free segment (along the line, or pivot at a dot onto a perpendicular line).</p>
+            <p><strong>Winning</strong> — the moment all 4 sides of a square are yours, you win instantly.</p>
+            <p><strong>Clock</strong> — each move adds +3 s. Run out of time and you lose. You can also <em>Resign</em> at any time.</p>
+          </div>
+        </div>
       </div>
     </div>
   );
