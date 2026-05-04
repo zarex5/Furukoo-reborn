@@ -99,10 +99,13 @@ export default function GamePage() {
       if (user?.username === gameMeta?.black.username) updateElo(data.newBlackElo);
     };
 
+    const onHistory = ({ messages }: { messages: Omit<ChatMsg, 'id'>[] }) =>
+      setMessages(messages.map(m => ({ ...m, id: mkId() })));
     const onLobby = ({ users }: { users: OnlineUser[] }) => setLobbyUsers(users);
     const onChat  = (m: { type: 'system' | 'user'; username?: string; text: string; spectator?: boolean }) => addMsg(m);
     const onError = ({ message }: { message: string }) => { addMsg({ type: 'system', text: `Error: ${message}` }); navigate('/'); };
 
+    socket.on('game:history', onHistory);
     socket.on('game:started', onStarted);
     socket.on('game:state',   onState);
     socket.on('game:over',    onOver);
@@ -112,6 +115,7 @@ export default function GamePage() {
 
     return () => {
       socket.off('connect',      joinGame);
+      socket.off('game:history', onHistory);
       socket.off('game:started', onStarted);
       socket.off('game:state',   onState);
       socket.off('game:over',    onOver);

@@ -52,6 +52,7 @@ const GameSchema = new mongoose.Schema({
   blackTimeMs:   Number,
   lastMoveAt:    { type: Number, default: Date.now },
   status:        { type: String, enum: ['active', 'ended'], default: 'active' },
+  chat:          { type: M, default: [] },
 }, { timestamps: true });
 
 const Game = mongoose.model('Game', GameSchema);
@@ -129,7 +130,15 @@ function lobbySnapshot() {
 function broadcastLobby() { io.emit('lobby:state', lobbySnapshot()); }
 
 function sysLobby(text) { io.emit('chat:lobby', { type: 'system', text }); }
-function sysGame(gameId, text) { io.to(`game:${gameId}`).emit('chat:game', { type: 'system', text }); }
+function sysGame(gameId, text) {
+  const msg = { type: 'system', text };
+  io.to(`game:${gameId}`).emit('chat:game', msg);
+  const game = activeGames.get(gameId);
+  if (game) {
+    game.chat.push(msg);
+    Game.findOneAndUpdate({ gameId }, { $push: { chat: msg } }).catch(e => console.error('saveChat:', e.message));
+  }
+}
 function fmt(n) { return (n >= 0 ? '+' : '') + n; }
 
 // Return a copy of game with timer values advanced to "right now".
@@ -161,6 +170,7 @@ async function loadActiveGames() {
       redTimeMs: g.redTimeMs, blackTimeMs: g.blackTimeMs,
       lastMoveAt: Date.now(), // reset so downtime doesn't eat the clock
       disconnectedColor: null, disconnectedAt: null,
+      chat: g.chat || [],
     });
   }
   if (games.length) console.log(`Restored ${games.length} active game(s) from DB`);
@@ -257,6 +267,7 @@ io.on('connection', async (socket) => {
       redTimeMs: INITIAL_TIME_MS, blackTimeMs: INITIAL_TIME_MS,
       lastMoveAt: Date.now(),
       disconnectedColor: null, disconnectedAt: null,
+      chat: [],
     };
 
     activeGames.set(gameId, game);
@@ -298,6 +309,7 @@ io.on('connection', async (socket) => {
         redTimeMs: dbGame.redTimeMs, blackTimeMs: dbGame.blackTimeMs,
         lastMoveAt: dbGame.lastMoveAt || Date.now(),
         disconnectedColor: null, disconnectedAt: null,
+        chat: dbGame.chat || [],
       };
     }
 
@@ -358,6 +370,7 @@ io.on('connection', async (socket) => {
     // Broadcast state to the room so reconnect/spectate is visible to everyone;
     // for DB-loaded ended games the socket just joined so the room = only them.
     io.to(`game:${gameId}`).emit('game:state', liveState(game));
+    socket.emit('game:history', { messages: game.chat || [] });
     socket.emit('game:started', {
       gameId, gameColor: game.color,
       red: game.red, black: game.black, eloInfo: game.eloInfo,
@@ -433,11 +446,13 @@ io.on('connection', async (socket) => {
     if (typeof text !== 'string' || !text.trim()) return;
     const u = connectedUsers.get(socket.id);
     if (!u || u.gameId !== gameId) return;
-    io.to(`game:${gameId}`).emit('chat:game', {
-      type: 'user', username: socket.username,
-      text: text.trim().slice(0, 200),
-      spectator: u.spectating,
-    });
+    const msg = { type: 'user', username: socket.username, text: text.trim().slice(0, 200), spectator: u.spectating };
+    io.to(`game:${gameId}`).emit('chat:game', msg);
+    const game = activeGames.get(gameId);
+    if (game) {
+      game.chat.push(msg);
+      Game.findOneAndUpdate({ gameId }, { $push: { chat: msg } }).catch(e => console.error('saveChat:', e.message));
+    }
   });
 
   // ── Disconnect ──
