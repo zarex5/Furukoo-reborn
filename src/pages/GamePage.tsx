@@ -322,12 +322,12 @@ export default function GamePage() {
             </div>
           }
           second={
-            <div className="h-full p-2 flex flex-col min-h-0">
+            <div className="h-full flex flex-col min-h-0">
               <ResizableSplit
                 direction="vertical"
                 initialFirstPct={40}
-                first={<PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} />}
-                second={<ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} />}
+                first={<div className="h-full p-2 pb-0"><PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} /></div>}
+                second={<div className="h-full p-2 pt-0"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} /></div>}
               />
             </div>
           }
