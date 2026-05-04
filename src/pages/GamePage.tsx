@@ -214,7 +214,7 @@ export default function GamePage() {
 
   const redName      = gameMeta.red.username;
   const blackName    = gameMeta.black.username;
-  const isSpectating = myColor === null;
+  const isSpectating = myColor === null || !!gameState.winner;
   const boardDisabled = isSpectating || gameState.currentPlayer !== myColor || !!gameOver || viewIndex !== -1;
 
   const lastRedMove   = [...(viewedState?.moves ?? [])].reverse().find(m => m.player === 'red')   ?? null;
