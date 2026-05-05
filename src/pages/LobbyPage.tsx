@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getSocket } from '../lib/socket';
-import { PlayersBox, ChatBox, type OnlineUser, type ChatMsg } from '../components/RightPanel';
+import { useChatMessages } from '../lib/chatStore';
+import { PlayersBox, ChatBox, type OnlineUser } from '../components/RightPanel';
 import { ResizableSplit } from '../components/ResizableSplit';
 import { FurukooLogo } from '../components/FurukooLogo';
 import { ConnectionBanner } from '../components/ConnectionBanner';
@@ -12,9 +13,6 @@ import { useDarkMode } from '../lib/darkMode';
 interface Proposal { username: string; elo: number; eloRange: string; }
 
 const ELO_RANGES = ['2400-3000','2200-2399','2000-2199','1800-1999','1600-1799','1400-1599','1200-1399','1000-1199'];
-
-let msgId = 0;
-const mkId = () => String(++msgId);
 
 /** Scaled-down replica of the real game board (6 V-lines × 6 H-lines, 7 slots each) */
 function MiniBoardPreview() {
@@ -129,12 +127,9 @@ export default function LobbyPage() {
   const { isDark, toggleDark } = useDarkMode();
   const [users,     setUsers]     = useState<OnlineUser[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [messages,  setMessages]  = useState<ChatMsg[]>([]);
   const [hasProposal, setHasProposal] = useState(false);
 
-  const addMsg = useCallback((m: Omit<ChatMsg, 'id'>) => {
-    setMessages(prev => [...prev.slice(-199), { ...m, id: mkId() }]);
-  }, []);
+  const messages = useChatMessages();
 
   useEffect(() => {
     const socket = getSocket();
@@ -145,22 +140,19 @@ export default function LobbyPage() {
       setProposals(p);
       setHasProposal(p.some(pr => pr.username === user?.username));
     };
-    const onChat = (m: { type: 'system' | 'user'; username?: string; text: string }) => addMsg(m);
     const onStarted = ({ gameId }: { gameId: string }) => navigate(`/game/${gameId}`);
     const onState = (g: { id: string }) => navigate(`/game/${g.id}`);
 
     socket.on('lobby:state',  onLobby);
-    socket.on('chat:lobby',   onChat);
     socket.on('game:started', onStarted);
     socket.on('game:state',   onState);
 
     return () => {
       socket.off('lobby:state',  onLobby);
-      socket.off('chat:lobby',   onChat);
       socket.off('game:started', onStarted);
       socket.off('game:state',   onState);
     };
-  }, [addMsg, navigate, user?.username]);
+  }, [navigate, user?.username]);
 
   useEffect(() => {
     const me = users.find(u => u.username === user?.username);
@@ -170,7 +162,7 @@ export default function LobbyPage() {
   const myUser   = users.find(u => u.username === user?.username);
   const myGameId = myUser?.gameId && !myUser.spectating ? myUser.gameId : null;
 
-  const handleSend   = (text: string) => getSocket()?.emit('lobby:chat', text);
+  const handleSend   = (text: string) => getSocket()?.emit('chat:send', { text, origin: 'lobby' });
   const handlePlay   = () => getSocket()?.emit('game:propose');
   const handleRemove = () => { getSocket()?.emit('game:remove'); setHasProposal(false); };
   const handleAccept = (proposerUsername: string) => getSocket()?.emit('game:accept', proposerUsername);
@@ -265,7 +257,7 @@ export default function LobbyPage() {
                 direction="vertical"
                 initialFirstPct={45}
                 first={<div className="h-full"><PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} /></div>}
-                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} /></div>}
+                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" /></div>}
               />
             </div>
           }

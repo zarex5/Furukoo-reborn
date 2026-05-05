@@ -2,9 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getSocket } from '../lib/socket';
+import { useChatMessages } from '../lib/chatStore';
 import { Board } from '../components/Board';
 import { PlayerPanel } from '../components/PlayerPanel';
-import { PlayersBox, ChatBox, type OnlineUser, type ChatMsg } from '../components/RightPanel';
+import { PlayersBox, ChatBox, type OnlineUser } from '../components/RightPanel';
 import { ResizableSplit } from '../components/ResizableSplit';
 import { FurukooLogo } from '../components/FurukooLogo';
 import { ConnectionBanner } from '../components/ConnectionBanner';
@@ -31,8 +32,6 @@ interface GameOver {
   newRedElo: number; newBlackElo: number;
 }
 
-let msgId = 0;
-const mkId = () => String(++msgId);
 const fmtDelta = (n: number) => (n >= 0 ? '+' : '') + n;
 
 export default function GamePage() {
@@ -48,7 +47,7 @@ export default function GamePage() {
   const [myColor,    setMyColor]    = useState<Player | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(null);
   const [lobbyUsers, setLobbyUsers] = useState<OnlineUser[]>([]);
-  const [messages,   setMessages]   = useState<ChatMsg[]>([]);
+  const messages = useChatMessages();
 
   // History navigation
   const [stateHistory, setStateHistory] = useState<BoardState[]>([]);
@@ -58,10 +57,6 @@ export default function GamePage() {
   const [displayedState, setDisplayedState] = useState<BoardState | null>(null);
   const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastTickRef = useRef(Date.now());
-
-  const addMsg = useCallback((m: Omit<ChatMsg, 'id'>) => {
-    setMessages(prev => [...prev.slice(-199), { ...m, id: mkId() }]);
-  }, []);
 
   useEffect(() => {
     const socket = getSocket();
@@ -79,14 +74,6 @@ export default function GamePage() {
       if (user?.username === data.red.username)   color = 'red';
       if (user?.username === data.black.username) color = 'black';
       setMyColor(color);
-      if (data.eloInfo) {
-        const { red: r, black: b } = data.eloInfo;
-        const elo1: ChatMsg = { id: 'elo-red',   type: 'system', text: `${data.red.username}: win ${fmtDelta(r.win)} / draw ${fmtDelta(r.draw)} / loss ${fmtDelta(r.loss)}` };
-        const elo2: ChatMsg = { id: 'elo-black', type: 'system', text: `${data.black.username}: win ${fmtDelta(b.win)} / draw ${fmtDelta(b.draw)} / loss ${fmtDelta(b.loss)}` };
-        const isElo = (m: ChatMsg) => m.id === 'elo-red' || m.id === 'elo-black' ||
-          (m.type === 'system' && /^.+: win [+-]?\d+ \/ draw [+-]?\d+ \/ loss [+-]?\d+$/.test(m.text));
-        setMessages(prev => [elo1, elo2, ...prev.filter(m => !isElo(m))]);
-      }
     };
 
     const onState = (g: BoardState) => {
@@ -103,32 +90,25 @@ export default function GamePage() {
       if (user?.username === gameMeta?.black.username) updateElo(data.newBlackElo);
     };
 
-    const onHistory = ({ messages }: { messages: Omit<ChatMsg, 'id'>[] }) =>
-      setMessages(messages.map(m => ({ ...m, id: mkId() })));
     const onLobby = ({ users }: { users: OnlineUser[] }) => setLobbyUsers(users);
-    const onChat  = (m: { type: 'system' | 'user'; username?: string; text: string; spectator?: boolean }) => addMsg(m);
-    const onError = ({ message }: { message: string }) => { addMsg({ type: 'system', text: `Error: ${message}` }); navigate('/'); };
+    const onError = ({ message: _msg }: { message: string }) => { navigate('/'); };
 
-    socket.on('game:history', onHistory);
     socket.on('game:started', onStarted);
     socket.on('game:state',   onState);
     socket.on('game:over',    onOver);
     socket.on('lobby:state',  onLobby);
-    socket.on('chat:game',    onChat);
     socket.on('game:error',   onError);
 
     return () => {
       socket.off('connect',      joinGame);
-      socket.off('game:history', onHistory);
       socket.off('game:started', onStarted);
       socket.off('game:state',   onState);
       socket.off('game:over',    onOver);
       socket.off('lobby:state',  onLobby);
-      socket.off('chat:game',    onChat);
       socket.off('game:error',   onError);
       socket.emit('game:leave', gameId);
     };
-  }, [gameId, addMsg, navigate, user?.username]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [gameId, navigate, user?.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Local timer tick
   useEffect(() => {
@@ -198,7 +178,7 @@ export default function GamePage() {
   const viewedState = (viewIndex !== -1 && stateHistory[viewIndex]) ? stateHistory[viewIndex] : displayedState;
 
   const handleResign  = () => getSocket()?.emit('game:resign', { gameId });
-  const handleSend    = (text: string) => getSocket()?.emit('game:chat', { gameId, text });
+  const handleSend    = (text: string) => getSocket()?.emit('chat:send', { text, origin: gameId });
   const handleBack    = () => navigate('/');
   const handleSpectate = (gid: string) => navigate(`/game/${gid}`);
 
@@ -332,7 +312,7 @@ export default function GamePage() {
                 direction="vertical"
                 initialFirstPct={40}
                 first={<div className="h-full"><PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} /></div>}
-                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} /></div>}
+                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin={gameId ?? ''} /></div>}
               />
             </div>
           }

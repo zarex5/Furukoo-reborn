@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const mongoose = require('mongoose');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
+const crypto   = require('crypto');
 const { slotKey, legalMoves, applyMove, calcEloDelta, eloInfo, getEloRange, INITIAL_TIME_MS } = require('./gameLogic');
 
 // ── App setup ────────────────────────────────────────────────────────────────
@@ -55,17 +56,19 @@ const GameSchema = new mongoose.Schema({
   blackTimeMs:   Number,
   lastMoveAt:    { type: Number, default: Date.now },
   status:        { type: String, enum: ['active', 'ended'], default: 'active' },
-  chat:          { type: M, default: [] },
 }, { timestamps: true });
 
 const Game = mongoose.model('Game', GameSchema);
 
-const LobbyChatSchema = new mongoose.Schema({
+const ChatSchema = new mongoose.Schema({
+  id:       { type: String, index: true },
   type:     { type: String, required: true },
   username: String,
   text:     { type: String, required: true },
+  origin:   { type: String, required: true },
+  spectator: Boolean,
 }, { timestamps: true });
-const LobbyChat = mongoose.model('LobbyChat', LobbyChatSchema);
+const Chat = mongoose.model('Chat', ChatSchema);
 
 // Fire-and-forget: persist game state after every move or status change
 function saveGame(game) {
@@ -81,7 +84,6 @@ function saveGame(game) {
       redTimeMs: game.redTimeMs, blackTimeMs: game.blackTimeMs,
       lastMoveAt: game.lastMoveAt,
       status: game.winner ? 'ended' : 'active',
-      chat: game.chat || [],
     },
     { upsert: true }
   ).catch(e => console.error('saveGame:', e.message));
@@ -162,16 +164,11 @@ function lobbySnapshot() {
 }
 function broadcastLobby() { io.emit('lobby:state', lobbySnapshot()); }
 
-function sysLobby(text) {
-  const msg = { type: 'system', text };
-  io.emit('chat:lobby', msg);
-  LobbyChat.create(msg).catch(e => console.error('lobbyChat:', e.message));
-}
-function sysGame(gameId, text) {
-  const msg = { type: 'system', text };
-  io.to(`game:${gameId}`).emit('chat:game', msg);
-  const game = activeGames.get(gameId);
-  if (game) { game.chat.push(msg); saveGame(game); }
+function genId() { return crypto.randomBytes(6).toString('hex'); }
+function sysChat(text, origin) {
+  const msg = { id: genId(), type: 'system', text, origin };
+  io.emit('chat:message', msg);
+  Chat.create(msg).catch(e => console.error('chat:', e.message));
 }
 function fmt(n) { return (n >= 0 ? '+' : '') + n; }
 
@@ -211,7 +208,6 @@ async function loadActiveGames() {
       redTimeMs: g.redTimeMs, blackTimeMs: g.blackTimeMs,
       lastMoveAt: Date.now(), // reset so downtime doesn't eat the clock
       disconnectedColor: null, disconnectedAt: null,
-      chat: g.chat || [],
     });
   }
   if (games.length) console.log(`Restored ${games.length} active game(s) from DB`);
@@ -253,12 +249,19 @@ io.on('connection', async (socket) => {
     }
   }
 
-  // ── Lobby chat ──
-  socket.on('lobby:chat', (text) => {
-    if (typeof text !== 'string' || !text.trim()) return;
-    const msg = { type: 'user', username: socket.username, text: text.trim().slice(0, 200) };
-    io.emit('chat:lobby', msg);
-    LobbyChat.create(msg).catch(e => console.error('lobbyChat:', e.message));
+  // ── Unified chat ──
+  socket.on('chat:send', ({ text, origin }) => {
+    if (typeof text !== 'string' || !text.trim() || typeof origin !== 'string') return;
+    if (origin !== 'lobby' && !activeGames.has(origin)) return;
+    const u = connectedUsers.get(socket.id);
+    if (!u) return;
+    const msg = {
+      id: genId(), type: 'user', username: u.username,
+      text: text.trim().slice(0, 200), origin,
+      spectator: u.spectating || false,
+    };
+    io.emit('chat:message', msg);
+    Chat.create(msg).catch(e => console.error('chat:', e.message));
   });
 
   // ── Game proposals ──
@@ -269,14 +272,17 @@ io.on('connection', async (socket) => {
     if (u.spectating) { u.gameId = null; u.gameColor = null; u.spectating = false; u.reviewing = false; broadcastLobby(); }
     if (u.gameId || gameProposals.has(u.username)) return;
     gameProposals.set(u.username, { username: u.username, elo: u.elo, eloRange: getEloRange(u.elo) });
-    sysLobby(`${u.username} just created a new game`);
+    sysChat(`${u.username} just proposed a game`, 'lobby');
     broadcastLobby();
   });
 
   socket.on('game:remove', () => {
     const u = connectedUsers.get(socket.id);
     if (!u) return;
-    if (gameProposals.delete(u.username)) broadcastLobby();
+    if (gameProposals.delete(u.username)) {
+      sysChat(`${u.username} removed its game proposal`, 'lobby');
+      broadcastLobby();
+    }
   });
 
   // ── Accept proposal → start game ──
@@ -320,7 +326,6 @@ io.on('connection', async (socket) => {
       redTimeMs: INITIAL_TIME_MS, blackTimeMs: INITIAL_TIME_MS,
       lastMoveAt: Date.now(),
       disconnectedColor: null, disconnectedAt: null,
-      chat: [],
     };
 
     activeGames.set(gameId, game);
@@ -332,12 +337,12 @@ io.on('connection', async (socket) => {
     if (redSock)   redSock.join(`game:${gameId}`);
     if (blackSock) blackSock.join(`game:${gameId}`);
 
-    // Seed chat with ELO stakes for both players (delivered via game:history)
-    game.chat.push({ type: 'system', text: `${redU.username}: win ${fmt(info.red.win)} / draw ${fmt(info.red.draw)} / loss ${fmt(info.red.loss)}` });
-    game.chat.push({ type: 'system', text: `${blackU.username}: win ${fmt(info.black.win)} / draw ${fmt(info.black.draw)} / loss ${fmt(info.black.loss)}` });
+    sysChat(`${accepter.username} accepts ${proposerUsername}'s game`, 'lobby');
+    sysChat(`${redU.username} - victory ${fmt(info.red.win)} / draw ${fmt(info.red.draw)} / loss ${fmt(info.red.loss)}`, gameId);
+    sysChat(`${blackU.username} - victory ${fmt(info.black.win)} / draw ${fmt(info.black.draw)} / loss ${fmt(info.black.loss)}`, gameId);
 
     broadcastLobby();
-    sysLobby(`Game started: ${redU.username} vs ${blackU.username}`);
+    sysChat(`Game started: ${redU.username} vs ${blackU.username}`, 'lobby');
 
     saveGame(game);
 
@@ -366,7 +371,6 @@ io.on('connection', async (socket) => {
         redTimeMs: dbGame.redTimeMs, blackTimeMs: dbGame.blackTimeMs,
         lastMoveAt: dbGame.lastMoveAt || Date.now(),
         disconnectedColor: null, disconnectedAt: null,
-        chat: dbGame.chat || [],
       };
     }
 
@@ -384,7 +388,7 @@ io.on('connection', async (socket) => {
     socket.join(`game:${gameId}`);
 
     if (!isPlayer) {
-      sysGame(gameId, `${u.username} is spectating`);
+      sysChat(`${u.username} just joined game ${gameId}`, gameId);
     } else {
       const color         = isRed ? 'red' : 'black';
       const otherColor    = color === 'red' ? 'black' : 'red';
@@ -397,7 +401,9 @@ io.on('connection', async (socket) => {
         if (t) { clearTimeout(t); disconnectTimeouts.delete(key); }
         game.disconnectedColor = null;
         game.disconnectedAt    = null;
-        sysGame(gameId, `${u.username} reconnected`);
+        sysChat(`${u.username} reconnected`, gameId);
+      } else {
+        sysChat(`${u.username} just joined game ${gameId}`, gameId);
       }
 
       // If the other player isn't online and no countdown is running for them,
@@ -408,7 +414,7 @@ io.on('connection', async (socket) => {
         if (!otherOnline && !disconnectTimeouts.has(otherKey)) {
           game.disconnectedColor = otherColor;
           game.disconnectedAt    = Date.now();
-          sysGame(gameId, `Waiting for ${otherUsername} — 60 s to reconnect`);
+          sysChat(`Waiting for ${otherUsername} — 60 s to reconnect`, gameId);
           const t = setTimeout(() => {
             disconnectTimeouts.delete(otherKey);
             const g = activeGames.get(gameId);
@@ -427,7 +433,6 @@ io.on('connection', async (socket) => {
     // Broadcast state to the room so reconnect/spectate is visible to everyone;
     // for DB-loaded ended games the socket just joined so the room = only them.
     io.to(`game:${gameId}`).emit('game:state', liveState(game));
-    socket.emit('game:history', { messages: game.chat || [] });
     socket.emit('game:started', {
       gameId, gameColor: game.color,
       red: game.red, black: game.black, eloInfo: game.eloInfo,
@@ -502,16 +507,6 @@ io.on('connection', async (socket) => {
     broadcastLobby();
   });
 
-  // ── Game chat ──
-  socket.on('game:chat', ({ gameId, text }) => {
-    if (typeof gameId !== 'string' || typeof text !== 'string' || !text.trim()) return;
-    const u = connectedUsers.get(socket.id);
-    if (!u || u.gameId !== gameId) return;
-    const msg = { type: 'user', username: socket.username, text: text.trim().slice(0, 200), spectator: u.spectating };
-    io.to(`game:${gameId}`).emit('chat:game', msg);
-    const game = activeGames.get(gameId);
-    if (game) { game.chat.push(msg); saveGame(game); }
-  });
 
   // ── Disconnect ──
   socket.on('disconnect', () => {
@@ -519,7 +514,7 @@ io.on('connection', async (socket) => {
     if (!u) return;
     gameProposals.delete(u.username);
     connectedUsers.delete(socket.id);
-    sysLobby(`${u.username} just disconnected`);
+    sysChat(`${u.username} just disconnected`, 'lobby');
     broadcastLobby();
 
     // If the player was in an active game, handle reconnect window (skip for spectators)
@@ -553,7 +548,7 @@ io.on('connection', async (socket) => {
           game.disconnectedColor = color;
           game.disconnectedAt    = Date.now();
           io.to(`game:${gid}`).emit('game:state', liveState(game));
-          sysGame(gid, `${username} disconnected — 60 s to reconnect`);
+          sysChat(`${username} disconnected — 60 s to reconnect`, gid);
 
           const t = setTimeout(() => {
             disconnectTimeouts.delete(key);
@@ -600,8 +595,11 @@ io.on('connection', async (socket) => {
   }
 
   socket.emit('lobby:state', lobbySnapshot());
-  sysLobby(`${socket.username} just connected`);
+  sysChat(`${socket.username} just connected`, 'lobby');
   broadcastLobby();
+  const since = new Date(Date.now() - 60_000);
+  const history = await Chat.find({ createdAt: { $gte: since } }).sort({ createdAt: 1 }).limit(500).lean();
+  socket.emit('chat:history', history);
 });
 
 // ── End game ────────────────────────────────────────────────────────────────
@@ -636,10 +634,8 @@ async function endGame(gameId, winner, reason) {
     winner, reason, winnerName,
     redDelta, blackDelta, newRedElo, newBlackElo,
   });
-  sysGame(gameId, `${winnerName} wins${reasonMsg}!`);
-  sysGame(gameId, `${game.red.username}: ${fmt(redDelta)} ELO → ${newRedElo}`);
-  sysGame(gameId, `${game.black.username}: ${fmt(blackDelta)} ELO → ${newBlackElo}`);
-  sysLobby(`${winnerName} won a game${reasonMsg}`);
+  sysChat(`${winnerName} wins${reasonMsg}!`, gameId);
+  sysChat(`${winnerName} won a game${reasonMsg}`, 'lobby');
 
   Game.findOneAndUpdate({ gameId }, { $set: { status: 'ended', winner } }).catch(console.error);
   activeGames.delete(gameId);

@@ -14,6 +14,7 @@ export interface ChatMsg {
   type: 'system' | 'user';
   username?: string;
   text: string;
+  origin: string;
   spectator?: boolean;
 }
 
@@ -87,15 +88,19 @@ interface ChatBoxProps {
   messages: ChatMsg[];
   onSend: (text: string) => void;
   myUsername: string;
+  origin: string;
 }
 
-export function ChatBox({ messages, onSend, myUsername }: ChatBoxProps) {
+export function ChatBox({ messages, onSend, myUsername, origin }: ChatBoxProps) {
   const [draft, setDraft] = useState('');
+  const [filtered, setFiltered] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const visible = filtered ? messages.filter(m => m.origin === origin) : messages;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [visible]);
 
   const send = () => {
     const t = draft.trim();
@@ -106,11 +111,20 @@ export function ChatBox({ messages, onSend, myUsername }: ChatBoxProps) {
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="text-xs font-bold px-2 py-1 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
-        Chat
+      <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex-none">
+        <span className="text-xs font-bold text-slate-500 dark:text-gray-400 flex-1">Chat</span>
+        <button
+          onClick={() => setFiltered(f => !f)}
+          title={filtered ? 'Show all messages' : 'Show only this room'}
+          className={`text-xs font-mono px-1.5 py-0.5 rounded transition ${
+            filtered
+              ? 'bg-violet-600 text-white'
+              : 'bg-slate-200 dark:bg-gray-700 text-slate-500 dark:text-gray-400 hover:bg-slate-300 dark:hover:bg-gray-600'
+          }`}
+        >filter</button>
       </div>
       <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5 min-h-0">
-        {messages.map(m => (
+        {visible.map(m => (
           <div key={m.id} className={`text-xs font-mono leading-snug ${
             m.type === 'system' ? 'text-slate-400 dark:text-gray-500 italic' :
             m.spectator ? 'text-slate-400 dark:text-gray-500' :
