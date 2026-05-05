@@ -9,6 +9,7 @@ interface Props {
   timeMs: number;
   lastMove: Move | null;
   moveIndex: number;
+  isWinner?: boolean;
 }
 
 function formatMoveInfo(move: Move | null, idx: number): string {
@@ -20,7 +21,7 @@ function formatMoveInfo(move: Move | null, idx: number): string {
   return `${n}. ${from}-${to}`;
 }
 
-export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, lastMove, moveIndex }) => {
+export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, lastMove, moveIndex, isWinner }) => {
   const isRed = player === 'red';
   const borderColor = isRed ? 'border-red-400 dark:border-red-500' : 'border-slate-400 dark:border-gray-600';
   const wrapBg = isActive
@@ -44,7 +45,9 @@ export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, l
         className="w-3 h-3 rounded-full flex-shrink-0"
         style={isRed ? { background: '#ef4444' } : { background: '#1e293b', border: '1.5px solid #475569' }}
       />
-      <div className={`w-28 ${cell} font-bold ${nameCls}`}>{name}</div>
+      <div className={`w-28 ${cell} font-bold ${nameCls}`}>
+        {isWinner && <span className="mr-1">👑</span>}{name}
+      </div>
       <div className={`w-40 ${cell} ${moveCls}`}>{formatMoveInfo(lastMove, moveIndex)}</div>
       <div className={`w-24 ${cell} font-bold ${timeCls}`}>{formatTime(timeMs)}</div>
     </div>

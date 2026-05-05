@@ -18,6 +18,7 @@ export default function LoginPage() {
 
   const { isDark, toggleDark } = useDarkMode();
 
+  const kicked = new URLSearchParams(window.location.search).get('reason') === 'kicked';
   const [mode,     setMode]     = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -66,6 +67,12 @@ export default function LoginPage() {
       </div>
 
       <FurukooLogo />
+
+      {kicked && (
+        <div className="w-80 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-xs font-mono text-amber-800 dark:text-amber-200 text-center">
+          You were disconnected — this account connected from another location.
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl p-6 w-80 shadow-lg">
         {/* Tab toggle */}

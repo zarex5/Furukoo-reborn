@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       localStorage.removeItem(KEY);
       disconnectSocket();
+      window.location.replace('/login?reason=kicked');
     };
     sock.on('session:kicked', onKicked);
     return () => { sock.off('session:kicked', onKicked); };

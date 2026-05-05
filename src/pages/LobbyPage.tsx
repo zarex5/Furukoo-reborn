@@ -66,9 +66,13 @@ function MiniBoardPreview() {
 }
 
 const INVITE_MSGS = [
-  'Invite your friends',      // English
-  'Invitez vos amis',         // French
+  'Invite your friends',      // English ×3
+  'Invitez vos amis',         // French ×3
+  'Invite your friends',
+  'Invitez vos amis',
   'Kutsu ystäväsi',           // Finnish
+  'Invite your friends',
+  'Invitez vos amis',
   'Invita a tus amigos',      // Spanish
   'Lade deine Freunde ein',   // German
   'Invita i tuoi amici',      // Italian

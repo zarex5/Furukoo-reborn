@@ -293,7 +293,8 @@ export default function GamePage() {
               <PlayerPanel player="red" name={redName}
                 isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
                 timeMs={(viewedState ?? displayedState).redTimeMs}
-                lastMove={lastRedMove} moveIndex={redMoveIdx} />
+                lastMove={lastRedMove} moveIndex={redMoveIdx}
+                isWinner={gameOver?.winner === 'red'} />
               <Board
                 pieces={(viewedState ?? displayedState).pieces}
                 currentPlayer={gameState.currentPlayer}
@@ -306,7 +307,8 @@ export default function GamePage() {
               <PlayerPanel player="black" name={blackName}
                 isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
                 timeMs={(viewedState ?? displayedState).blackTimeMs}
-                lastMove={lastBlackMove} moveIndex={blackMoveIdx} />
+                lastMove={lastBlackMove} moveIndex={blackMoveIdx}
+                isWinner={gameOver?.winner === 'black'} />
               {/* History nav — centered */}
               <div className="flex items-center justify-center gap-1">
                 <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">⏮</button>

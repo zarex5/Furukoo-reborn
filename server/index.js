@@ -133,15 +133,12 @@ const disconnectTimeouts = new Map();
 
 function lobbySnapshot() {
   return {
-    users: Array.from(connectedUsers.values()).map(u => {
-      const game = u.gameId ? activeGames.get(u.gameId) : null;
-      return {
-        username: u.username, elo: u.elo,
-        gameId: u.gameId || null, gameColor: u.gameColor || null,
-        spectating: u.spectating || false,
-        reviewing: !!(u.spectating && game?.winner),
-      };
-    }),
+    users: Array.from(connectedUsers.values()).map(u => ({
+      username: u.username, elo: u.elo,
+      gameId: u.gameId || null, gameColor: u.gameColor || null,
+      spectating: u.spectating || false,
+      reviewing: u.reviewing || false,
+    })),
     proposals: Array.from(gameProposals.values()),
   };
 }
@@ -226,7 +223,7 @@ io.on('connection', async (socket) => {
   connectedUsers.set(socket.id, {
     socketId: socket.id, userId: socket.userId,
     username: socket.username, elo: 1200, // placeholder; real value set below
-    gameId: null, gameColor: null, spectating: false,
+    gameId: null, gameColor: null, spectating: false, reviewing: false,
   });
 
   // Kick any earlier session for the same user (second browser / tab)
@@ -251,7 +248,7 @@ io.on('connection', async (socket) => {
     const u = connectedUsers.get(socket.id);
     if (!u) return;
     // Allow re-entry from spectating (game over)
-    if (u.spectating) { u.gameId = null; u.gameColor = null; u.spectating = false; broadcastLobby(); }
+    if (u.spectating) { u.gameId = null; u.gameColor = null; u.spectating = false; u.reviewing = false; broadcastLobby(); }
     if (u.gameId || gameProposals.has(u.username)) return;
     gameProposals.set(u.username, { username: u.username, elo: u.elo, eloRange: getEloRange(u.elo) });
     sysLobby(`${u.username} just created a new game`);
@@ -269,7 +266,7 @@ io.on('connection', async (socket) => {
     const accepter = connectedUsers.get(socket.id);
     if (!accepter) return;
     // Allow re-entry from spectating (game over)
-    if (accepter.spectating) { accepter.gameId = null; accepter.gameColor = null; accepter.spectating = false; }
+    if (accepter.spectating) { accepter.gameId = null; accepter.gameColor = null; accepter.spectating = false; accepter.reviewing = false; }
     if (accepter.gameId) return;
     if (proposerUsername === accepter.username) return;
     const proposal = gameProposals.get(proposerUsername);
@@ -482,7 +479,7 @@ io.on('connection', async (socket) => {
   socket.on('game:leave', (gameId) => {
     const u = connectedUsers.get(socket.id);
     if (!u || u.gameId !== gameId) return;
-    u.gameId = null; u.gameColor = null; u.spectating = false;
+    u.gameId = null; u.gameColor = null; u.spectating = false; u.reviewing = false;
     socket.leave(`game:${gameId}`);
     broadcastLobby();
   });
@@ -611,7 +608,7 @@ async function endGame(gameId, winner, reason) {
   for (const [, u] of connectedUsers) {
     if (u.username === game.red.username)   u.elo = newRedElo;
     if (u.username === game.black.username) u.elo = newBlackElo;
-    if (u.gameId === gameId) u.spectating = true;
+    if (u.gameId === gameId) { u.spectating = true; u.reviewing = true; }
   }
 
   const winnerName = winner === 'red' ? game.red.username : game.black.username;
