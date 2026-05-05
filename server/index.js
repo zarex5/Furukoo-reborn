@@ -31,6 +31,7 @@ const UserSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true },
   elo:          { type: Number, default: 1200 },
   email:        { type: String, trim: true, default: '' },
+  guest:        { type: Boolean, default: false },
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
@@ -104,6 +105,23 @@ app.post('/api/register', async (req, res) => {
     res.json({ token: sign(user), username: user.username, elo: user.elo });
   } catch (e) {
     if (e.code === 11000) return res.status(400).json({ error: 'Username already taken' });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/guest', async (req, res) => {
+  try {
+    const crypto = require('crypto');
+    let username, exists;
+    do {
+      const digits = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
+      username = `Guest${digits}`;
+      exists = await User.findOne({ username });
+    } while (exists);
+    const passwordHash = await bcrypt.hash(crypto.randomBytes(24).toString('hex'), 10);
+    const user = await User.create({ username, passwordHash, guest: true });
+    res.json({ token: sign(user), username: user.username, elo: user.elo });
+  } catch {
     res.status(500).json({ error: 'Server error' });
   }
 });

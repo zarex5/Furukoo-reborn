@@ -29,6 +29,21 @@ export default function LoginPage() {
 
   const captchaChallenge = useMemo(makeCaptcha, [mode]);
 
+  const [guestLoading, setGuestLoading] = useState(false);
+
+  const handleGuest = async () => {
+    setGuestLoading(true);
+    try {
+      const data = await api.guest();
+      login(data);
+      navigate('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error');
+    } finally {
+      setGuestLoading(false);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -111,6 +126,24 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
+
+      {/* Guest play */}
+      <div className="w-80 flex flex-col items-center gap-2">
+        <div className="w-full flex items-center gap-2">
+          <div className="flex-1 border-t border-slate-200 dark:border-gray-700" />
+          <span className="text-xs font-mono text-slate-400 dark:text-gray-500">or</span>
+          <div className="flex-1 border-t border-slate-200 dark:border-gray-700" />
+        </div>
+        <button onClick={handleGuest} disabled={guestLoading}
+          className="w-full py-1.5 rounded text-sm font-bold transition border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40">
+          {guestLoading ? '…' : 'Play as Guest'}
+        </button>
+        <p className="text-xs font-mono text-slate-400 dark:text-gray-500 text-center leading-snug">
+          A temporary account will be created (Guest + 6 random digits).<br />
+          ELO won't be saved and the account cannot be recovered.
+        </p>
+      </div>
+
     </div>
     </div>
   );
