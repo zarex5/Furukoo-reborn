@@ -53,12 +53,12 @@ export function ResizableSplit({
         {first}
       </div>
       <div
-        className={`${handleCls} bg-slate-200 dark:bg-gray-700 hover:bg-violet-300 dark:hover:bg-violet-700 active:bg-violet-300 dark:active:bg-violet-700 transition-colors select-none flex-shrink-0`}
+        className={`${handleCls} bg-slate-200/40 dark:bg-gray-900 hover:bg-violet-300 dark:hover:bg-violet-700 active:bg-violet-300 dark:active:bg-violet-700 transition-colors select-none flex-shrink-0`}
         onMouseDown={onMouseDown}
       >
         {isV
-          ? <span className="w-8 h-0.5 rounded bg-slate-400 dark:bg-slate-500 pointer-events-none" />
-          : <span className="h-8 w-0.5 rounded bg-slate-400 dark:bg-slate-500 pointer-events-none" />}
+          ? <span className="w-8 h-0.5 rounded bg-slate-300 dark:bg-gray-700 pointer-events-none" />
+          : <span className="h-8 w-0.5 rounded bg-slate-300 dark:bg-gray-700 pointer-events-none" />}
       </div>
       <div style={{ flex: 100 - firstFlex }} className={isV ? 'min-h-0 overflow-hidden' : 'min-w-0 overflow-hidden'}>
         {second}
