@@ -44,7 +44,7 @@ export function ResizableSplit({
 
   const handleCls = isV
     ? 'flex-none h-3 w-full cursor-row-resize flex items-center justify-center'
-    : 'flex-none w-3 h-full cursor-col-resize flex items-center justify-center';
+    : 'flex-none w-3 cursor-col-resize flex items-center justify-center self-stretch';
 
   return (
     <div ref={containerRef}
