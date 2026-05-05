@@ -170,12 +170,12 @@ export default function LobbyPage() {
       <ConnectionBanner />
 
       {/* Main content — horizontal split: 66% left / 34% right */}
-      <div className="flex-1 min-h-0 py-2">
+      <div className="flex-1 min-h-0 p-2">
         <ResizableSplit
           direction="horizontal"
           initialFirstPct={66}
           first={
-            <div className="h-full flex flex-col min-h-0 px-2">
+            <div className="h-full flex flex-col min-h-0">
               {/* Vertical split: rules (top) / proposals table (bottom) */}
               <ResizableSplit
                 direction="vertical"
@@ -224,7 +224,7 @@ export default function LobbyPage() {
             </div>
           }
           second={
-            <div className="h-full flex flex-col min-h-0 px-2">
+            <div className="h-full flex flex-col min-h-0">
               {/* Vertical split: players (top) / chat (bottom) */}
               <ResizableSplit
                 direction="vertical"

@@ -282,12 +282,12 @@ export default function GamePage() {
       )}
 
       {/* Main content — 66% board area / 34% right panel */}
-      <div className="flex-1 min-h-0 py-2">
+      <div className="flex-1 min-h-0 p-2">
         <ResizableSplit
           direction="horizontal"
           initialFirstPct={66}
           first={
-            <div className="h-full flex flex-col items-center justify-center gap-1.5 px-2 overflow-y-auto">
+            <div className="h-full flex flex-col items-center justify-center gap-1.5 overflow-y-auto">
               <PlayerPanel player="red" name={redName}
                 isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
                 timeMs={(viewedState ?? displayedState).redTimeMs}
@@ -323,7 +323,7 @@ export default function GamePage() {
             </div>
           }
           second={
-            <div className="h-full flex flex-col min-h-0 px-2">
+            <div className="h-full flex flex-col min-h-0">
               <ResizableSplit
                 direction="vertical"
                 initialFirstPct={40}
