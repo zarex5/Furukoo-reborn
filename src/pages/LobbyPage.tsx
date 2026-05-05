@@ -170,19 +170,19 @@ export default function LobbyPage() {
       <ConnectionBanner />
 
       {/* Main content — horizontal split: 66% left / 34% right */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 py-2">
         <ResizableSplit
           direction="horizontal"
           initialFirstPct={66}
           first={
-            <div className="h-full flex flex-col min-h-0">
+            <div className="h-full flex flex-col min-h-0 px-2">
               {/* Vertical split: rules (top) / proposals table (bottom) */}
               <ResizableSplit
                 direction="vertical"
                 initialFirstPct={38}
-                first={<div className="h-full p-2 pt-2 pb-0"><RulesBox /></div>}
+                first={<div className="h-full"><RulesBox /></div>}
                 second={
-                  <div className="h-full p-2 pb-2 pt-0"><div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                  <div className="h-full"><div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
                     <table className="w-full text-xs font-mono">
                       <thead>
                         <tr className="bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700">
@@ -224,13 +224,13 @@ export default function LobbyPage() {
             </div>
           }
           second={
-            <div className="h-full flex flex-col min-h-0">
+            <div className="h-full flex flex-col min-h-0 px-2">
               {/* Vertical split: players (top) / chat (bottom) */}
               <ResizableSplit
                 direction="vertical"
                 initialFirstPct={45}
-                first={<div className="h-full p-2 pb-0"><PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} /></div>}
-                second={<div className="h-full p-2 pt-0"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} /></div>}
+                first={<div className="h-full"><PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} /></div>}
+                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} /></div>}
               />
             </div>
           }

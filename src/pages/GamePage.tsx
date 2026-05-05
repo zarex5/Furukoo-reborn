@@ -282,12 +282,12 @@ export default function GamePage() {
       )}
 
       {/* Main content — 66% board area / 34% right panel */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 py-2">
         <ResizableSplit
           direction="horizontal"
           initialFirstPct={66}
           first={
-            <div className="h-full flex flex-col items-center justify-center gap-1.5 p-2 overflow-y-auto">
+            <div className="h-full flex flex-col items-center justify-center gap-1.5 px-2 overflow-y-auto">
               <PlayerPanel player="red" name={redName}
                 isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
                 timeMs={(viewedState ?? displayedState).redTimeMs}
@@ -323,12 +323,12 @@ export default function GamePage() {
             </div>
           }
           second={
-            <div className="h-full flex flex-col min-h-0">
+            <div className="h-full flex flex-col min-h-0 px-2">
               <ResizableSplit
                 direction="vertical"
                 initialFirstPct={40}
-                first={<div className="h-full p-2 pb-0"><PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} /></div>}
-                second={<div className="h-full p-2 pt-0"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} /></div>}
+                first={<div className="h-full"><PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} /></div>}
+                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} /></div>}
               />
             </div>
           }
