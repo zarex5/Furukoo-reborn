@@ -6,6 +6,7 @@ export interface OnlineUser {
   gameId: string | null;
   gameColor: string | null;
   spectating: boolean;
+  reviewing: boolean;
 }
 
 export interface ChatMsg {
@@ -60,7 +61,7 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate }: Playe
                 <span
                   className="inline-block w-3 h-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-400 dark:hover:ring-slate-500 transition-shadow"
                   style={{ background: u.gameColor, opacity: u.spectating ? 0.5 : 1 }}
-                  title={u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId}`}
+                  title={u.reviewing ? `Reviewing ${u.gameId}` : u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId}`}
                   onClick={() => onSpectate?.(u.gameId!)}
                 />
               ) : (

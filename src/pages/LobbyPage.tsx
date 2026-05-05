@@ -65,6 +65,36 @@ function MiniBoardPreview() {
   );
 }
 
+const INVITE_MSGS = [
+  'Invite your friends',      // English
+  'Invitez vos amis',         // French
+  'Kutsu ystäväsi',           // Finnish
+  'Invita a tus amigos',      // Spanish
+  'Lade deine Freunde ein',   // German
+  'Invita i tuoi amici',      // Italian
+  'Convide seus amigos',      // Portuguese
+  '友達を誘おう',               // Japanese
+  '邀请你的朋友',               // Chinese
+  'ادعُ أصدقاءك',              // Arabic
+  'Пригласи друзей',          // Russian
+  '친구를 초대하세요',           // Korean
+  'Nodig je vrienden uit',    // Dutch
+  'Zaproś znajomych',         // Polish
+  'Arkadaşlarını davet et',   // Turkish
+];
+
+function InviteTicker() {
+  const content = INVITE_MSGS.join(' 🦉 ') + ' 🦉 ';
+  const doubled = content + content;
+  return (
+    <div className="overflow-hidden border-t border-slate-100 dark:border-gray-800 mt-1.5 pt-1.5">
+      <span className="ticker-track text-xs font-mono text-slate-400 dark:text-gray-500 select-none">
+        {doubled}
+      </span>
+    </div>
+  );
+}
+
 function RulesBox() {
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
@@ -82,6 +112,7 @@ function RulesBox() {
             <p><strong>Clock</strong> — each move adds +3 s. Run out of time and you lose. You can also <em>Resign</em> at any time.</p>
           </div>
         </div>
+        <InviteTicker />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { connectSocket, disconnectSocket, getSocket } from '../lib/socket';
 
 interface AuthUser { username: string; elo: number; token: string; }
@@ -33,6 +33,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(KEY);
     disconnectSocket();
   };
+
+  useEffect(() => {
+    const sock = getSocket();
+    if (!sock || !user) return;
+    const onKicked = () => {
+      setUser(null);
+      localStorage.removeItem(KEY);
+      disconnectSocket();
+    };
+    sock.on('session:kicked', onKicked);
+    return () => { sock.off('session:kicked', onKicked); };
+  }, [user]);
 
   const updateElo = (elo: number) => {
     setUser(prev => {

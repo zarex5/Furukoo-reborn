@@ -233,9 +233,11 @@ export default function GamePage() {
         <FurukooLogo />
         <div className="flex gap-2 ml-auto items-center">
           <span className="text-xs font-mono text-slate-400 dark:text-gray-500">
-            {isSpectating
-              ? `Spectating ${redName} vs ${blackName}`
-              : `Playing against ${myColor === 'red' ? blackName : redName}`}
+            {!isSpectating
+              ? `Playing against ${myColor === 'red' ? blackName : redName}`
+              : gameState?.winner || gameOver
+                ? `Reviewing ${redName} vs ${blackName}`
+                : `Spectating ${redName} vs ${blackName}`}
           </span>
           {isSpectating || gameOver
             ? <button onClick={handleBack}

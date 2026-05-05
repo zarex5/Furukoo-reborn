@@ -133,11 +133,15 @@ const disconnectTimeouts = new Map();
 
 function lobbySnapshot() {
   return {
-    users:     Array.from(connectedUsers.values()).map(u => ({
-      username: u.username, elo: u.elo,
-      gameId: u.gameId || null, gameColor: u.gameColor || null,
-      spectating: u.spectating || false,
-    })),
+    users: Array.from(connectedUsers.values()).map(u => {
+      const game = u.gameId ? activeGames.get(u.gameId) : null;
+      return {
+        username: u.username, elo: u.elo,
+        gameId: u.gameId || null, gameColor: u.gameColor || null,
+        spectating: u.spectating || false,
+        reviewing: !!(u.spectating && game?.winner),
+      };
+    }),
     proposals: Array.from(gameProposals.values()),
   };
 }
@@ -225,6 +229,15 @@ io.on('connection', async (socket) => {
     gameId: null, gameColor: null, spectating: false,
   });
 
+  // Kick any earlier session for the same user (second browser / tab)
+  for (const [sid, u] of connectedUsers) {
+    if (u.username === socket.username && sid !== socket.id) {
+      const old = io.sockets.sockets.get(sid);
+      if (old) { old.emit('session:kicked'); old.disconnect(true); }
+      break;
+    }
+  }
+
   // ── Lobby chat ──
   socket.on('lobby:chat', (text) => {
     if (typeof text !== 'string' || !text.trim()) return;
@@ -269,6 +282,7 @@ io.on('connection', async (socket) => {
     if (!proposerEntry || proposerEntry.gameId) return;
 
     gameProposals.delete(proposerUsername);
+    gameProposals.delete(accepter.username);
 
     const flip   = Math.random() < 0.5;
     const redU   = flip ? proposerEntry : accepter;
