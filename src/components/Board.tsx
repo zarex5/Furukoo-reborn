@@ -11,6 +11,7 @@ interface Props {
   disabled: boolean;
   phase: 'placement' | 'movement';
   isDark: boolean;
+  responsive?: boolean;
 }
 
 /**
@@ -113,6 +114,7 @@ export const Board: React.FC<Props> = ({
   disabled,
   phase,
   isDark,
+  responsive = false,
 }) => {
   const C = isDark ? {
     emptyFill: '#4b5563', emptyStroke: '#6b7280', labelFill: '#d1d5db',
@@ -232,8 +234,9 @@ export const Board: React.FC<Props> = ({
 
   return (
     <svg
-      width={SVG_W}
-      height={SVG_H}
+      viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+      width={responsive ? '100%' : SVG_W}
+      height={responsive ? undefined : SVG_H}
       style={{ display: 'block' }}
     >
       <defs>

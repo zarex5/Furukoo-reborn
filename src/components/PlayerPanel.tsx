@@ -10,6 +10,7 @@ interface Props {
   lastMove: Move | null;
   moveIndex: number;
   isWinner?: boolean;
+  compact?: boolean;
 }
 
 function formatMoveInfo(move: Move | null, idx: number): string {
@@ -21,7 +22,7 @@ function formatMoveInfo(move: Move | null, idx: number): string {
   return `${n}. ${from}-${to}`;
 }
 
-export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, lastMove, moveIndex, isWinner }) => {
+export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, lastMove, moveIndex, isWinner, compact = false }) => {
   const isRed = player === 'red';
   const borderColor = isRed ? 'border-red-400 dark:border-red-500' : 'border-slate-400 dark:border-gray-600';
   const wrapBg = isActive
@@ -38,6 +39,21 @@ export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, l
   const timeCls = timeMs < 60000
     ? 'bg-red-50 text-red-700 border-red-400 dark:bg-red-900 dark:text-red-300 dark:border-red-500'
     : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600';
+
+  if (compact) {
+    return (
+      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${borderColor} ${wrapBg}`}>
+        <div
+          className="w-3.5 h-3.5 rounded-full flex-shrink-0"
+          style={isRed ? { background: '#ef4444' } : { background: '#1e293b', border: '1.5px solid #475569' }}
+        />
+        <div className={`flex-1 min-w-0 ${cell} font-bold ${nameCls} truncate`}>
+          {isWinner && <span className="mr-1">👑</span>}{name}
+        </div>
+        <div className={`w-24 ${cell} font-bold text-sm ${timeCls}`}>{formatTime(timeMs)}</div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border ${borderColor} ${wrapBg}`}>
