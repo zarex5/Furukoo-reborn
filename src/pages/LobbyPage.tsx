@@ -50,29 +50,35 @@ function InviteTicker() {
   );
 }
 
-function RulesBox() {
+function RulesBox({ mobile = false }: { mobile?: boolean }) {
+  const content = (
+    <div className={`${mobile ? '' : 'flex-1 overflow-y-auto'} px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed`}>
+      <div className="flex gap-3 items-start">
+        <div className="flex-none mt-1"><img src={boardPreview} alt="Board preview" className="w-20 h-20 object-contain rounded" /></div>
+        <div className="space-y-1.5">
+          <p><strong>Goal</strong> — be the first to own all 4 sides of any unit square. Pieces sit on the <em>line segments</em> of a 6×6 grid, not on the dots.</p>
+          <p><strong>Placement</strong> — alternate placing one of your 7 pieces on any free segment.</p>
+          <p><strong>Movement</strong> — once all 14 pieces are on the board, each turn slide one piece to an adjacent free segment (along the line, or pivot at a dot onto a perpendicular line).</p>
+          <p><strong>Winning</strong> — the moment all 4 sides of a square are yours, you win instantly.</p>
+          <p><strong>Clock</strong> — each move adds +3 s. Run out of time and you lose. You can also <em>Resign</em> at any time.</p>
+          <p><strong>Spectate</strong> — click any colored dot in the Players panel to watch a live game in progress.</p>
+        </div>
+      </div>
+      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-800 text-slate-400 dark:text-gray-500">
+        <p>Coded with ♥ by <span className="text-slate-500 dark:text-gray-400">iNo_</span> & <span className="text-violet-500 dark:text-violet-400">Claude</span> — Original game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span> & <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
+      </div>
+      <InviteTicker />
+    </div>
+  );
+
+  if (mobile) return content;
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <div className="text-xs font-bold px-2 py-1 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
         How to play
       </div>
-      <div className="flex-1 overflow-y-auto px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
-        <div className="flex gap-3 items-start">
-          <div className="flex-none mt-1"><img src={boardPreview} alt="Board preview" className="w-20 h-20 object-contain rounded" /></div>
-          <div className="space-y-1.5">
-            <p><strong>Goal</strong> — be the first to own all 4 sides of any unit square. Pieces sit on the <em>line segments</em> of a 6×6 grid, not on the dots.</p>
-            <p><strong>Placement</strong> — alternate placing one of your 7 pieces on any free segment.</p>
-            <p><strong>Movement</strong> — once all 14 pieces are on the board, each turn slide one piece to an adjacent free segment (along the line, or pivot at a dot onto a perpendicular line).</p>
-            <p><strong>Winning</strong> — the moment all 4 sides of a square are yours, you win instantly.</p>
-            <p><strong>Clock</strong> — each move adds +3 s. Run out of time and you lose. You can also <em>Resign</em> at any time.</p>
-            <p><strong>Spectate</strong> — click any colored dot in the Players panel to watch a live game in progress.</p>
-          </div>
-        </div>
-        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-800 text-slate-400 dark:text-gray-500">
-          <p>Coded with ♥ by <span className="text-slate-500 dark:text-gray-400">iNo_</span> & <span className="text-violet-500 dark:text-violet-400">Claude</span> — Original game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span> & <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
-        </div>
-        <InviteTicker />
-      </div>
+      {content}
     </div>
   );
 }
@@ -127,43 +133,48 @@ export default function LobbyPage() {
   const handleSpectate = (gameId: string) => navigate(`/game/${gameId}`);
 
   const btn = `px-3 py-0.5 rounded text-xs font-bold transition`;
+  const allProposals = proposals; // flat list for mobile
+
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   return (
     <div className={`${isDark ? 'dark' : ''} min-h-screen`}>
     <div className="min-h-screen bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
 
-      {/* Top bar — compact */}
-      <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
+      {/* ── Shared top bar ───────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-none">
         <FurukooLogo />
-
         <div className="flex gap-2 ml-auto items-center">
+          {/* Profile button — hidden on mobile (shown in mobile action bar) */}
           <button
             onClick={() => navigate(`/profile/${user?.username}`)}
-            className="px-2 py-0.5 rounded text-xs font-mono bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition border border-slate-200 dark:border-gray-700"
+            className="hidden md:inline-flex px-2 py-0.5 rounded text-xs font-mono bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition border border-slate-200 dark:border-gray-700"
           >
             {user?.username} <span className="text-violet-500 font-bold">({user?.elo})</span>
           </button>
-          {myGameId
-            ? <button onClick={handleRejoin} className={`${btn} bg-emerald-600 text-white hover:bg-emerald-700`}>Rejoin</button>
-            : hasProposal
-              ? <button onClick={handleRemove} className={`${btn} bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200`}>Remove</button>
-              : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
-          }
-          <button onClick={logout} className={`${btn} bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300`}>Logout</button>
+          {/* Desktop action buttons */}
+          <div className="hidden md:flex gap-2 items-center">
+            {myGameId
+              ? <button onClick={handleRejoin} className={`${btn} bg-emerald-600 text-white hover:bg-emerald-700`}>Rejoin</button>
+              : hasProposal
+                ? <button onClick={handleRemove} className={`${btn} bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200`}>Remove</button>
+                : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
+            }
+            <button onClick={logout} className={`${btn} bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300`}>Logout</button>
+          </div>
           <DarkToggle isDark={isDark} onToggle={toggleDark} />
         </div>
       </div>
 
       <ConnectionBanner />
 
-      {/* Main content — horizontal split: 66% left / 34% right */}
-      <div className="flex-1 min-h-0 p-2">
+      {/* ── Desktop layout (md+) ─────────────────────────────────────────── */}
+      <div className="hidden md:flex flex-1 min-h-0 p-2">
         <ResizableSplit
           direction="horizontal"
           initialFirstPct={66}
           first={
             <div className="h-full flex flex-col min-h-0">
-              {/* Vertical split: rules (top) / proposals table (bottom) */}
               <ResizableSplit
                 direction="vertical"
                 initialFirstPct={38}
@@ -212,7 +223,6 @@ export default function LobbyPage() {
           }
           second={
             <div className="h-full flex flex-col min-h-0">
-              {/* Vertical split: players (top) / chat (bottom) */}
               <ResizableSplit
                 direction="vertical"
                 initialFirstPct={45}
@@ -222,6 +232,90 @@ export default function LobbyPage() {
             </div>
           }
         />
+      </div>
+
+      {/* ── Mobile layout (<md) ──────────────────────────────────────────── */}
+      <div className="flex md:hidden flex-col flex-1 overflow-y-auto">
+
+        {/* Action bar */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
+          <button
+            onClick={() => navigate(`/profile/${user?.username}`)}
+            className="flex-1 min-w-0 text-left px-3 py-2 rounded-lg text-sm font-mono bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-700"
+          >
+            <span className="font-bold">{user?.username}</span>
+            <span className="text-violet-500 font-bold ml-1">({user?.elo})</span>
+          </button>
+          {myGameId
+            ? <button onClick={handleRejoin}  className="px-5 py-2 rounded-lg text-sm font-bold bg-emerald-600 text-white active:bg-emerald-700">Rejoin</button>
+            : hasProposal
+              ? <button onClick={handleRemove} className="px-5 py-2 rounded-lg text-sm font-bold bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-200 active:bg-slate-300">Remove</button>
+              : <button onClick={handlePlay}   className="px-5 py-2 rounded-lg text-sm font-bold bg-violet-600 text-white active:bg-violet-700 shadow-sm">Play</button>
+          }
+          <button onClick={logout} className="px-3 py-2 rounded-lg text-sm font-bold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 active:bg-red-100">Out</button>
+        </div>
+
+        {/* Waiting section */}
+        <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <div className="px-4 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Waiting</span>
+            {allProposals.length > 0 && (
+              <span className="text-xs font-mono font-bold text-violet-600 dark:text-violet-400">{allProposals.length} open</span>
+            )}
+          </div>
+          <div className="px-4 py-3">
+            {allProposals.length === 0 ? (
+              <p className="text-sm font-mono text-slate-400 dark:text-gray-500 text-center py-2">
+                No proposals yet — tap <strong>Play</strong> to be first!
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {allProposals.map(p => (
+                  <button
+                    key={p.username}
+                    onClick={() => p.username !== user?.username && handleAccept(p.username)}
+                    disabled={p.username === user?.username}
+                    className={`px-4 py-2 rounded-xl text-sm font-bold border transition
+                      ${p.username === user?.username
+                        ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700'
+                        : 'bg-green-50 text-green-800 border-green-200 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
+                      }`}
+                  >
+                    {p.username}
+                    <span className="ml-1 opacity-70 text-xs">{p.elo}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Chat */}
+        <div className="mx-3 mt-3 flex flex-col bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 300 }}>
+          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" />
+        </div>
+
+        {/* Players */}
+        <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 220 }}>
+          <PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} />
+        </div>
+
+        {/* Rules — collapsible */}
+        <div className="mx-3 mt-3 mb-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <button
+            onClick={() => setRulesOpen(o => !o)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-slate-600 dark:text-gray-300 bg-slate-50 dark:bg-gray-800"
+          >
+            <span>How to play</span>
+            <span className="text-slate-400 dark:text-gray-500 text-xs">{rulesOpen ? '▲' : '▼'}</span>
+          </button>
+          {rulesOpen && (
+            <div className="px-4 py-3">
+              <RulesBox mobile />
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
     </div>
