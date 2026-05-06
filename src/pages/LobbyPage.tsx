@@ -115,10 +115,8 @@ function RulesBox() {
             <p><strong>Spectate</strong> — click any colored dot in the Players panel to watch a live game in progress.</p>
           </div>
         </div>
-        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-800 space-y-0.5 text-slate-400 dark:text-gray-500">
-          <p>Original board game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span></p>
-          <p>Original web game by <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
-          <p>Coded with ♥ by <span className="text-violet-500 dark:text-violet-400">Claude Code</span> for <span className="text-slate-500 dark:text-gray-400">iNo_</span></p>
+        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-800 text-slate-400 dark:text-gray-500">
+          <p>Coded with ♥ by <span className="text-slate-500 dark:text-gray-400">iNo_</span> & <span className="text-violet-500 dark:text-violet-400">Claude</span> — Original game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span> & <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
         </div>
         <InviteTicker />
       </div>
