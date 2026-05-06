@@ -55,6 +55,12 @@ const GameSchema = new mongoose.Schema({
   redTimeMs:     Number,
   blackTimeMs:   Number,
   lastMoveAt:    { type: Number, default: Date.now },
+  startedAt:     { type: Number },
+  redEloAfter:   { type: Number },
+  blackEloAfter: { type: Number },
+  redEloDelta:   { type: Number },
+  blackEloDelta: { type: Number },
+  durationMs:    { type: Number },
   status:        { type: String, enum: ['active', 'ended'], default: 'active' },
 }, { timestamps: true });
 
@@ -70,6 +76,15 @@ const ChatSchema = new mongoose.Schema({
 }, { timestamps: true });
 const Chat = mongoose.model('Chat', ChatSchema);
 
+const EloHistorySchema = new mongoose.Schema({
+  userId:   { type: String, required: true },
+  username: { type: String, required: true },
+  elo:      { type: Number, required: true },
+  date:     { type: String, required: true }, // YYYY-MM-DD
+}, { timestamps: true });
+EloHistorySchema.index({ userId: 1, date: 1 }, { unique: true });
+const EloHistory = mongoose.model('EloHistory', EloHistorySchema);
+
 // Fire-and-forget: persist game state after every move or status change
 function saveGame(game) {
   Game.findOneAndUpdate(
@@ -83,6 +98,7 @@ function saveGame(game) {
       winner: game.winner || null, resignedBy: game.resignedBy || null,
       redTimeMs: game.redTimeMs, blackTimeMs: game.blackTimeMs,
       lastMoveAt: game.lastMoveAt,
+      startedAt: game.startedAt || null,
       status: game.winner ? 'ended' : 'active',
     },
     { upsert: true }
@@ -139,6 +155,161 @@ app.post('/api/login', async (req, res) => {
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// ── Profile & Leaderboard REST ───────────────────────────────────────────────
+
+function gamePlayerMeta(g, username) {
+  const isRed  = g.red.username === username;
+  const color  = isRed ? 'red' : 'black';
+  const oColor = isRed ? 'black' : 'red';
+  return {
+    gameId:        g.gameId,
+    opponent:      g[oColor].username,
+    result:        g.winner === color ? 'win' : 'loss',
+    eloDelta:      isRed ? g.redEloDelta   : g.blackEloDelta,
+    eloAfter:      isRed ? g.redEloAfter   : g.blackEloAfter,
+    myMoves:       (g.moves || []).filter(m => m.player === color).length,
+    opponentMoves: (g.moves || []).filter(m => m.player === oColor).length,
+    moveCount:     (g.moves || []).length,
+    durationMs:    g.durationMs ?? null,
+    date:          g.createdAt,
+  };
+}
+
+app.get('/api/profile/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username }).select('username elo createdAt guest').lean();
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const [gamesCount, minutesAgg] = await Promise.all([
+      Game.countDocuments({
+        $or: [{ 'red.username': username }, { 'black.username': username }],
+        status: 'ended',
+      }),
+      Game.aggregate([
+        { $match: {
+          $or: [{ 'red.username': username }, { 'black.username': username }],
+          status: 'ended', durationMs: { $exists: true, $ne: null },
+        }},
+        { $group: { _id: null, totalMs: { $sum: '$durationMs' } } },
+      ]),
+    ]);
+
+    res.json({
+      username: user.username,
+      elo: user.elo,
+      gamesPlayed: gamesCount,
+      minutesPlayed: Math.round((minutesAgg[0]?.totalMs || 0) / 60000),
+      joinDate: user.createdAt,
+      isGuest: user.guest || false,
+    });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    const { username } = req.query;
+
+    const users = await User.find({ guest: { $ne: true } })
+      .sort({ elo: -1 }).select('username elo').lean();
+
+    const gameCounts = await Game.aggregate([
+      { $match: { status: 'ended' } },
+      { $project: { usernames: ['$red.username', '$black.username'] } },
+      { $unwind: '$usernames' },
+      { $group: { _id: '$usernames', count: { $sum: 1 } } },
+    ]);
+    const countMap = Object.fromEntries(gameCounts.map(g => [g._id, g.count]));
+
+    const ranked = users.map((u, i) => ({
+      rank: i + 1, username: u.username, elo: u.elo,
+      gamesPlayed: countMap[u.username] || 0,
+    }));
+
+    const userIdx  = username ? ranked.findIndex(r => r.username === username) : -1;
+    const userRank = userIdx + 1;
+
+    let rows, separatorAfter;
+    if (!username || userRank === 0 || userRank <= 8) {
+      rows = ranked.slice(0, 10);
+      separatorAfter = null;
+    } else {
+      const contextStart = Math.max(5, userIdx - 2);
+      const contextEnd   = Math.min(ranked.length, userIdx + 3);
+      rows = [...ranked.slice(0, 5), ...ranked.slice(contextStart, contextEnd)];
+      separatorAfter = 5;
+    }
+
+    res.json({ rows, separatorAfter, userRank });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.get('/api/profile/:username/elo-history', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const user = await User.findOne({ username }).select('_id createdAt').lean();
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const since     = user.createdAt > oneYearAgo ? user.createdAt : oneYearAgo;
+    const sinceDate = since.toISOString().slice(0, 10);
+
+    const history = await EloHistory.find({
+      userId: user._id.toString(), date: { $gte: sinceDate },
+    }).sort({ date: 1 }).select('date elo -_id').lean();
+
+    res.json(history);
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.get('/api/profile/:username/records', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const fields = 'gameId red black moves winner durationMs redEloAfter blackEloAfter redEloDelta blackEloDelta createdAt';
+    const games = await Game.find({
+      $or: [{ 'red.username': username }, { 'black.username': username }],
+      status: 'ended',
+    }).select(fields).lean();
+
+    if (!games.length) return res.json({ leastMoves: null, mostMoves: null, shortestGame: null, longestGame: null });
+
+    const metas   = games.map(g => gamePlayerMeta(g, username));
+    const byMoves = [...metas].sort((a, b) => a.moveCount - b.moveCount);
+    const timed   = metas.filter(g => g.durationMs != null).sort((a, b) => a.durationMs - b.durationMs);
+
+    res.json({
+      leastMoves:   byMoves[0]                     ?? null,
+      mostMoves:    byMoves[byMoves.length - 1]    ?? null,
+      shortestGame: timed[0]                        ?? null,
+      longestGame:  timed[timed.length - 1]         ?? null,
+    });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.get('/api/profile/:username/games', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const page  = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = 10;
+    const query = {
+      $or: [{ 'red.username': username }, { 'black.username': username }],
+      status: 'ended',
+    };
+    const fields = 'gameId red black moves winner durationMs redEloAfter blackEloAfter redEloDelta blackEloDelta createdAt';
+
+    const [total, games] = await Promise.all([
+      Game.countDocuments(query),
+      Game.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).select(fields).lean(),
+    ]);
+
+    res.json({
+      games: games.map(g => gamePlayerMeta(g, username)),
+      total, page, totalPages: Math.ceil(total / limit),
+    });
+  } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
 // ── In-memory state ──────────────────────────────────────────────────────────
@@ -207,6 +378,7 @@ async function loadActiveGames() {
       winner: g.winner || null, resignedBy: g.resignedBy || null,
       redTimeMs: g.redTimeMs, blackTimeMs: g.blackTimeMs,
       lastMoveAt: Date.now(), // reset so downtime doesn't eat the clock
+      startedAt: g.startedAt || Date.now(),
       disconnectedColor: null, disconnectedAt: null,
     });
   }
@@ -325,6 +497,7 @@ io.on('connection', async (socket) => {
       moves: [], winner: null, resignedBy: null,
       redTimeMs: INITIAL_TIME_MS, blackTimeMs: INITIAL_TIME_MS,
       lastMoveAt: Date.now(),
+      startedAt: Date.now(),
       disconnectedColor: null, disconnectedAt: null,
     };
 
@@ -614,10 +787,31 @@ async function endGame(gameId, winner, reason) {
   const newRedElo   = Math.max(100, game.red.elo   + redDelta);
   const newBlackElo = Math.max(100, game.black.elo + blackDelta);
 
+  const durationMs = game.startedAt ? Date.now() - game.startedAt : null;
+  const today = new Date().toISOString().slice(0, 10);
+
   await Promise.all([
     User.findByIdAndUpdate(game.red.userId,   { elo: newRedElo }),
     User.findByIdAndUpdate(game.black.userId, { elo: newBlackElo }),
+    EloHistory.updateOne(
+      { userId: game.red.userId,   date: today },
+      { $max: { elo: newRedElo },   $set: { username: game.red.username } },
+      { upsert: true }
+    ),
+    EloHistory.updateOne(
+      { userId: game.black.userId, date: today },
+      { $max: { elo: newBlackElo }, $set: { username: game.black.username } },
+      { upsert: true }
+    ),
   ]).catch(console.error);
+
+  // Update game record with final ELO data
+  Game.findOneAndUpdate({ gameId }, { $set: {
+    status: 'ended', winner,
+    redEloAfter: newRedElo, blackEloAfter: newBlackElo,
+    redEloDelta: redDelta,  blackEloDelta: blackDelta,
+    durationMs,
+  }}).catch(console.error);
 
   // Update ELO and mark everyone still in the room as spectating
   // (keeps their gameId set so the lobby shows the faded circle until they leave)
@@ -637,7 +831,6 @@ async function endGame(gameId, winner, reason) {
   sysChat(`${winnerName} wins${reasonMsg}!`, gameId);
   sysChat(`${winnerName} won a game${reasonMsg}`, 'lobby');
 
-  Game.findOneAndUpdate({ gameId }, { $set: { status: 'ended', winner } }).catch(console.error);
   activeGames.delete(gameId);
   broadcastLobby();
 }
