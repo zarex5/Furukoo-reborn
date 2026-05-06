@@ -208,11 +208,12 @@ export default function GamePage() {
     <div className={`${isDark ? 'dark' : ''} min-h-screen`}>
     <div className="min-h-screen bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
 
-      {/* Top bar — compact */}
-      <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
+      {/* Top bar */}
+      <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-none">
         <FurukooLogo />
         <div className="flex gap-2 ml-auto items-center">
-          <span className="text-xs font-mono text-slate-400 dark:text-gray-500">
+          {/* Context label — hidden on very small screens */}
+          <span className="hidden sm:inline text-xs font-mono text-slate-400 dark:text-gray-500">
             {!isSpectating ? <>
               Playing against{' '}
               <button onClick={() => navigate(`/profile/${myColor === 'red' ? blackName : redName}`)} className="hover:text-violet-500 transition underline underline-offset-2">
@@ -223,12 +224,10 @@ export default function GamePage() {
               : `Spectating ${redName} vs ${blackName}`}
           </span>
           {isSpectating || gameOver
-            ? <button onClick={handleBack}
-                className="px-3 py-0.5 rounded text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 transition">
-                Back to Lobby
+            ? <button onClick={handleBack} className="px-3 py-1.5 rounded text-xs font-bold bg-violet-600 text-white active:bg-violet-700 transition">
+                Back
               </button>
-            : <button onClick={handleResign}
-                className="px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
+            : <button onClick={handleResign} className="px-3 py-1.5 rounded text-xs font-bold bg-red-100 text-red-700 active:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
                 Resign
               </button>
           }
@@ -238,9 +237,9 @@ export default function GamePage() {
 
       <ConnectionBanner />
 
-      {/* Game over banner */}
+      {/* ── Banners (shared) ────────────────────────────────────────────── */}
       {gameOver && (
-        <div className="mx-4 mt-2 px-4 py-1.5 rounded-lg bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 text-xs font-mono text-center">
+        <div className="mx-3 mt-2 px-4 py-1.5 rounded-lg bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 text-xs font-mono text-center">
           <span className="font-bold text-green-800 dark:text-green-300">{gameOver.winnerName} wins</span>
           {gameOver.reason === 'resign'     && ' (by resignation)'}
           {gameOver.reason === 'timeout'    && ' (on time)'}
@@ -251,10 +250,8 @@ export default function GamePage() {
           {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
         </div>
       )}
-
-      {/* Disconnect countdown banner */}
       {!gameOver && displayedState?.disconnectedColor && displayedState.disconnectedAt && (
-        <div className="mx-4 mt-2 px-4 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-xs font-mono text-center animate-pulse">
+        <div className="mx-3 mt-2 px-4 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-xs font-mono text-center animate-pulse">
           <span className="font-bold text-amber-800 dark:text-amber-300">
             {displayedState.disconnectedColor === 'red' ? redName : blackName}
           </span>
@@ -266,8 +263,8 @@ export default function GamePage() {
         </div>
       )}
 
-      {/* Main content — 66% board area / 34% right panel */}
-      <div className="flex-1 min-h-0 p-2">
+      {/* ── Desktop layout (md+) ─────────────────────────────────────────── */}
+      <div className="hidden md:flex flex-1 min-h-0 p-2">
         <ResizableSplit
           direction="horizontal"
           initialFirstPct={66}
@@ -292,20 +289,12 @@ export default function GamePage() {
                 timeMs={(viewedState ?? displayedState).blackTimeMs}
                 lastMove={lastBlackMove} moveIndex={blackMoveIdx}
                 isWinner={gameOver?.winner === 'black'} />
-              {/* History nav — centered */}
               <div className="flex items-center justify-center gap-1">
                 <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">⏮</button>
                 <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0} title="Previous move">◀</button>
                 <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">▶</button>
-                <button
-                  className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`}
-                  onClick={navLast} disabled={isAtLatest} title="Latest move"
-                >⏭</button>
-                {!isAtLatest && (
-                  <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">
-                    {curIdx + 1}/{histLen}
-                  </span>
-                )}
+                <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest} title="Latest move">⏭</button>
+                {!isAtLatest && <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">{curIdx + 1}/{histLen}</span>}
               </div>
             </div>
           }
@@ -320,6 +309,62 @@ export default function GamePage() {
             </div>
           }
         />
+      </div>
+
+      {/* ── Mobile layout (<md) ──────────────────────────────────────────── */}
+      <div className="flex md:hidden flex-col flex-1 overflow-y-auto">
+
+        {/* Red player — compact */}
+        <div className="mx-3 mt-2">
+          <PlayerPanel player="red" name={redName} compact
+            isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
+            timeMs={(viewedState ?? displayedState).redTimeMs}
+            lastMove={lastRedMove} moveIndex={redMoveIdx}
+            isWinner={gameOver?.winner === 'red'} />
+        </div>
+
+        {/* Board — fills width */}
+        <div className="px-3 mt-2">
+          <Board
+            pieces={(viewedState ?? displayedState).pieces}
+            currentPlayer={gameState.currentPlayer}
+            selectedSlot={selectedSlot}
+            onSlotClick={handleSlotClick}
+            disabled={boardDisabled}
+            phase={gameState.phase}
+            isDark={isDark}
+            responsive
+          />
+        </div>
+
+        {/* Black player — compact */}
+        <div className="mx-3 mt-2">
+          <PlayerPanel player="black" name={blackName} compact
+            isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
+            timeMs={(viewedState ?? displayedState).blackTimeMs}
+            lastMove={lastBlackMove} moveIndex={blackMoveIdx}
+            isWinner={gameOver?.winner === 'black'} />
+        </div>
+
+        {/* History nav */}
+        <div className="flex items-center justify-center gap-2 mt-3">
+          <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>⏮</button>
+          <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>◀</button>
+          <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>▶</button>
+          <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>⏭</button>
+          {!isAtLatest && <span className="text-xs font-mono text-slate-400 dark:text-gray-500">{curIdx + 1}/{histLen}</span>}
+        </div>
+
+        {/* Chat */}
+        <div className="mx-3 mt-3 flex flex-col bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 280 }}>
+          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin={gameId ?? ''} />
+        </div>
+
+        {/* Players */}
+        <div className="mx-3 mt-3 mb-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 200 }}>
+          <PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} />
+        </div>
+
       </div>
     </div>
     </div>
