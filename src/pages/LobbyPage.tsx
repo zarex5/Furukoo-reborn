@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import boardPreview from '../assets/board-preview.png';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getSocket } from '../lib/socket';
@@ -14,54 +15,6 @@ interface Proposal { username: string; elo: number; eloRange: string; }
 
 const ELO_RANGES = ['2400-3000','2200-2399','2000-2199','1800-1999','1600-1799','1400-1599','1200-1399','1000-1199'];
 
-/** Scaled-down replica of the real game board (6 V-lines × 6 H-lines, 7 slots each) */
-function MiniBoardPreview() {
-  const D = 6;          // px per grid cell (13×13 grid → 78×78 px internal)
-  const G = 12 * D;     // 72 px — board spans visual rows/cols 0..12*D
-  const PAD = 6;        // padding so edge pieces aren't clipped
-  const LONG = 10;      // piece rectangle long side
-  const SHORT = 3;      // piece rectangle short side
-
-  // V line k is at x = (2k-1)*D;  V slot s on line k is at y = 2*(s-1)*D
-  // H line j is at y = (2j-1)*D;  H slot k on line j is at x = 2*(k-1)*D
-  const vX  = (k: number) => (2 * k - 1) * D;
-  const hY  = (j: number) => (2 * j - 1) * D;
-  const vsY = (s: number) => 2 * (s - 1) * D;
-  const hsX = (k: number) => 2 * (k - 1) * D;
-
-  const vp = (k: number, s: number, col: string, key: string) => (
-    <rect key={key} x={vX(k) - SHORT / 2} y={vsY(s) - LONG / 2} width={SHORT} height={LONG} rx={1} fill={col} />
-  );
-  const hp = (j: number, k: number, col: string, key: string) => (
-    <rect key={key} x={hsX(k) - LONG / 2} y={hY(j) - SHORT / 2} width={LONG} height={SHORT} rx={1} fill={col} />
-  );
-
-  const RED = '#ef4444'; const BLK = '#475569';
-  const size = G + 2 * PAD;
-
-  return (
-    <svg viewBox={`${-PAD} ${-PAD} ${size} ${size}`} width={size} height={size}>
-      {/* V lines */}
-      {[1,2,3,4,5,6].map(k => <line key={`vl${k}`} x1={vX(k)} y1={0} x2={vX(k)} y2={G} stroke="#cbd5e1" strokeWidth={0.5} />)}
-      {/* H lines */}
-      {[1,2,3,4,5,6].map(j => <line key={`hl${j}`} x1={0} y1={hY(j)} x2={G} y2={hY(j)} stroke="#cbd5e1" strokeWidth={0.5} />)}
-      {/* Completed square highlight at (j=1,k=1) */}
-      <rect x={vX(1)} y={hY(1)} width={vX(2) - vX(1)} height={hY(2) - hY(1)} fill="rgba(239,68,68,0.18)" />
-      {/* Intersection dots */}
-      {[1,2,3,4,5,6].flatMap(j => [1,2,3,4,5,6].map(k =>
-        <circle key={`d${j}${k}`} cx={vX(k)} cy={hY(j)} r={1.5} fill="#64748b" />
-      ))}
-      {/* Red pieces completing the square (top/bottom H slots + left/right V slots) */}
-      {hp(1, 2, RED, 'r1')}  {hp(2, 2, RED, 'r2')}
-      {vp(1, 2, RED, 'r3')}  {vp(2, 2, RED, 'r4')}
-      {/* Black pieces scattered around the board */}
-      {vp(4, 4, BLK, 'b1')}  {hp(3, 5, BLK, 'b2')}
-      {vp(6, 5, BLK, 'b3')}  {hp(5, 3, BLK, 'b4')}
-      {hp(4, 7, BLK, 'b5')}  {vp(3, 6, BLK, 'b6')}
-      {hp(6, 4, BLK, 'b7')}
-    </svg>
-  );
-}
 
 const INVITE_MSGS = [
   'Invite your friends',      // English ×3
@@ -105,7 +58,7 @@ function RulesBox() {
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
         <div className="flex gap-3 items-start">
-          <div className="flex-none mt-1"><MiniBoardPreview /></div>
+          <div className="flex-none mt-1"><img src={boardPreview} alt="Board preview" className="w-20 h-20 object-contain rounded" /></div>
           <div className="space-y-1.5">
             <p><strong>Goal</strong> — be the first to own all 4 sides of any unit square. Pieces sit on the <em>line segments</em> of a 6×6 grid, not on the dots.</p>
             <p><strong>Placement</strong> — alternate placing one of your 7 pieces on any free segment.</p>
