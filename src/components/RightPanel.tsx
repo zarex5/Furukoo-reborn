@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Tip } from './Tip';
 
 export interface OnlineUser {
   username: string;
@@ -59,17 +60,17 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate }: Playe
             <span className="w-12 text-center tabular-nums">{u.elo}</span>
             <span className="w-8 flex justify-center">
               {u.gameId && u.gameColor ? (
-                <span
-                  className="inline-block w-3 h-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-400 dark:hover:ring-slate-500 transition-shadow"
-                  style={{ background: u.gameColor, opacity: u.spectating ? 0.5 : 1 }}
-                  title={u.reviewing ? `Reviewing ${u.gameId}` : u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId}`}
-                  onClick={() => onSpectate?.(u.gameId!)}
-                />
+                <Tip content={u.reviewing ? `Reviewing ${u.gameId}` : u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId} — click to spectate`}>
+                  <span
+                    className="inline-block w-3 h-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-400 dark:hover:ring-slate-500 transition-shadow"
+                    style={{ background: u.gameColor, opacity: u.spectating ? 0.5 : 1 }}
+                    onClick={() => onSpectate?.(u.gameId!)}
+                  />
+                </Tip>
               ) : (
-                <span
-                  className="inline-block w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-600"
-                  title="Lobby"
-                />
+                <Tip content="In lobby">
+                  <span className="inline-block w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-600" />
+                </Tip>
               )}
             </span>
           </div>

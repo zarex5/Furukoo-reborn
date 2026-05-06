@@ -112,7 +112,13 @@ function RulesBox() {
             <p><strong>Movement</strong> — once all 14 pieces are on the board, each turn slide one piece to an adjacent free segment (along the line, or pivot at a dot onto a perpendicular line).</p>
             <p><strong>Winning</strong> — the moment all 4 sides of a square are yours, you win instantly.</p>
             <p><strong>Clock</strong> — each move adds +3 s. Run out of time and you lose. You can also <em>Resign</em> at any time.</p>
+            <p><strong>Spectate</strong> — click any colored dot in the Players panel to watch a live game in progress.</p>
           </div>
+        </div>
+        <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-800 space-y-0.5 text-slate-400 dark:text-gray-500">
+          <p>Original board game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span></p>
+          <p>Original web game by <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
+          <p>Coded with ♥ by <span className="text-violet-500 dark:text-violet-400">Claude Code</span> for <span className="text-slate-500 dark:text-gray-400">iNo_</span></p>
         </div>
         <InviteTicker />
       </div>
