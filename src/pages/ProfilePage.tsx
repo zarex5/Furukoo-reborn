@@ -218,7 +218,7 @@ function GamesTable({ data, page, setPage }: { data: GamesPage; page: number; se
               <th className="text-left px-3 py-2 text-slate-500 dark:text-gray-400 font-bold">Opponent</th>
               <th className="text-center px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-16">Result</th>
               <th className="text-right px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-16">ELO ±</th>
-              <th className="text-right px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-16">After</th>
+              <th className="text-right px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-16 hidden sm:table-cell">After</th>
               <th className="text-right px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-20 hidden sm:table-cell">Moves</th>
               <th className="text-right px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-20 hidden sm:table-cell">Duration</th>
               <th className="text-right px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-28">Date</th>
@@ -242,7 +242,7 @@ function GamesTable({ data, page, setPage }: { data: GamesPage; page: number; se
                   g.eloDelta == null ? 'text-slate-400 dark:text-gray-600' :
                   g.eloDelta >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'
                 }`}>{fmtDelta(g.eloDelta)}</td>
-                <td className="px-3 py-1.5 text-right tabular-nums text-slate-600 dark:text-gray-300">
+                <td className="px-3 py-1.5 text-right tabular-nums text-slate-600 dark:text-gray-300 hidden sm:table-cell">
                   {g.eloAfter ?? '—'}
                 </td>
                 <td className="px-3 py-1.5 text-right tabular-nums text-slate-500 dark:text-gray-400 hidden sm:table-cell">
@@ -357,7 +357,7 @@ export default function ProfilePage() {
 
         {/* ── Stats ───────────────────────────────────────── */}
         <Section title="Stats">
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 md:flex gap-3">
             {profile ? <>
               <StatBox icon="⚡" value={profile.elo} label="Current ELO" />
               <StatBox icon="🎮" value={profile.gamesPlayed} label="Games played" />
@@ -385,7 +385,7 @@ export default function ProfilePage() {
 
         {/* ── Records ─────────────────────────────────────── */}
         <Section title="Records">
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 md:flex gap-3">
             {records ? <>
               <GameRecordBox icon="🐣" label="Least moves"   game={records.leastMoves}   navigate={navigate} />
               <GameRecordBox icon="🏟️" label="Most moves"    game={records.mostMoves}    navigate={navigate} />
