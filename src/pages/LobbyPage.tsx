@@ -137,9 +137,12 @@ export default function LobbyPage() {
         <FurukooLogo />
 
         <div className="flex gap-2 ml-auto items-center">
-          <span className="text-xs font-mono text-slate-500 dark:text-gray-400">
+          <button
+            onClick={() => navigate(`/profile/${user?.username}`)}
+            className="text-xs font-mono text-slate-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition"
+          >
             {user?.username} <span className="text-violet-500 font-bold">({user?.elo})</span>
-          </span>
+          </button>
           {myGameId
             ? <button onClick={handleRejoin} className={`${btn} bg-emerald-600 text-white hover:bg-emerald-700`}>Rejoin</button>
             : hasProposal

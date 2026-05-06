@@ -24,12 +24,12 @@ export const chatStore = {
   get() { return _messages; },
   subscribe(fn: (m: ChatMsg[]) => void) {
     _listeners.add(fn);
-    return () => _listeners.delete(fn);
+    return () => { _listeners.delete(fn); };
   },
 };
 
 export function useChatMessages() {
   const [msgs, setMsgs] = useState(() => chatStore.get());
-  useEffect(() => chatStore.subscribe(setMsgs), []);
+  useEffect(() => { return chatStore.subscribe(setMsgs); }, []);
   return msgs;
 }

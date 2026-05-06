@@ -213,11 +213,14 @@ export default function GamePage() {
         <FurukooLogo />
         <div className="flex gap-2 ml-auto items-center">
           <span className="text-xs font-mono text-slate-400 dark:text-gray-500">
-            {!isSpectating
-              ? `Playing against ${myColor === 'red' ? blackName : redName}`
-              : gameState?.winner || gameOver
-                ? `Reviewing ${redName} vs ${blackName}`
-                : `Spectating ${redName} vs ${blackName}`}
+            {!isSpectating ? <>
+              Playing against{' '}
+              <button onClick={() => navigate(`/profile/${myColor === 'red' ? blackName : redName}`)} className="hover:text-violet-500 transition underline underline-offset-2">
+                {myColor === 'red' ? blackName : redName}
+              </button>
+            </> : gameState?.winner || gameOver
+              ? `Reviewing ${redName} vs ${blackName}`
+              : `Spectating ${redName} vs ${blackName}`}
           </span>
           {isSpectating || gameOver
             ? <button onClick={handleBack}
