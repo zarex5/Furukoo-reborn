@@ -139,7 +139,7 @@ export default function LobbyPage() {
         <div className="flex gap-2 ml-auto items-center">
           <button
             onClick={() => navigate(`/profile/${user?.username}`)}
-            className="text-xs font-mono text-slate-500 dark:text-gray-400 hover:text-violet-600 dark:hover:text-violet-400 transition"
+            className="px-2 py-0.5 rounded text-xs font-mono bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition border border-slate-200 dark:border-gray-700"
           >
             {user?.username} <span className="text-violet-500 font-bold">({user?.elo})</span>
           </button>

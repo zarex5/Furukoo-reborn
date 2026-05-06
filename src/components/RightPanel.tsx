@@ -112,17 +112,23 @@ export function ChatBox({ messages, onSend, myUsername, origin }: ChatBoxProps) 
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex-none">
+      <div className="flex items-center gap-2 px-2 py-1.5 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex-none">
         <span className="text-xs font-bold text-slate-500 dark:text-gray-400 flex-1">Chat</span>
+        <span className="text-xs font-mono text-slate-400 dark:text-gray-500 select-none">
+          {origin === 'lobby' ? 'lobby chat only' : 'game chat only'}
+        </span>
         <button
+          role="switch"
+          aria-checked={filtered}
           onClick={() => setFiltered(f => !f)}
-          title={filtered ? 'Show all messages' : 'Show only this room'}
-          className={`text-xs font-mono px-1.5 py-0.5 rounded transition ${
-            filtered
-              ? 'bg-violet-600 text-white'
-              : 'bg-slate-200 dark:bg-gray-700 text-slate-500 dark:text-gray-400 hover:bg-slate-300 dark:hover:bg-gray-600'
+          className={`relative inline-flex h-4 w-7 flex-none items-center rounded-full transition-colors ${
+            filtered ? 'bg-violet-600' : 'bg-slate-300 dark:bg-gray-600'
           }`}
-        >filter</button>
+        >
+          <span className={`inline-block h-3 w-3 rounded-full bg-white shadow transition-transform ${
+            filtered ? 'translate-x-3.5' : 'translate-x-0.5'
+          }`} />
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5 min-h-0">
         {visible.map(m => (

@@ -222,6 +222,7 @@ function GamesTable({ data, page, setPage }: { data: GamesPage; page: number; se
               <th className="text-right px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-20 hidden sm:table-cell">Moves</th>
               <th className="text-right px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-20 hidden sm:table-cell">Duration</th>
               <th className="text-right px-3 py-2 text-slate-500 dark:text-gray-400 font-bold w-28">Date</th>
+              <th className="text-center px-2 py-2 text-slate-500 dark:text-gray-400 font-bold w-12">Review</th>
             </tr>
           </thead>
           <tbody>
@@ -251,14 +252,24 @@ function GamesTable({ data, page, setPage }: { data: GamesPage; page: number; se
                   {fmtDuration(g.durationMs)}
                 </td>
                 <td className="px-3 py-1.5 text-right text-slate-500 dark:text-gray-400">
-                  <Link to={`/game/${g.gameId}`} className="hover:underline hover:text-violet-600 dark:hover:text-violet-400">
-                    {fmtDate(g.date)}
+                  {fmtDate(g.date)}
+                </td>
+                <td className="px-2 py-1.5 text-center">
+                  <Link
+                    to={`/game/${g.gameId}`}
+                    title="Review game"
+                    className="inline-flex items-center justify-center text-slate-400 dark:text-gray-500 hover:text-violet-600 dark:hover:text-violet-400 transition"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                      <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                      <path fillRule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41ZM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z" clipRule="evenodd" />
+                    </svg>
                   </Link>
                 </td>
               </tr>
             ))}
             {data.games.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-4 text-center text-slate-400 dark:text-gray-500">No games yet</td></tr>
+              <tr><td colSpan={8} className="px-3 py-4 text-center text-slate-400 dark:text-gray-500">No games yet</td></tr>
             )}
           </tbody>
         </table>
@@ -340,14 +351,11 @@ export default function ProfilePage() {
       <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col gap-8">
 
         {/* Title */}
-        <div>
-          <h1 className="text-xl font-bold text-slate-800 dark:text-white">{username}</h1>
-          {profile && <p className="text-xs font-mono text-slate-400 dark:text-gray-500 mt-0.5">Member since {fmtDate(profile.joinDate)}</p>}
-        </div>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-white">{username}</h1>
 
         {error && <p className="text-red-500 text-sm font-mono">{error}</p>}
 
-        {/* ── Me ──────────────────────────────────────────── */}
+        {/* ── Stats ───────────────────────────────────────── */}
         <Section title="Stats">
           <div className="flex gap-3">
             {profile ? <>
@@ -365,22 +373,14 @@ export default function ProfilePage() {
           </div>
         </Section>
 
-        {/* ── Leaderboard ─────────────────────────────────── */}
-        <Section title="Leaderboard">
-          {lb ? <LeaderboardTable data={lb} myUsername={user?.username ?? ''} /> : (
-            <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg p-4 flex flex-col gap-2">
-              {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}
-            </div>
-          )}
-        </Section>
-
-        {/* ── ELO history ─────────────────────────────────── */}
-        <Section title="ELO History">
-          {eloHist ? <EloChart data={eloHist} isDark={isDark} /> : (
-            <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg p-4">
-              <Skeleton className="w-full h-48" />
-            </div>
-          )}
+        {/* ── Games history ────────────────────────────────── */}
+        <Section title="Games History">
+          {gamesPage
+            ? <GamesTable data={gamesPage} page={page} setPage={setPage} />
+            : <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg p-4 flex flex-col gap-2">
+                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}
+              </div>
+          }
         </Section>
 
         {/* ── Records ─────────────────────────────────────── */}
@@ -401,14 +401,22 @@ export default function ProfilePage() {
           </div>
         </Section>
 
-        {/* ── Games history ────────────────────────────────── */}
-        <Section title="Games History">
-          {gamesPage
-            ? <GamesTable data={gamesPage} page={page} setPage={p => { setPage(p); }} />
-            : <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg p-4 flex flex-col gap-2">
-                {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}
-              </div>
-          }
+        {/* ── ELO history ─────────────────────────────────── */}
+        <Section title="ELO History">
+          {eloHist ? <EloChart data={eloHist} isDark={isDark} /> : (
+            <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg p-4">
+              <Skeleton className="w-full h-48" />
+            </div>
+          )}
+        </Section>
+
+        {/* ── Leaderboard ─────────────────────────────────── */}
+        <Section title="Leaderboard">
+          {lb ? <LeaderboardTable data={lb} myUsername={user?.username ?? ''} /> : (
+            <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg p-4 flex flex-col gap-2">
+              {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-6 w-full" />)}
+            </div>
+          )}
         </Section>
 
       </div>
