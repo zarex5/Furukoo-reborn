@@ -23,27 +23,6 @@ for (let i = 0; i < SQUARE_KEYS.length; i++) {
   for (const k of SQUARE_KEYS[i]) SLOT_TO_SQUARES[k].push(i);
 }
 
-// ── Lightweight state transition (no Date.now overhead) ──────────────────────
-
-function simApply(s, to, from) {
-  const pieces = { ...s.pieces };
-  const player = s.currentPlayer;
-  const toKey = slotKey(to);
-  if (from) delete pieces[slotKey(from)];
-  pieces[toKey] = player;
-
-  const redPlaced   = player === 'red'   ? s.redPlaced   + (from ? 0 : 1) : s.redPlaced;
-  const blackPlaced = player === 'black' ? s.blackPlaced + (from ? 0 : 1) : s.blackPlaced;
-  const phase = (redPlaced >= PIECES_PER_PLAYER && blackPlaced >= PIECES_PER_PLAYER) ? 'movement' : 'placement';
-
-  return {
-    pieces,
-    currentPlayer: player === 'red' ? 'black' : 'red',
-    redPlaced, blackPlaced, phase,
-    winner: checkWinner(pieces),
-  };
-}
-
 // ── Evaluation: positive = good for botColor ─────────────────────────────────
 
 function evaluate(pieces, botColor) {
@@ -56,33 +35,94 @@ function evaluate(pieces, botColor) {
       if (p === botColor) bc++;
       else if (p === opp) oc++;
     }
-    if (bc > 0 && oc > 0) continue; // contested
+    if (bc > 0 && oc > 0) continue;
     if (bc === 4) return 1e8;
     if (oc === 4) return -1e8;
     if (bc === 3) score += 600;
     else if (bc === 2) score += 40;
     else if (bc === 1) score += 4;
-    if (oc === 3) score -= 800; // blocking opponent 3-sided is more urgent
+    if (oc === 3) score -= 800;
     else if (oc === 2) score -= 50;
     else if (oc === 1) score -= 5;
   }
   return score;
 }
 
+// Fast score for move ordering: mutate pieces in-place, score, then undo.
+// Only evaluates squares touching the moved slot (and vacated slot) — O(1) squares.
+function fastScore(pieces, to, from, color) {
+  const opp = color === 'red' ? 'black' : 'red';
+  const tk = slotKey(to);
+  const fk = from ? slotKey(from) : null;
+
+  // Apply
+  const prevTo   = pieces[tk];
+  const prevFrom = fk ? pieces[fk] : undefined;
+  if (fk) delete pieces[fk];
+  pieces[tk] = color;
+
+  let score = 0;
+  for (const i of (SLOT_TO_SQUARES[tk] || [])) {
+    const sq = SQUARE_KEYS[i];
+    let bc = 0, oc = 0;
+    for (const k of sq) {
+      const p = pieces[k];
+      if (p === color) bc++;
+      else if (p === opp) oc++;
+    }
+    if (bc === 4) { score = 1e9; break; }
+    if (bc > 0 && oc > 0) continue;
+    if (bc === 3) score += 600;
+    else if (bc === 2) score += 40;
+    else if (bc === 1) score += 4;
+    if (oc === 3) score -= 800;
+    else if (oc === 2) score -= 50;
+  }
+
+  // Check vacated slot squares (we may have exposed opponent progress)
+  if (fk && score < 1e9) {
+    for (const i of (SLOT_TO_SQUARES[fk] || [])) {
+      const sq = SQUARE_KEYS[i];
+      let bc = 0, oc = 0;
+      for (const k of sq) {
+        const p = pieces[k];
+        if (p === color) bc++;
+        else if (p === opp) oc++;
+      }
+      if (bc > 0 && oc > 0) continue;
+      if (oc === 3) score -= 800;
+      else if (oc === 2) score -= 50;
+    }
+  }
+
+  // Undo
+  if (fk) pieces[fk] = prevFrom;
+  if (prevTo === undefined) delete pieces[tk]; else pieces[tk] = prevTo;
+
+  return score;
+}
+
+// Fast winner check: only checks squares touching the destination slot.
+function checkWinnerFast(pieces, toKey, player) {
+  for (const i of (SLOT_TO_SQUARES[toKey] || [])) {
+    const sq = SQUARE_KEYS[i];
+    if (sq.every(k => pieces[k] === player)) return player;
+  }
+  return null;
+}
+
 // ── Move generation ──────────────────────────────────────────────────────────
 
-function getMoves(s, color) {
+function getMoves(pieces, phase, color) {
   const moves = [];
-  if (s.phase === 'placement') {
+  if (phase === 'placement') {
     for (let i = 0; i < ALL_SLOTS.length; i++) {
-      if (!s.pieces[ALL_SLOT_KEYS[i]]) {
-        moves.push({ to: ALL_SLOTS[i], from: null });
-      }
+      if (!pieces[ALL_SLOT_KEYS[i]]) moves.push({ to: ALL_SLOTS[i], from: null });
     }
   } else {
     for (let i = 0; i < ALL_SLOTS.length; i++) {
-      if (s.pieces[ALL_SLOT_KEYS[i]] === color) {
-        for (const dest of legalMoves(ALL_SLOTS[i], s.pieces)) {
+      if (pieces[ALL_SLOT_KEYS[i]] === color) {
+        for (const dest of legalMoves(ALL_SLOTS[i], pieces)) {
           moves.push({ to: dest, from: ALL_SLOTS[i] });
         }
       }
@@ -91,51 +131,56 @@ function getMoves(s, color) {
   return moves;
 }
 
-// Quick score for move ordering — only checks squares touching the moved slot
-function quickScore(pieces, to, from, color) {
-  const opp = color === 'red' ? 'black' : 'red';
-  const np = { ...pieces };
-  if (from) delete np[slotKey(from)];
-  const toKey = slotKey(to);
-  np[toKey] = color;
-
-  // Immediate win?
-  for (const i of SLOT_TO_SQUARES[toKey] || []) {
-    const sq = SQUARE_KEYS[i];
-    if (sq.every(k => np[k] === color)) return 1e9;
-  }
-
-  // Opponent was about to win — how many 4-side threats did we block/create?
-  return evaluate(np, color);
-}
-
-// ── Minimax with alpha-beta pruning ──────────────────────────────────────────
+// ── Minimax with alpha-beta (mutable pieces + undo/redo) ─────────────────────
 
 let _searchDeadline = 0;
 
-function minimax(s, depth, alpha, beta, botColor) {
-  if (s.winner) {
-    return s.winner === botColor ? 1e7 + depth * 10 : -1e7 - depth * 10;
-  }
+function minimax(pieces, redPlaced, blackPlaced, phase, color, depth, alpha, beta, botColor) {
   if (depth === 0 || Date.now() > _searchDeadline) {
-    return evaluate(s.pieces, botColor);
+    return evaluate(pieces, botColor);
   }
 
-  const color = s.currentPlayer;
-  const rawMoves = getMoves(s, color);
-  if (!rawMoves.length) return evaluate(s.pieces, botColor);
+  const moves = getMoves(pieces, phase, color);
+  if (!moves.length) return evaluate(pieces, botColor);
 
-  // Order by quick score (descending)
-  const scored = rawMoves.map(m => ({ m, q: quickScore(s.pieces, m.to, m.from, color) }));
-  scored.sort((a, b) => b.q - a.q);
+  // Order moves by fast score (best first)
+  const opp = color === 'red' ? 'black' : 'red';
+  moves.sort((a, b) => fastScore(pieces, b.to, b.from, color) - fastScore(pieces, a.to, a.from, color));
 
-  const maximizing = color === botColor;
-  let best = maximizing ? -Infinity : Infinity;
+  const max = color === botColor;
+  let best = max ? -Infinity : Infinity;
+  const nextColor = opp;
 
-  for (const { m } of scored) {
-    const next = simApply(s, m.to, m.from);
-    const score = minimax(next, depth - 1, alpha, beta, botColor);
-    if (maximizing) {
+  for (const m of moves) {
+    if (Date.now() > _searchDeadline) break;
+
+    const tk = slotKey(m.to);
+    const fk = m.from ? slotKey(m.from) : null;
+    const prevTo   = pieces[tk];
+    const prevFrom = fk ? pieces[fk] : undefined;
+
+    // Apply
+    if (fk) delete pieces[fk];
+    pieces[tk] = color;
+
+    const nrp = color === 'red'   ? redPlaced   + (m.from ? 0 : 1) : redPlaced;
+    const nbp = color === 'black' ? blackPlaced + (m.from ? 0 : 1) : blackPlaced;
+    const nphase = (nrp >= PIECES_PER_PLAYER && nbp >= PIECES_PER_PLAYER) ? 'movement' : 'placement';
+
+    const winner = checkWinnerFast(pieces, tk, color);
+
+    let score;
+    if (winner) {
+      score = winner === botColor ? 1e7 + depth * 10 : -1e7 - depth * 10;
+    } else {
+      score = minimax(pieces, nrp, nbp, nphase, nextColor, depth - 1, alpha, beta, botColor);
+    }
+
+    // Undo
+    if (fk) pieces[fk] = prevFrom;
+    if (prevTo === undefined) delete pieces[tk]; else pieces[tk] = prevTo;
+
+    if (max) {
       if (score > best) best = score;
       if (score > alpha) alpha = score;
     } else {
@@ -151,57 +196,69 @@ function minimax(s, depth, alpha, beta, botColor) {
 // ── Best move selection with iterative deepening ─────────────────────────────
 
 function chooseBestMove(game, botColor) {
-  const s = {
-    pieces: game.pieces,
-    currentPlayer: game.currentPlayer,
-    redPlaced: game.redPlaced,
-    blackPlaced: game.blackPlaced,
-    phase: game.phase,
-    winner: game.winner,
-  };
+  const { pieces, currentPlayer, redPlaced, blackPlaced, phase } = game;
 
-  const moves = getMoves(s, botColor);
+  const moves = getMoves(pieces, phase, botColor);
   if (!moves.length) return null;
 
-  // Order moves
-  const scored = moves.map(m => ({ m, q: quickScore(s.pieces, m.to, m.from, botColor) }));
-  scored.sort((a, b) => b.q - a.q);
+  // Order by fast score
+  moves.sort((a, b) => fastScore(pieces, b.to, b.from, botColor) - fastScore(pieces, a.to, a.from, botColor));
 
-  // Immediate win? Take it now.
-  if (scored[0].q >= 1e9) return scored[0].m;
+  // Immediate win? Take it.
+  if (fastScore(pieces, moves[0].to, moves[0].from, botColor) >= 1e9) return moves[0];
 
-  const maxDepth = s.phase === 'placement' ? 3 : 5;
-  const timeLimitMs = 4000;
+  const maxDepth  = phase === 'placement' ? 4 : 5;
+  const timeLimitMs = 3500;
   _searchDeadline = Date.now() + timeLimitMs;
 
-  let bestMove = scored[0].m;
-  let bestScore = -Infinity;
+  let bestMove = moves[0];
 
-  // Iterative deepening
+  // Iterative deepening: each completed depth updates bestMove
   for (let depth = 1; depth <= maxDepth; depth++) {
     if (Date.now() > _searchDeadline) break;
 
     let depthBest = -Infinity;
-    let depthBestMove = scored[0].m;
+    let depthBestMove = moves[0];
+    const opp = botColor === 'red' ? 'black' : 'red';
 
-    for (const { m } of scored) {
+    for (const m of moves) {
       if (Date.now() > _searchDeadline) break;
-      const next = simApply(s, m.to, m.from);
-      const score = minimax(next, depth - 1, -Infinity, Infinity, botColor);
+
+      const tk = slotKey(m.to);
+      const fk = m.from ? slotKey(m.from) : null;
+      const prevTo   = pieces[tk];
+      const prevFrom = fk ? pieces[fk] : undefined;
+
+      if (fk) delete pieces[fk];
+      pieces[tk] = botColor;
+
+      const nrp = botColor === 'red'   ? redPlaced   + (m.from ? 0 : 1) : redPlaced;
+      const nbp = botColor === 'black' ? blackPlaced + (m.from ? 0 : 1) : blackPlaced;
+      const nphase = (nrp >= PIECES_PER_PLAYER && nbp >= PIECES_PER_PLAYER) ? 'movement' : 'placement';
+      const winner = checkWinnerFast(pieces, tk, botColor);
+
+      let score;
+      if (winner) {
+        score = 1e7 + depth * 10;
+      } else {
+        score = minimax(pieces, nrp, nbp, nphase, opp, depth - 1, -Infinity, Infinity, botColor);
+      }
+
+      if (fk) pieces[fk] = prevFrom;
+      if (prevTo === undefined) delete pieces[tk]; else pieces[tk] = prevTo;
+
       if (score > depthBest) {
         depthBest = score;
         depthBestMove = m;
       }
     }
 
-    // Only update if full depth completed (or at least first move done)
-    if (depthBest > -Infinity) {
+    // Only commit full-depth result
+    if (Date.now() <= _searchDeadline || depth === 1) {
       bestMove = depthBestMove;
-      bestScore = depthBest;
     }
 
-    // Stop searching if we found a forced win
-    if (bestScore >= 1e7) break;
+    if (depthBest >= 1e7) break; // Forced win found
   }
 
   return bestMove;
@@ -212,14 +269,13 @@ function chooseBestMove(game, botColor) {
 let _sharedState = null;
 let _api = null;
 
-let botUser = null;       // { userId, username: 'Machine', elo }
+let botUser = null;
 let botGameId = null;
 let botColor = null;
 let botMoveTimer = null;
 
 const BOT_USERNAME = 'Machine';
 const BOT_SOCKET_ID = '__bot__machine__';
-// Base delay range in ms — add randomness to appear more human
 const THINK_MIN_MS = 600;
 const THINK_MAX_MS = 2000;
 
@@ -237,32 +293,37 @@ function makeBotMove() {
   if (!game || game.winner || game.currentPlayer !== botColor) return;
 
   const t0 = Date.now();
-  const move = chooseBestMove(game, botColor);
-  console.log(`[Bot] Computed move in ${Date.now() - t0}ms: ${JSON.stringify(move)}`);
+  // Work on a mutable copy for the search (the search restores it after each branch)
+  const piecesCopy = { ...game.pieces };
+  const searchGame = { ...game, pieces: piecesCopy };
+  const move = chooseBestMove(searchGame, botColor);
+  console.log(`[Bot] depth search ${Date.now() - t0}ms → ${move ? slotKey(move.to) : 'null'}`);
 
   if (!move) return;
   _api.botMove(botGameId, move.to, move.from);
 }
 
-// Called when a game involving the bot starts
 function onBotGameStarted(gameId, color, game) {
   botGameId = gameId;
   botColor = color;
   const { connectedUsers } = _sharedState;
   const entry = connectedUsers.get(BOT_SOCKET_ID);
-  if (entry) { entry.gameId = gameId; entry.gameColor = game.color; entry.spectating = false; entry.reviewing = false; }
-  console.log(`[Bot] Game started ${gameId} — playing as ${color}`);
+  if (entry) {
+    entry.gameId = gameId;
+    entry.gameColor = game.color;
+    entry.spectating = false;
+    entry.reviewing = false;
+  }
+  console.log(`[Bot] Game ${gameId} — playing as ${color}`);
   if (game.currentPlayer === botColor) scheduleBotMove();
 }
 
-// Called after each game:state broadcast
 function onGameState(gameId, game) {
   if (gameId !== botGameId || !game || game.winner) return;
   if (game.currentPlayer !== botColor) return;
   scheduleBotMove();
 }
 
-// Called when bot's game ends
 function onBotGameEnded(newElo) {
   if (botMoveTimer) { clearTimeout(botMoveTimer); botMoveTimer = null; }
   botGameId = null;
@@ -270,7 +331,6 @@ function onBotGameEnded(newElo) {
 
   if (botUser && newElo != null) botUser.elo = newElo;
 
-  // Reset Machine's lobby entry
   const { connectedUsers } = _sharedState;
   const entry = connectedUsers.get(BOT_SOCKET_ID);
   if (entry) {
@@ -279,7 +339,6 @@ function onBotGameEnded(newElo) {
     if (botUser) entry.elo = botUser.elo;
   }
 
-  // Re-queue after a short pause
   setTimeout(requeue, 3000);
 }
 
@@ -317,7 +376,6 @@ async function initBot(sharedState, api, User) {
     }
     botUser = { userId: machine._id.toString(), username: BOT_USERNAME, elo: machine.elo };
 
-    // Virtual lobby entry — Machine is always "connected"
     sharedState.connectedUsers.set(BOT_SOCKET_ID, {
       socketId: BOT_SOCKET_ID,
       userId: botUser.userId,
@@ -342,7 +400,6 @@ async function initBot(sharedState, api, User) {
       }
     }
 
-    // No active game — start proposing
     requeue();
   } catch (err) {
     console.error('[Bot] Init error:', err.message);
