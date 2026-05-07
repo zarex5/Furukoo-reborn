@@ -8,6 +8,7 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
 const { slotKey, legalMoves, applyMove, calcEloDelta, eloInfo, getEloRange, INITIAL_TIME_MS } = require('./gameLogic');
+const bot = require('./bot');
 
 // ── App setup ────────────────────────────────────────────────────────────────
 const app    = express();
@@ -24,6 +25,11 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/furukoo')
   .then(async () => {
     console.log('MongoDB connected');
     await loadActiveGames();
+    await bot.initBot(
+      { connectedUsers, gameProposals, activeGames },
+      { botMove, broadcastLobby, sysChat, getEloRange },
+      User,
+    );
   })
   .catch(e => console.error('MongoDB error:', e.message));
 
@@ -33,6 +39,7 @@ const UserSchema = new mongoose.Schema({
   elo:          { type: Number, default: 1200 },
   email:        { type: String, trim: true, default: '' },
   guest:        { type: Boolean, default: false },
+  isBot:        { type: Boolean, default: false },
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
@@ -329,6 +336,7 @@ function lobbySnapshot() {
       gameId: u.gameId || null, gameColor: u.gameColor || null,
       spectating: u.spectating || false,
       reviewing: u.reviewing || false,
+      isBot: u.isBot || false,
     })),
     proposals: Array.from(gameProposals.values()),
   };
@@ -362,6 +370,26 @@ function liveState(game) {
     redTimeMs:   game.currentPlayer === 'red'   ? Math.max(0, game.redTimeMs   - elapsed) : game.redTimeMs,
     blackTimeMs: game.currentPlayer === 'black' ? Math.max(0, game.blackTimeMs - elapsed) : game.blackTimeMs,
   };
+}
+
+// Internal move execution for the bot (bypasses socket auth, same logic as game:move)
+function botMove(gameId, to, from) {
+  const game = activeGames.get(gameId);
+  if (!game || game.winner) return;
+  // Basic validity
+  if (game.phase === 'placement') {
+    if (from || game.pieces[slotKey(to)]) return;
+  } else {
+    if (!from) return;
+    if (game.pieces[slotKey(from)] !== game.currentPlayer) return;
+    if (!legalMoves(from, game.pieces).some(s => slotKey(s) === slotKey(to))) return;
+  }
+  const next = applyMove(game, to, from);
+  activeGames.set(gameId, next);
+  io.to(`game:${gameId}`).emit('game:state', next);
+  bot.onGameState(gameId, next);
+  if (next.winner) endGame(gameId, next.winner, 'board');
+  else saveGame(next);
 }
 
 // Restore activeGames from DB on startup (called after mongoose connects)
@@ -519,6 +547,10 @@ io.on('connection', async (socket) => {
 
     saveGame(game);
 
+    // Notify bot if Machine is one of the players
+    if (redU.username === bot.BOT_USERNAME)   bot.onBotGameStarted(gameId, 'red',   game);
+    if (blackU.username === bot.BOT_USERNAME) bot.onBotGameStarted(gameId, 'black', game);
+
     // Emit directly to each socket ID (belt-and-suspenders vs room-join race)
     const startedPayload = { gameId, gameColor, red: game.red, black: game.black, eloInfo: info };
     io.to(redU.socketId).emit('game:started', startedPayload);
@@ -635,6 +667,7 @@ io.on('connection', async (socket) => {
     const next = applyMove(game, to, from);
     activeGames.set(gameId, next);
     io.to(`game:${gameId}`).emit('game:state', next);
+    bot.onGameState(gameId, next);
     if (next.winner) endGame(gameId, next.winner, 'board');
     else saveGame(next);
   });
@@ -832,6 +865,13 @@ async function endGame(gameId, winner, reason) {
   sysChat(`${winnerName} won a game${reasonMsg}`, 'lobby');
 
   activeGames.delete(gameId);
+
+  // Notify bot if it was playing in this game
+  if (game.red.username === bot.BOT_USERNAME || game.black.username === bot.BOT_USERNAME) {
+    const botNewElo = game.red.username === bot.BOT_USERNAME ? newRedElo : newBlackElo;
+    bot.onBotGameEnded(botNewElo);
+  }
+
   broadcastLobby();
 }
 
