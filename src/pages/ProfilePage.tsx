@@ -351,7 +351,9 @@ export default function ProfilePage() {
       <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col gap-8">
 
         {/* Title */}
-        <h1 className="text-xl font-bold text-slate-800 dark:text-white">{username}</h1>
+        <h1 className="text-xl font-bold text-slate-800 dark:text-white">
+          {profile?.isBot && <span className="mr-1">🤖</span>}{username}
+        </h1>
 
         {error && <p className="text-red-500 text-sm font-mono">{error}</p>}
 

@@ -187,7 +187,7 @@ function gamePlayerMeta(g, username) {
 app.get('/api/profile/:username', async (req, res) => {
   try {
     const { username } = req.params;
-    const user = await User.findOne({ username }).select('username elo createdAt guest').lean();
+    const user = await User.findOne({ username }).select('username elo createdAt guest isBot').lean();
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const [gamesCount, minutesAgg] = await Promise.all([
@@ -207,6 +207,7 @@ app.get('/api/profile/:username', async (req, res) => {
     res.json({
       username: user.username,
       elo: user.elo,
+      isBot: user.isBot || false,
       gamesPlayed: gamesCount,
       minutesPlayed: Math.round((minutesAgg[0]?.totalMs || 0) / 60000),
       joinDate: user.createdAt,
