@@ -352,7 +352,7 @@ export default function ProfilePage() {
 
         {/* Title */}
         <h1 className="text-xl font-bold text-slate-800 dark:text-white">
-          {profile?.isBot && <span className="mr-1">🤖</span>}{username}
+          {username}{profile?.isBot && <span className="ml-2 text-xs font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 align-middle">BOT</span>}
         </h1>
 
         {error && <p className="text-red-500 text-sm font-mono">{error}</p>}

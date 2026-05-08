@@ -160,6 +160,9 @@ export default function LobbyPage() {
                 ? <button onClick={handleRemove} className={`${btn} bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200`}>Remove</button>
                 : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
             }
+            {user?.isAdmin && (
+              <button onClick={() => navigate('/admin')} className={`${btn} bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300`}>Admin</button>
+            )}
             <button onClick={logout} className={`${btn} bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300`}>Logout</button>
           </div>
           <DarkToggle isDark={isDark} onToggle={toggleDark} />
@@ -206,7 +209,7 @@ export default function LobbyPage() {
                                           : 'bg-green-50 text-green-800 border-green-300 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
                                         }`}
                                     >
-                                      {p.isBot && <span className="mr-0.5">🤖</span>}{p.username} ({p.elo}){p.isBot && p.botLevel != null && <span className="ml-1 opacity-60 text-[10px]">Lv{p.botLevel}</span>}
+                                      {p.username} ({p.elo}){p.isBot && p.botLevel != null && <span className="ml-1 opacity-60 text-[10px]">Lv{p.botLevel}</span>}
                                     </button>
                                   ))}
                                 </div>
@@ -281,7 +284,7 @@ export default function LobbyPage() {
                         : 'bg-green-50 text-green-800 border-green-200 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
                       }`}
                   >
-                    {p.isBot && <span className="mr-0.5">🤖</span>}{p.username}
+                    {p.username}
                     <span className="ml-1 opacity-70 text-xs">{p.elo}</span>
                     {p.isBot && p.botLevel != null && <span className="ml-1 opacity-50 text-[10px]">Lv{p.botLevel}</span>}
                   </button>

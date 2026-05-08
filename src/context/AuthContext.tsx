@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { connectSocket, disconnectSocket, getSocket } from '../lib/socket';
 
-interface AuthUser { username: string; elo: number; token: string; }
+interface AuthUser { username: string; elo: number; token: string; isAdmin?: boolean; }
 interface AuthCtx {
   user: AuthUser | null;
   login: (u: AuthUser) => void;
@@ -43,8 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       disconnectSocket();
       window.location.replace('/login?reason=kicked');
     };
+    const onBanned = () => {
+      setUser(null);
+      localStorage.removeItem(KEY);
+      disconnectSocket();
+      window.location.replace('/login?reason=banned');
+    };
     sock.on('session:kicked', onKicked);
-    return () => { sock.off('session:kicked', onKicked); };
+    sock.on('auth:banned', onBanned);
+    return () => { sock.off('session:kicked', onKicked); sock.off('auth:banned', onBanned); };
   }, [user]);
 
   const updateElo = (elo: number) => {

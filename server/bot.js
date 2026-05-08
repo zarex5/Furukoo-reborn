@@ -1,6 +1,6 @@
 'use strict';
 
-const { slotKey, legalMoves, allSquares, checkWinner, positionKey, PIECES_PER_PLAYER } = require('./gameLogic');
+const { slotKey, legalMoves, allSquares, positionKey, PIECES_PER_PLAYER } = require('./gameLogic');
 
 // ── Pre-computed constants (shared by all bot instances) ─────────────────────
 
@@ -21,6 +21,34 @@ for (const key of ALL_SLOT_KEYS) SLOT_TO_SQUARES[key] = [];
 for (let i = 0; i < SQUARE_KEYS.length; i++) {
   for (const k of SQUARE_KEYS[i]) SLOT_TO_SQUARES[k].push(i);
 }
+
+// ── Level → search parameters ─────────────────────────────────────────────────
+//
+// level 1 — plays a square but doesn't look ahead more than 2 steps
+// level 10 — maximum strength (deep minimax, no random errors)
+//
+const LEVEL_PARAMS = {
+  1:  { maxMovementDepth: 1, maxPlacementDepth: 1, searchTimeMs:  200, errorRate: 0.50, thinkMinMs:  300, thinkMaxMs:  800 },
+  2:  { maxMovementDepth: 1, maxPlacementDepth: 1, searchTimeMs:  300, errorRate: 0.35, thinkMinMs:  300, thinkMaxMs:  900 },
+  3:  { maxMovementDepth: 1, maxPlacementDepth: 2, searchTimeMs:  400, errorRate: 0.25, thinkMinMs:  300, thinkMaxMs: 1000 },
+  4:  { maxMovementDepth: 2, maxPlacementDepth: 2, searchTimeMs:  600, errorRate: 0.18, thinkMinMs:  350, thinkMaxMs: 1100 },
+  5:  { maxMovementDepth: 2, maxPlacementDepth: 2, searchTimeMs:  800, errorRate: 0.15, thinkMinMs:  400, thinkMaxMs: 1200 },
+  6:  { maxMovementDepth: 3, maxPlacementDepth: 2, searchTimeMs: 1200, errorRate: 0.10, thinkMinMs:  400, thinkMaxMs: 1400 },
+  7:  { maxMovementDepth: 3, maxPlacementDepth: 3, searchTimeMs: 1800, errorRate: 0.06, thinkMinMs:  500, thinkMaxMs: 1500 },
+  8:  { maxMovementDepth: 4, maxPlacementDepth: 3, searchTimeMs: 2500, errorRate: 0.03, thinkMinMs:  500, thinkMaxMs: 1800 },
+  9:  { maxMovementDepth: 4, maxPlacementDepth: 4, searchTimeMs: 3000, errorRate: 0.01, thinkMinMs:  600, thinkMaxMs: 1900 },
+  10: { maxMovementDepth: 5, maxPlacementDepth: 4, searchTimeMs: 3500, errorRate: 0.00, thinkMinMs:  600, thinkMaxMs: 2000 },
+};
+
+// ── Seed configs — used only if the bot account doesn't exist in DB yet ───────
+//
+// Only username, initialElo, and level are needed here.
+// Search parameters are derived at runtime from LEVEL_PARAMS[level].
+//
+const BOT_CONFIGS = [
+  { username: 'Machine',   initialElo: 1500, level: 10 },
+  { username: 'Automaton', initialElo: 1200, level: 5  },
+];
 
 // ── AI: pure functions (no bot-instance state) ────────────────────────────────
 
@@ -178,16 +206,7 @@ function minimax(pieces, rp, bp, phase, color, depth, alpha, beta, botColor, pos
   return best;
 }
 
-/**
- * Choose the best move for `botColor` given the current game state.
- *
- * config fields used here:
- *   maxMovementDepth  — maximum ply depth during movement phase
- *   maxPlacementDepth — maximum ply depth during placement phase
- *   errorRate         — probability [0,1] of returning a random legal move
- *   searchTimeMs      — minimax time budget in ms
- */
-function chooseBestMove(game, botColor, config) {
+function chooseBestMove(game, botColor, params) {
   const { pieces, redPlaced, blackPlaced, phase } = game;
   const posCounts = game.positionCounts || {};
 
@@ -200,12 +219,12 @@ function chooseBestMove(game, botColor, config) {
   if (fastScore(pieces, moves[0].to, moves[0].from, botColor) >= 1e9) return moves[0];
 
   // Random error injection (lower-level bots make occasional bad moves)
-  if (config.errorRate > 0 && Math.random() < config.errorRate) {
+  if (params.errorRate > 0 && Math.random() < params.errorRate) {
     return moves[Math.floor(Math.random() * moves.length)];
   }
 
-  const maxDepth = phase === 'placement' ? config.maxPlacementDepth : config.maxMovementDepth;
-  _searchDeadline = Date.now() + config.searchTimeMs;
+  const maxDepth = phase === 'placement' ? params.maxPlacementDepth : params.maxMovementDepth;
+  _searchDeadline = Date.now() + params.searchTimeMs;
 
   let bestMove = moves[0];
   const opp = botColor === 'red' ? 'black' : 'red';
@@ -260,43 +279,11 @@ function chooseBestMove(game, botColor, config) {
   return bestMove;
 }
 
-// ── Bot configurations ────────────────────────────────────────────────────────
-//
-// level 1–10: higher = stronger
-// searchTimeMs: minimax budget (lower levels cut off sooner — but they also use
-//   shallower depth, so they'd finish fast anyway; still cap it for safety)
-// errorRate: probability of playing a random legal move (0 = always best)
-// thinkMinMs / thinkMaxMs: artificial delay before emitting the move
-//
-const BOT_CONFIGS = [
-  {
-    username:          'Machine',
-    initialElo:        1500,
-    level:             10,
-    maxMovementDepth:  5,
-    maxPlacementDepth: 4,
-    searchTimeMs:      3500,
-    errorRate:         0.00,
-    thinkMinMs:        600,
-    thinkMaxMs:        2000,
-  },
-  {
-    username:          'Automaton',
-    initialElo:        1200,
-    level:             5,
-    maxMovementDepth:  2,
-    maxPlacementDepth: 2,
-    searchTimeMs:      800,
-    errorRate:         0.15,
-    thinkMinMs:        400,
-    thinkMaxMs:        1400,
-  },
-];
-
 // ── Bot instance factory ──────────────────────────────────────────────────────
 
 function createBotInstance(config) {
-  const SOCKET_ID = `__bot__${config.username.toLowerCase()}__`;
+  // _cfg is live and mutable — admin can update level, enabled, username at runtime
+  let _cfg = { enabled: true, ...config };
 
   let _sharedState = null;
   let _api         = null;
@@ -305,9 +292,18 @@ function createBotInstance(config) {
   let botColor     = null;
   let moveTimer    = null;
 
+  function getSocketId() {
+    return `__bot__${_cfg.username.toLowerCase().replace(/[^\w]/g, '_')}__`;
+  }
+
+  function getParams() {
+    return LEVEL_PARAMS[_cfg.level] || LEVEL_PARAMS[5];
+  }
+
   function scheduleMove() {
     if (moveTimer) clearTimeout(moveTimer);
-    const delay = config.thinkMinMs + Math.random() * (config.thinkMaxMs - config.thinkMinMs);
+    const p = getParams();
+    const delay = p.thinkMinMs + Math.random() * (p.thinkMaxMs - p.thinkMinMs);
     moveTimer = setTimeout(makeMove, delay);
   }
 
@@ -319,25 +315,25 @@ function createBotInstance(config) {
 
     const t0 = Date.now();
     const piecesCopy = { ...game.pieces };
-    const move = chooseBestMove({ ...game, pieces: piecesCopy }, botColor, config);
-    console.log(`[${config.username}] move in ${Date.now() - t0}ms → ${move ? slotKey(move.to) : 'none'}`);
+    const move = chooseBestMove({ ...game, pieces: piecesCopy }, botColor, getParams());
+    console.log(`[${_cfg.username}] move in ${Date.now() - t0}ms → ${move ? slotKey(move.to) : 'none'}`);
 
     if (move) _api.botMove(botGameId, move.to, move.from);
   }
 
   function requeue() {
-    if (!botUser || !_sharedState || botGameId) return;
+    if (!botUser || !_sharedState || botGameId || !_cfg.enabled) return;
     const { gameProposals } = _sharedState;
-    if (gameProposals.has(config.username)) return;
-    gameProposals.set(config.username, {
-      username:  config.username,
+    if (gameProposals.has(_cfg.username)) return;
+    gameProposals.set(_cfg.username, {
+      username:  _cfg.username,
       elo:       botUser.elo,
       eloRange:  _api.getEloRange(botUser.elo),
       isBot:     true,
-      botLevel:  config.level,
+      botLevel:  _cfg.level,
     });
     _api.broadcastLobby();
-    console.log(`[${config.username}] Proposing game (ELO ${botUser.elo})`);
+    console.log(`[${_cfg.username}] Proposing game (ELO ${botUser.elo})`);
   }
 
   // ── Public interface ──────────────────────────────────────────────────────
@@ -346,60 +342,66 @@ function createBotInstance(config) {
     _sharedState = sharedState;
     _api         = api;
     try {
-      let dbUser = await User.findOne({ username: config.username });
+      let dbUser = await User.findOne({ username: _cfg.username });
       if (!dbUser) {
         const bcrypt = require('bcryptjs');
         dbUser = await User.create({
-          username:     config.username,
+          username:     _cfg.username,
           passwordHash: await bcrypt.hash(require('crypto').randomBytes(32).toString('hex'), 10),
-          elo:          config.initialElo,
+          elo:          _cfg.initialElo || 1200,
           isBot:        true,
+          botLevel:     _cfg.level,
+          botEnabled:   true,
         });
-        console.log(`[${config.username}] Account created (ELO ${config.initialElo})`);
+        console.log(`[${_cfg.username}] Account created (ELO ${_cfg.initialElo || 1200})`);
+      } else {
+        // Load persisted level and enabled state from DB
+        if (dbUser.botLevel != null) _cfg.level = dbUser.botLevel;
+        _cfg.enabled = dbUser.botEnabled !== false;
       }
-      botUser = { userId: dbUser._id.toString(), username: config.username, elo: dbUser.elo };
+      botUser = { userId: dbUser._id.toString(), username: _cfg.username, elo: dbUser.elo };
 
-      sharedState.connectedUsers.set(SOCKET_ID, {
-        socketId:   SOCKET_ID,
+      sharedState.connectedUsers.set(getSocketId(), {
+        socketId:   getSocketId(),
         userId:     botUser.userId,
-        username:   config.username,
+        username:   _cfg.username,
         elo:        botUser.elo,
         gameId:     null,
         gameColor:  null,
         spectating: false,
         reviewing:  false,
         isBot:      true,
-        botLevel:   config.level,
+        botLevel:   _cfg.level,
       });
 
       // Restore an in-progress game after server restart
       for (const [gameId, game] of sharedState.activeGames) {
-        const isRed   = game.red.username   === config.username;
-        const isBlack = game.black.username === config.username;
+        const isRed   = game.red.username   === _cfg.username;
+        const isBlack = game.black.username === _cfg.username;
         if (isRed || isBlack) {
           const color = isRed ? 'red' : 'black';
           botGameId = gameId;
           botColor  = color;
-          const entry = sharedState.connectedUsers.get(SOCKET_ID);
+          const entry = sharedState.connectedUsers.get(getSocketId());
           if (entry) { entry.gameId = gameId; entry.gameColor = game.color; }
           if (game.currentPlayer === color) scheduleMove();
-          console.log(`[${config.username}] Restored game ${gameId} as ${color}`);
+          console.log(`[${_cfg.username}] Restored game ${gameId} as ${color}`);
           return;
         }
       }
 
       requeue();
     } catch (err) {
-      console.error(`[${config.username}] Init error:`, err.message);
+      console.error(`[${_cfg.username}] Init error:`, err.message);
     }
   }
 
   function onBotGameStarted(gameId, color, game) {
     botGameId = gameId;
     botColor  = color;
-    const entry = _sharedState.connectedUsers.get(SOCKET_ID);
+    const entry = _sharedState.connectedUsers.get(getSocketId());
     if (entry) { entry.gameId = gameId; entry.gameColor = game.color; entry.spectating = false; entry.reviewing = false; }
-    console.log(`[${config.username}] Game ${gameId} — playing as ${color}`);
+    console.log(`[${_cfg.username}] Game ${gameId} — playing as ${color}`);
     if (game.currentPlayer === botColor) scheduleMove();
   }
 
@@ -414,7 +416,7 @@ function createBotInstance(config) {
     botGameId = null;
     botColor  = null;
     if (botUser && newElo != null) botUser.elo = newElo;
-    const entry = _sharedState.connectedUsers.get(SOCKET_ID);
+    const entry = _sharedState.connectedUsers.get(getSocketId());
     if (entry) {
       entry.gameId = null; entry.gameColor = null;
       entry.spectating = false; entry.reviewing = false;
@@ -423,15 +425,63 @@ function createBotInstance(config) {
     setTimeout(requeue, 3000);
   }
 
+  // Update runtime config (level, enabled, username) without restarting the instance.
+  function updateConfig(updates) {
+    const oldUsername  = _cfg.username;
+    const oldSocketId  = getSocketId();
+
+    Object.assign(_cfg, updates);
+
+    // Handle rename: move connectedUsers entry to new socket ID
+    if (updates.username && updates.username !== oldUsername && _sharedState) {
+      const newSocketId = getSocketId();
+      const entry = _sharedState.connectedUsers.get(oldSocketId);
+      if (entry) {
+        entry.username = _cfg.username;
+        entry.socketId = newSocketId;
+        _sharedState.connectedUsers.delete(oldSocketId);
+        _sharedState.connectedUsers.set(newSocketId, entry);
+      }
+      // Move game proposal if exists
+      const prop = _sharedState.gameProposals.get(oldUsername);
+      if (prop) {
+        _sharedState.gameProposals.delete(oldUsername);
+        prop.username = _cfg.username;
+        _sharedState.gameProposals.set(_cfg.username, prop);
+      }
+      if (botUser) botUser.username = _cfg.username;
+    }
+
+    // Sync level in connectedUsers + proposal
+    if (updates.level !== undefined) {
+      const entry = _sharedState?.connectedUsers.get(getSocketId());
+      if (entry) entry.botLevel = _cfg.level;
+      const prop = _sharedState?.gameProposals.get(_cfg.username);
+      if (prop) prop.botLevel = _cfg.level;
+    }
+
+    // Enabled → remove proposal; disabled → try to requeue
+    if (updates.enabled === false && _sharedState) {
+      _sharedState.gameProposals.delete(_cfg.username);
+    } else if (updates.enabled === true && !botGameId) {
+      requeue();
+    }
+
+    _api?.broadcastLobby();
+  }
+
   return {
     init,
     onBotGameStarted,
     onGameState,
     onBotGameEnded,
-    get username() { return config.username; },
-    get socketId()  { return SOCKET_ID; },
-    get level()     { return config.level; },
+    updateConfig,
+    get username() { return _cfg.username; },
+    get socketId()  { return getSocketId(); },
+    get level()     { return _cfg.level; },
+    get enabled()   { return _cfg.enabled; },
+    get inGame()    { return !!botGameId; },
   };
 }
 
-module.exports = { BOT_CONFIGS, createBotInstance };
+module.exports = { BOT_CONFIGS, LEVEL_PARAMS, createBotInstance };

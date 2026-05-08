@@ -8,7 +8,7 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
 const { slotKey, legalMoves, applyMove, positionKey, calcEloDelta, eloInfo, getEloRange, INITIAL_TIME_MS } = require('./gameLogic');
-const { BOT_CONFIGS, createBotInstance } = require('./bot');
+const { BOT_CONFIGS, LEVEL_PARAMS, createBotInstance } = require('./bot');
 
 // All bot instances, keyed by username — populated after MongoDB connects
 const bots = new Map(); // username → bot instance
@@ -28,12 +28,23 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/furukoo')
   .then(async () => {
     console.log('MongoDB connected');
     await loadActiveGames();
+    // Give zarex5 admin rights (idempotent)
+    await User.updateOne({ username: 'zarex5' }, { $set: { isAdmin: true } }).catch(() => {});
     const sharedState = { connectedUsers, gameProposals, activeGames };
     const api         = { botMove, broadcastLobby, sysChat, getEloRange };
+    // Seed bots from BOT_CONFIGS, then load any extra bots created via admin panel
+    const seedNames = new Set(BOT_CONFIGS.map(c => c.username));
     for (const cfg of BOT_CONFIGS) {
       const inst = createBotInstance(cfg);
       await inst.init(sharedState, api, User);
-      bots.set(cfg.username, inst);
+      bots.set(inst.username, inst);
+    }
+    const extraBots = await User.find({ isBot: true, username: { $nin: [...seedNames] } }).lean().catch(() => []);
+    for (const dbBot of extraBots) {
+      const cfg = { username: dbBot.username, initialElo: dbBot.elo, level: dbBot.botLevel || 5 };
+      const inst = createBotInstance(cfg);
+      await inst.init(sharedState, api, User);
+      bots.set(inst.username, inst);
     }
   })
   .catch(e => console.error('MongoDB error:', e.message));
@@ -45,6 +56,12 @@ const UserSchema = new mongoose.Schema({
   email:        { type: String, trim: true, default: '' },
   guest:        { type: Boolean, default: false },
   isBot:        { type: Boolean, default: false },
+  botLevel:     { type: Number, default: null },
+  botEnabled:   { type: Boolean, default: true },
+  isAdmin:      { type: Boolean, default: false },
+  isMuted:      { type: Boolean, default: false },
+  isBanned:     { type: Boolean, default: false },
+  messageCount: { type: Number, default: 0 },
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
@@ -124,7 +141,11 @@ if (!process.env.JWT_SECRET) {
   console.warn('⚠️  JWT_SECRET not set — using insecure default. Set this env var in production.');
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'furukoo-dev-secret';
-const sign = (user) => jwt.sign({ userId: user._id.toString(), username: user.username }, JWT_SECRET, { expiresIn: '30d' });
+const sign = (user) => jwt.sign(
+  { userId: user._id.toString(), username: user.username, isAdmin: user.isAdmin || false },
+  JWT_SECRET,
+  { expiresIn: '30d' }
+);
 
 // ── Auth REST ────────────────────────────────────────────────────────────────
 app.post('/api/register', async (req, res) => {
@@ -135,7 +156,7 @@ app.post('/api/register', async (req, res) => {
     if (!email?.trim())                  return res.status(400).json({ error: 'Email is required' });
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({ username: username.trim(), passwordHash, email: email?.trim() || '' });
-    res.json({ token: sign(user), username: user.username, elo: user.elo });
+    res.json({ token: sign(user), username: user.username, elo: user.elo, isAdmin: false });
   } catch (e) {
     if (e.code === 11000) return res.status(400).json({ error: 'Username already taken' });
     res.status(500).json({ error: 'Server error' });
@@ -166,10 +187,206 @@ app.post('/api/login', async (req, res) => {
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok)   return res.status(401).json({ error: 'Invalid credentials' });
-    res.json({ token: sign(user), username: user.username, elo: user.elo });
+    if (user.isBanned) return res.status(403).json({ error: 'This account has been banned' });
+    res.json({ token: sign(user), username: user.username, elo: user.elo, isAdmin: user.isAdmin || false });
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// ── Admin middleware ─────────────────────────────────────────────────────────
+
+async function requireAdmin(req, res, next) {
+  const auth = req.headers.authorization;
+  if (!auth?.startsWith('Bearer ')) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const decoded = jwt.verify(auth.slice(7), JWT_SECRET);
+    const user = await User.findById(decoded.userId).select('isAdmin').lean();
+    if (!user?.isAdmin) return res.status(403).json({ error: 'Forbidden' });
+    req.adminUserId   = decoded.userId;
+    req.adminUsername = decoded.username;
+    next();
+  } catch {
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+}
+
+// ── Admin: Bot endpoints ─────────────────────────────────────────────────────
+
+app.get('/api/admin/bots', requireAdmin, async (req, res) => {
+  try {
+    const botUsers = await User.find({ isBot: true }).sort({ createdAt: 1 }).lean();
+    const gameCounts = await Game.aggregate([
+      { $match: { status: 'ended' } },
+      { $project: { usernames: ['$red.username', '$black.username'] } },
+      { $unwind: '$usernames' },
+      { $group: { _id: '$usernames', count: { $sum: 1 } } },
+    ]);
+    const countMap = Object.fromEntries(gameCounts.map(g => [g._id, g.count]));
+    res.json(botUsers.map(u => ({
+      username:    u.username,
+      elo:         u.elo,
+      level:       u.botLevel ?? 5,
+      enabled:     u.botEnabled !== false,
+      gamesPlayed: countMap[u.username] || 0,
+      inGame:      bots.get(u.username)?.inGame || false,
+    })));
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.post('/api/admin/bots', requireAdmin, async (req, res) => {
+  try {
+    const { username, level } = req.body || {};
+    if (!username?.trim()) return res.status(400).json({ error: 'Username required' });
+    const lvl = Math.max(1, Math.min(10, parseInt(level) || 5));
+    const existing = await User.findOne({ username: username.trim() });
+    if (existing) return res.status(400).json({ error: 'Username already taken' });
+    const bcrypt = require('bcryptjs');
+    await User.create({
+      username:     username.trim(),
+      passwordHash: await bcrypt.hash(require('crypto').randomBytes(32).toString('hex'), 10),
+      elo:          1200,
+      isBot:        true,
+      botLevel:     lvl,
+      botEnabled:   true,
+    });
+    const cfg  = { username: username.trim(), initialElo: 1200, level: lvl };
+    const inst = createBotInstance(cfg);
+    const sharedState = { connectedUsers, gameProposals, activeGames };
+    const api         = { botMove, broadcastLobby, sysChat, getEloRange };
+    await inst.init(sharedState, api, User);
+    bots.set(inst.username, inst);
+    res.json({ ok: true });
+  } catch (e) {
+    if (e.code === 11000) return res.status(400).json({ error: 'Username already taken' });
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.put('/api/admin/bots/:username', requireAdmin, async (req, res) => {
+  try {
+    const oldUsername = req.params.username;
+    const { username: newUsername, level, enabled } = req.body || {};
+    const inst = bots.get(oldUsername);
+    if (!inst) return res.status(404).json({ error: 'Bot not found' });
+
+    // Prevent rename while in an active game
+    if (newUsername && newUsername !== oldUsername && inst.inGame) {
+      return res.status(409).json({ error: 'Cannot rename bot while it is playing a game' });
+    }
+    // Check new username not already taken
+    if (newUsername && newUsername !== oldUsername) {
+      const clash = await User.findOne({ username: newUsername.trim() });
+      if (clash) return res.status(400).json({ error: 'Username already taken' });
+    }
+
+    const dbUpdates = {};
+    const cfgUpdates = {};
+    if (newUsername && newUsername !== oldUsername) {
+      dbUpdates.username  = newUsername.trim();
+      cfgUpdates.username = newUsername.trim();
+    }
+    if (level !== undefined) {
+      const lvl = Math.max(1, Math.min(10, parseInt(level)));
+      dbUpdates.botLevel  = lvl;
+      cfgUpdates.level    = lvl;
+    }
+    if (enabled !== undefined) {
+      dbUpdates.botEnabled = Boolean(enabled);
+      cfgUpdates.enabled   = Boolean(enabled);
+    }
+
+    await User.updateOne({ username: oldUsername }, { $set: dbUpdates });
+    inst.updateConfig(cfgUpdates);
+
+    if (cfgUpdates.username) {
+      bots.delete(oldUsername);
+      bots.set(inst.username, inst);
+    }
+
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Admin: Player endpoints ──────────────────────────────────────────────────
+
+app.get('/api/admin/players', requireAdmin, async (req, res) => {
+  try {
+    const page   = Math.max(1, parseInt(req.query.page) || 1);
+    const search = req.query.search?.trim() || '';
+    const limit  = 10;
+    const query  = { isBot: { $ne: true }, guest: { $ne: true } };
+    if (search) query.username = { $regex: search, $options: 'i' };
+    const [total, players] = await Promise.all([
+      User.countDocuments(query),
+      User.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit)
+        .select('username elo isAdmin isMuted isBanned messageCount createdAt').lean(),
+    ]);
+    const gameCounts = await Game.aggregate([
+      { $match: { status: 'ended', $or: players.map(p => ({ 'red.username': p.username })).concat(players.map(p => ({ 'black.username': p.username }))) } },
+      { $project: { usernames: ['$red.username', '$black.username'] } },
+      { $unwind: '$usernames' },
+      { $match: { usernames: { $in: players.map(p => p.username) } } },
+      { $group: { _id: '$usernames', count: { $sum: 1 } } },
+    ]);
+    const countMap = Object.fromEntries(gameCounts.map(g => [g._id, g.count]));
+    res.json({
+      players: players.map(u => ({
+        username:     u.username,
+        elo:          u.elo,
+        gamesPlayed:  countMap[u.username] || 0,
+        messageCount: u.messageCount || 0,
+        joinDate:     u.createdAt,
+        isAdmin:      u.isAdmin || false,
+        isMuted:      u.isMuted || false,
+        isBanned:     u.isBanned || false,
+      })),
+      total, page, totalPages: Math.ceil(total / limit),
+    });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.put('/api/admin/players/:username/admin', requireAdmin, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { isAdmin } = req.body;
+    if (username === req.adminUsername) return res.status(400).json({ error: 'Cannot change your own admin status' });
+    await User.updateOne({ username }, { $set: { isAdmin: Boolean(isAdmin) } });
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.put('/api/admin/players/:username/mute', requireAdmin, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { isMuted } = req.body;
+    await User.updateOne({ username }, { $set: { isMuted: Boolean(isMuted) } });
+    // Update live connectedUsers entry so mute takes effect immediately
+    for (const [, u] of connectedUsers) {
+      if (u.username === username) { u.isMuted = Boolean(isMuted); break; }
+    }
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.put('/api/admin/players/:username/ban', requireAdmin, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const { isBanned } = req.body;
+    if (username === req.adminUsername) return res.status(400).json({ error: 'Cannot ban yourself' });
+    await User.updateOne({ username }, { $set: { isBanned: Boolean(isBanned) } });
+    // Disconnect the user if they are currently online
+    if (isBanned) {
+      for (const [, u] of connectedUsers) {
+        if (u.username === username) {
+          const sock = io.sockets.sockets.get(u.socketId);
+          if (sock) { sock.emit('auth:banned'); sock.disconnect(true); }
+          break;
+        }
+      }
+    }
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
 // ── Profile & Leaderboard REST ───────────────────────────────────────────────
@@ -485,7 +702,7 @@ io.on('connection', async (socket) => {
     if (typeof text !== 'string' || !text.trim() || typeof origin !== 'string') return;
     if (origin !== 'lobby' && !activeGames.has(origin)) return;
     const u = connectedUsers.get(socket.id);
-    if (!u) return;
+    if (!u || u.isMuted) return;
     const msg = {
       id: genId(), type: 'user', username: u.username,
       text: text.trim().slice(0, 200), origin,
@@ -493,6 +710,7 @@ io.on('connection', async (socket) => {
     };
     io.emit('chat:message', msg);
     Chat.create(msg).catch(e => console.error('chat:', e.message));
+    User.findByIdAndUpdate(u.userId, { $inc: { messageCount: 1 } }).catch(() => {});
   });
 
   // ── Game proposals ──
@@ -808,15 +1026,18 @@ io.on('connection', async (socket) => {
   // This runs AFTER all event handlers are registered so no incoming event
   // can be dropped while we wait for the database.
   const dbUser = await User.findById(socket.userId).catch(() => null);
-  if (!dbUser) {
+  if (!dbUser || dbUser.isBanned) {
     connectedUsers.delete(socket.id);
+    if (dbUser?.isBanned) socket.emit('auth:banned');
     socket.disconnect();
     return;
   }
 
   const entry = connectedUsers.get(socket.id);
   if (entry) {
-    entry.elo = dbUser.elo;
+    entry.elo     = dbUser.elo;
+    entry.isMuted = dbUser.isMuted || false;
+    entry.isAdmin = dbUser.isAdmin || false;
     // After a server restart, restore gameId for players with an active game
     const ongoing = Array.from(activeGames.values()).find(
       g => !g.winner && (g.red.username === socket.username || g.black.username === socket.username)
