@@ -713,6 +713,11 @@ io.on('connection', async (socket) => {
     User.findByIdAndUpdate(u.userId, { $inc: { messageCount: 1 } }).catch(() => {});
   });
 
+  // ── Lobby state request (e.g. browser back-button navigation) ──
+  socket.on('lobby:request', () => {
+    socket.emit('lobby:state', lobbySnapshot());
+  });
+
   // ── Game proposals ──
   socket.on('game:propose', () => {
     const u = connectedUsers.get(socket.id);

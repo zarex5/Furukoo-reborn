@@ -110,6 +110,10 @@ export default function LobbyPage() {
     socket.on('game:started', onStarted);
     socket.on('game:state',   onState);
 
+    // Re-request state on mount — the socket stays connected during navigation
+    // so the server won't push a fresh snapshot when we navigate back via browser history.
+    if (socket.connected) socket.emit('lobby:request');
+
     return () => {
       socket.off('lobby:state',  onLobby);
       socket.off('game:started', onStarted);
