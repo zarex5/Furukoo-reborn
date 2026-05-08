@@ -60,7 +60,7 @@ export interface EloPoint { date: string; elo: number; }
 export interface GameMeta {
   gameId: string;
   opponent: string;
-  result: 'win' | 'loss';
+  result: 'win' | 'loss' | 'draw';
   eloDelta: number | null;
   eloAfter: number | null;
   myMoves: number;

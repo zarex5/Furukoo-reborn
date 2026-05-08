@@ -234,8 +234,8 @@ function GamesTable({ data, page, setPage }: { data: GamesPage; page: number; se
                   </Link>
                 </td>
                 <td className="px-3 py-1.5 text-center">
-                  <span className={`font-bold ${g.result === 'win' ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-                    {g.result === 'win' ? 'Win' : 'Loss'}
+                  <span className={`font-bold ${g.result === 'win' ? 'text-green-600 dark:text-green-400' : g.result === 'draw' ? 'text-amber-500 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
+                    {g.result === 'win' ? 'Win' : g.result === 'draw' ? 'Draw' : 'Loss'}
                   </span>
                 </td>
                 <td className={`px-3 py-1.5 text-right tabular-nums font-bold ${

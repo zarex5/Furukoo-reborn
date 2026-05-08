@@ -25,9 +25,9 @@ interface GameMeta {
 }
 
 interface GameOver {
-  winner: Player;
+  winner: Player | 'draw';
   reason: string;
-  winnerName: string;
+  winnerName: string | null;
   redDelta: number; blackDelta: number;
   newRedElo: number; newBlackElo: number;
 }
@@ -239,11 +239,19 @@ export default function GamePage() {
 
       {/* ── Banners (shared) ────────────────────────────────────────────── */}
       {gameOver && (
-        <div className="mx-3 mt-2 px-4 py-1.5 rounded-lg bg-green-100 dark:bg-green-900/40 border border-green-300 dark:border-green-700 text-xs font-mono text-center">
-          <span className="font-bold text-green-800 dark:text-green-300">{gameOver.winnerName} wins</span>
-          {gameOver.reason === 'resign'     && ' (by resignation)'}
-          {gameOver.reason === 'timeout'    && ' (on time)'}
-          {gameOver.reason === 'disconnect' && ' (opponent disconnected)'}
+        <div className={`mx-3 mt-2 px-4 py-1.5 rounded-lg text-xs font-mono text-center border ${
+          gameOver.winner === 'draw'
+            ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700'
+            : 'bg-green-100 dark:bg-green-900/40 border-green-300 dark:border-green-700'
+        }`}>
+          {gameOver.winner === 'draw'
+            ? <span className="font-bold text-amber-800 dark:text-amber-300">Draw</span>
+            : <span className="font-bold text-green-800 dark:text-green-300">{gameOver.winnerName} wins</span>
+          }
+          {gameOver.reason === 'repetition'  && ' — threefold repetition'}
+          {gameOver.reason === 'resign'      && ' (by resignation)'}
+          {gameOver.reason === 'timeout'     && ' (on time)'}
+          {gameOver.reason === 'disconnect'  && ' (opponent disconnected)'}
           {'  ·  '}
           {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
           {'  ·  '}

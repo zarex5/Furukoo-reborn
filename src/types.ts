@@ -37,8 +37,9 @@ export interface BoardState {
   blackTimeMs: number;
   /** Move list up to this state */
   moves: Move[];
-  winner: Player | null;
+  winner: Player | 'draw' | null;
   resignedBy: Player | null;
+  drawnBy: string | null;
   /** Set when a player disconnects mid-game, cleared on reconnect */
   disconnectedColor: Player | null;
   disconnectedAt: number | null; // ms timestamp
