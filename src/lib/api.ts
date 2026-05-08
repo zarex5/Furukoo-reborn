@@ -181,6 +181,18 @@ export const api = {
     createBot: (username: string, level: number) => postAuth('/admin/bots', { username, level }),
     updateBot: (username: string, updates: { username?: string; level?: number; enabled?: boolean }) =>
       putAuth(`/admin/bots/${encodeURIComponent(username)}`, updates as Record<string, unknown>),
+    deleteBot: (username: string) => {
+      const headers = { ...authHeaders(), 'Content-Type': 'application/json' };
+      return fetch(`/api/admin/bots/${encodeURIComponent(username)}`, { method: 'DELETE', headers })
+        .then(async res => {
+          if (!res.ok) {
+            const text = await res.text();
+            let data: Record<string, string> = {};
+            try { data = JSON.parse(text); } catch { /* */ }
+            throw new Error(data.error || `Server error (${res.status})`);
+          }
+        });
+    },
     players: (page: number, search?: string) =>
       getAuth<AdminPlayersPage>(`/admin/players?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ''}`),
     setAdmin: (username: string, isAdmin: boolean) =>

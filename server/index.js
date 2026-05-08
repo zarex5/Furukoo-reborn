@@ -308,6 +308,24 @@ app.put('/api/admin/bots/:username', requireAdmin, async (req, res) => {
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+app.delete('/api/admin/bots/:username', requireAdmin, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const inst = bots.get(username);
+    if (!inst) return res.status(404).json({ error: 'Bot not found' });
+    if (inst.inGame) return res.status(409).json({ error: 'Cannot delete bot while it is playing a game' });
+    // Remove from in-memory structures
+    bots.delete(username);
+    gameProposals.delete(username);
+    for (const [sid, u] of connectedUsers) {
+      if (u.username === username) { connectedUsers.delete(sid); break; }
+    }
+    await User.deleteOne({ username, isBot: true });
+    broadcastLobby();
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // ── Admin: Player endpoints ──────────────────────────────────────────────────
 
 app.get('/api/admin/players', requireAdmin, async (req, res) => {

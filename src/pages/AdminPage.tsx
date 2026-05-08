@@ -99,10 +99,49 @@ function CreateBotModal({ onClose, onCreated }: { onClose: () => void; onCreated
   );
 }
 
+function DeleteBotModal({ username, onClose, onDeleted }: { username: string; onClose: () => void; onDeleted: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleDelete = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await api.admin.deleteBot(username);
+      onDeleted();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete bot');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-sm mx-4 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 p-6">
+        <h3 className="text-base font-bold text-slate-800 dark:text-white mb-2">Delete bot</h3>
+        <p className="text-sm text-slate-500 dark:text-gray-400 mb-4">
+          Are you sure you want to permanently delete <strong className="text-slate-700 dark:text-gray-200">{username}</strong>? This cannot be undone.
+        </p>
+        {error && <ErrorBanner msg={error} onDismiss={() => setError('')} />}
+        <div className="flex gap-2 justify-end">
+          <button onClick={onClose} className="px-3 py-1.5 rounded text-sm text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-800 transition">Cancel</button>
+          <button onClick={handleDelete} disabled={loading}
+            className="px-4 py-1.5 rounded text-sm font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition">
+            {loading ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BotRow({ bot, onUpdated, onError }: { bot: AdminBot; onUpdated: () => void; onError: (msg: string) => void }) {
   const [editName, setEditName] = useState(false);
   const [nameVal, setNameVal] = useState(bot.username);
   const [saving, setSaving] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
   const update = async (updates: { username?: string; level?: number; enabled?: boolean }) => {
     setSaving(true);
@@ -173,6 +212,21 @@ function BotRow({ bot, onUpdated, onError }: { bot: AdminBot; onUpdated: () => v
           disabled={saving}
         />
       </td>
+      <td className="px-4 py-2.5">
+        <button
+          onClick={() => setShowDelete(true)}
+          disabled={bot.inGame}
+          className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title={bot.inGame ? 'Cannot delete while playing' : 'Delete bot'}
+        >✕</button>
+      </td>
+      {showDelete && (
+        <DeleteBotModal
+          username={bot.username}
+          onClose={() => setShowDelete(false)}
+          onDeleted={onUpdated}
+        />
+      )}
     </tr>
   );
 }
@@ -222,6 +276,7 @@ function BotsSection() {
                 <th className="px-4 py-2 text-center">ELO</th>
                 <th className="px-4 py-2 text-center">Games</th>
                 <th className="px-4 py-2">Enabled</th>
+                <th className="px-4 py-2"></th>
               </tr>
             </thead>
             <tbody>
