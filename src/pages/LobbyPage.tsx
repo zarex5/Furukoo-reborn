@@ -212,7 +212,7 @@ export default function LobbyPage() {
                                           : 'bg-green-50 text-green-800 border-green-300 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
                                         }`}
                                     >
-                                      {p.username} ({p.elo}){p.isBot && p.botLevel != null && <span className="ml-1 opacity-60 text-[10px]">Lv{p.botLevel}</span>}
+                                      {p.username} ({p.elo})
                                     </button>
                                   ))}
                                 </div>
@@ -289,7 +289,6 @@ export default function LobbyPage() {
                   >
                     {p.username}
                     <span className="ml-1 opacity-70 text-xs">{p.elo}</span>
-                    {p.isBot && p.botLevel != null && <span className="ml-1 opacity-50 text-[10px]">Lv{p.botLevel}</span>}
                   </button>
                 ))}
               </div>

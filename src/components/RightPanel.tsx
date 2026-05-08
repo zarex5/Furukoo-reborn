@@ -65,12 +65,11 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate }: Playe
                 onClick={() => navigate(`/profile/${u.username}`)}
                 className="truncate hover:text-violet-600 dark:hover:text-violet-400 transition-colors text-left"
               >{u.username}</button>
-              {u.isBot && u.botLevel != null && <span className="ml-0.5 opacity-50 text-[10px] flex-none">Lv{u.botLevel}</span>}
             </span>
             <span className="w-12 text-center tabular-nums">{u.elo}</span>
             <span className="w-8 flex justify-center">
               {u.gameId && u.gameColor ? (
-                <Tip content={u.reviewing ? `Reviewing ${u.gameId}` : u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId} — click to spectate`}>
+                <Tip content={u.reviewing ? `Reviewing ${u.gameId}` : u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId}`}>
                   <span
                     className="inline-block w-3 h-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-400 dark:hover:ring-slate-500 transition-shadow"
                     style={{ background: u.gameColor, opacity: u.spectating ? 0.5 : 1 }}

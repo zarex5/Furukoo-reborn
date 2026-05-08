@@ -412,7 +412,6 @@ export default function AdminPage() {
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-none">
         <FurukooLogo />
-        <span className="text-xs font-mono px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 font-bold">Admin</span>
         <div className="flex gap-2 ml-auto items-center">
           <button
             onClick={() => navigate('/')}
