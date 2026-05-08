@@ -141,8 +141,8 @@ export default function LobbyPage() {
   const [rulesOpen, setRulesOpen] = useState(false);
 
   return (
-    <div className={`${isDark ? 'dark' : ''} min-h-screen`}>
-    <div className="min-h-screen bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
+    <div className={`${isDark ? 'dark' : ''} h-screen overflow-hidden`}>
+    <div className="h-full bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
 
       {/* ── Shared top bar ───────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-none">
@@ -183,7 +183,7 @@ export default function LobbyPage() {
             <div className="h-full flex flex-col min-h-0">
               <ResizableSplit
                 direction="vertical"
-                initialFirstPct={38}
+                initialFirstPct={65}
                 first={<div className="h-full"><RulesBox /></div>}
                 second={
                   <div className="h-full"><div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
@@ -231,7 +231,7 @@ export default function LobbyPage() {
             <div className="h-full flex flex-col min-h-0">
               <ResizableSplit
                 direction="vertical"
-                initialFirstPct={45}
+                initialFirstPct={50}
                 first={<div className="h-full"><PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} /></div>}
                 second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" /></div>}
               />

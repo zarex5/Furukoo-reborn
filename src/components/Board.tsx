@@ -12,6 +12,8 @@ interface Props {
   phase: 'placement' | 'movement';
   isDark: boolean;
   responsive?: boolean;
+  /** Fill parent container, maintaining aspect ratio (for desktop game layout). */
+  fit?: boolean;
 }
 
 /**
@@ -115,6 +117,7 @@ export const Board: React.FC<Props> = ({
   phase,
   isDark,
   responsive = false,
+  fit = false,
 }) => {
   const C = isDark ? {
     emptyFill: '#4b5563', emptyStroke: '#6b7280', labelFill: '#d1d5db',
@@ -235,8 +238,9 @@ export const Board: React.FC<Props> = ({
   return (
     <svg
       viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-      width={responsive ? '100%' : SVG_W}
-      height={responsive ? undefined : SVG_H}
+      width={fit ? '100%' : responsive ? '100%' : SVG_W}
+      height={fit ? '100%' : responsive ? undefined : SVG_H}
+      preserveAspectRatio={fit ? 'xMidYMid meet' : undefined}
       style={{ display: 'block' }}
     >
       <defs>

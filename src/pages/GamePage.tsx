@@ -184,8 +184,8 @@ export default function GamePage() {
 
   if (!gameState || !gameMeta || !displayedState) {
     return (
-      <div className={`${isDark ? 'dark' : ''} min-h-screen`}>
-        <div className="min-h-screen bg-slate-100 dark:bg-gray-950 flex items-center justify-center text-slate-500 dark:text-gray-400 font-mono text-sm">
+      <div className={`${isDark ? 'dark' : ''} h-screen overflow-hidden`}>
+        <div className="h-full bg-slate-100 dark:bg-gray-950 flex items-center justify-center text-slate-500 dark:text-gray-400 font-mono text-sm">
           Connecting to game…
         </div>
       </div>
@@ -205,8 +205,8 @@ export default function GamePage() {
   const navBtnCls = 'px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-30 transition';
 
   return (
-    <div className={`${isDark ? 'dark' : ''} min-h-screen`}>
-    <div className="min-h-screen bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
+    <div className={`${isDark ? 'dark' : ''} h-screen overflow-hidden`}>
+    <div className="h-full bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
 
       {/* Top bar */}
       <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-none">
@@ -274,27 +274,34 @@ export default function GamePage() {
           direction="horizontal"
           initialFirstPct={66}
           first={
-            <div className="h-full flex flex-col items-center justify-center gap-1.5 overflow-y-auto">
-              <PlayerPanel player="red" name={redName}
-                isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
-                timeMs={(viewedState ?? displayedState).redTimeMs}
-                lastMove={lastRedMove} moveIndex={redMoveIdx}
-                isWinner={gameOver?.winner === 'red'} />
-              <Board
-                pieces={(viewedState ?? displayedState).pieces}
-                currentPlayer={gameState.currentPlayer}
-                selectedSlot={selectedSlot}
-                onSlotClick={handleSlotClick}
-                disabled={boardDisabled}
-                phase={gameState.phase}
-                isDark={isDark}
-              />
-              <PlayerPanel player="black" name={blackName}
-                isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
-                timeMs={(viewedState ?? displayedState).blackTimeMs}
-                lastMove={lastBlackMove} moveIndex={blackMoveIdx}
-                isWinner={gameOver?.winner === 'black'} />
-              <div className="flex items-center justify-center gap-1">
+            <div className="h-full flex flex-col overflow-hidden py-2 px-1 gap-1.5">
+              <div className="flex-none">
+                <PlayerPanel player="red" name={redName}
+                  isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
+                  timeMs={(viewedState ?? displayedState).redTimeMs}
+                  lastMove={lastRedMove} moveIndex={redMoveIdx}
+                  isWinner={gameOver?.winner === 'red'} />
+              </div>
+              <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+                <Board
+                  fit
+                  pieces={(viewedState ?? displayedState).pieces}
+                  currentPlayer={gameState.currentPlayer}
+                  selectedSlot={selectedSlot}
+                  onSlotClick={handleSlotClick}
+                  disabled={boardDisabled}
+                  phase={gameState.phase}
+                  isDark={isDark}
+                />
+              </div>
+              <div className="flex-none">
+                <PlayerPanel player="black" name={blackName}
+                  isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
+                  timeMs={(viewedState ?? displayedState).blackTimeMs}
+                  lastMove={lastBlackMove} moveIndex={blackMoveIdx}
+                  isWinner={gameOver?.winner === 'black'} />
+              </div>
+              <div className="flex-none flex items-center justify-center gap-1">
                 <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">⏮</button>
                 <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0} title="Previous move">◀</button>
                 <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">▶</button>
@@ -307,7 +314,7 @@ export default function GamePage() {
             <div className="h-full flex flex-col min-h-0">
               <ResizableSplit
                 direction="vertical"
-                initialFirstPct={40}
+                initialFirstPct={50}
                 first={<div className="h-full"><PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} /></div>}
                 second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin={gameId ?? ''} /></div>}
               />
