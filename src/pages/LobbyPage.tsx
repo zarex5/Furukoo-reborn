@@ -56,12 +56,11 @@ function RulesBox({ mobile = false }: { mobile?: boolean }) {
       <div className="flex gap-3 items-start">
         <div className="flex-none mt-1"><img src={boardPreview} alt="Board preview" className="w-20 h-20 object-contain rounded" /></div>
         <div className="space-y-1.5">
-          <p><strong>Goal</strong> — be the first to own all 4 sides of any unit square. Pieces sit on the <em>line segments</em> of a 6×6 grid, not on the dots.</p>
-          <p><strong>Placement</strong> — alternate placing one of your 7 pieces on any free segment.</p>
-          <p><strong>Movement</strong> — once all 14 pieces are on the board, each turn slide one piece to an adjacent free segment (along the line, or pivot at a dot onto a perpendicular line).</p>
-          <p><strong>Winning</strong> — the moment all 4 sides of a square are yours, you win instantly.</p>
-          <p><strong>Clock</strong> — each move adds +3 s. Run out of time and you lose. You can also <em>Resign</em> at any time.</p>
-          <p><strong>Spectate</strong> — click any colored dot in the Players panel to watch a live game in progress.</p>
+          <p><strong>Win</strong> — own all 4 sides of any square on the grid first.</p>
+          <p><strong>Place</strong> — take turns putting one of your 7 pieces on any free segment.</p>
+          <p><strong>Move</strong> — once all 14 pieces are placed, slide a piece to an adjacent free segment each turn.</p>
+          <p><strong>Clock</strong> — each move adds 3 s. Run out of time and you lose.</p>
+          <p><strong>Watch</strong> — click the colored circle next to any player to spectate their game live.</p>
         </div>
       </div>
       <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-800 text-slate-400 dark:text-gray-500">
