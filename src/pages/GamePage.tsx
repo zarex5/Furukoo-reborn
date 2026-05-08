@@ -214,14 +214,11 @@ export default function GamePage() {
         <div className="flex gap-2 ml-auto items-center">
           {/* Context label — hidden on very small screens */}
           <span className="hidden sm:inline text-xs font-mono text-slate-400 dark:text-gray-500">
-            {!isSpectating ? <>
-              Playing against{' '}
-              <button onClick={() => navigate(`/profile/${myColor === 'red' ? blackName : redName}`)} className="hover:text-violet-500 transition underline underline-offset-2">
-                {myColor === 'red' ? blackName : redName}
-              </button>
-            </> : gameState?.winner || gameOver
-              ? `Reviewing ${redName} vs ${blackName}`
-              : `Spectating ${redName} vs ${blackName}`}
+            {!isSpectating
+              ? `Playing against ${myColor === 'red' ? blackName : redName}`
+              : gameState?.winner || gameOver
+                ? `Reviewing ${redName} vs ${blackName}`
+                : `Spectating ${redName} vs ${blackName}`}
           </span>
           {isSpectating || gameOver
             ? <button onClick={handleBack} className="px-3 py-1.5 rounded text-xs font-bold bg-violet-600 text-white active:bg-violet-700 transition">

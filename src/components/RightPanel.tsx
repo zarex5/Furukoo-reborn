@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Tip } from './Tip';
 
 export interface OnlineUser {
@@ -31,6 +32,7 @@ interface PlayersBoxProps {
 }
 
 export function PlayersBox({ users, myUsername, gamePlayers, onSpectate }: PlayersBoxProps) {
+  const navigate = useNavigate();
   const sorted = gamePlayers
     ? [
         ...users.filter(u => u.username === gamePlayers.red || u.username === gamePlayers.black),
@@ -58,7 +60,13 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate }: Playe
       <div className="flex-1 overflow-y-auto">
         {sorted.map(u => (
           <div key={u.username} className={rowCls(u)}>
-            <span className="flex-1 truncate">{u.username}{u.isBot && u.botLevel != null && <span className="ml-1 opacity-50 text-[10px]">Lv{u.botLevel}</span>}</span>
+            <span className="flex-1 truncate flex items-center gap-0.5 min-w-0">
+              <button
+                onClick={() => navigate(`/profile/${u.username}`)}
+                className="truncate hover:text-violet-600 dark:hover:text-violet-400 transition-colors text-left"
+              >{u.username}</button>
+              {u.isBot && u.botLevel != null && <span className="ml-0.5 opacity-50 text-[10px] flex-none">Lv{u.botLevel}</span>}
+            </span>
             <span className="w-12 text-center tabular-nums">{u.elo}</span>
             <span className="w-8 flex justify-center">
               {u.gameId && u.gameColor ? (
