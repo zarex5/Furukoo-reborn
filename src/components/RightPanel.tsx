@@ -29,9 +29,10 @@ interface PlayersBoxProps {
   myUsername: string;
   gamePlayers?: { red: string; black: string };
   onSpectate?: (gameId: string) => void;
+  mobile?: boolean;
 }
 
-export function PlayersBox({ users, myUsername, gamePlayers, onSpectate }: PlayersBoxProps) {
+export function PlayersBox({ users, myUsername, gamePlayers, onSpectate, mobile = false }: PlayersBoxProps) {
   const navigate = useNavigate();
   const sorted = gamePlayers
     ? [
@@ -50,43 +51,59 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate }: Playe
     return base;
   };
 
+  const rows = sorted.map(u => (
+    <div key={u.username} className={rowCls(u)}>
+      <span className="flex-1 truncate flex items-center gap-0.5 min-w-0">
+        <button
+          onClick={() => navigate(`/profile/${u.username}`)}
+          className="truncate hover:text-violet-600 dark:hover:text-violet-400 transition-colors text-left"
+        >{u.username}</button>
+      </span>
+      <span className="w-12 text-center tabular-nums">{u.elo}</span>
+      <span className="w-8 flex justify-center">
+        {u.gameId && u.gameColor ? (
+          <Tip content={u.reviewing ? `Reviewing ${u.gameId}` : u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId}`}>
+            <span
+              className="inline-block w-3 h-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-400 dark:hover:ring-slate-500 transition-shadow"
+              style={{ background: u.gameColor, opacity: u.spectating ? 0.5 : 1 }}
+              onClick={() => onSpectate?.(u.gameId!)}
+            />
+          </Tip>
+        ) : (
+          <Tip content="In lobby">
+            <span className="inline-block w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-600" />
+          </Tip>
+        )}
+      </span>
+    </div>
+  ));
+
+  const header = (
+    <div className="grid grid-cols-[1fr_3rem_2rem] text-xs font-bold px-2 py-1 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
+      <span>Players</span>
+      <span className="text-center">ELO</span>
+      <span className="text-center">In</span>
+    </div>
+  );
+
+  const empty = users.length === 0 && (
+    <p className="text-xs text-slate-400 dark:text-gray-500 px-2 py-2">No players online</p>
+  );
+
+  if (mobile) {
+    return (
+      <div className="bg-white dark:bg-gray-900 rounded-lg overflow-hidden">
+        {header}
+        <div>{rows}{empty}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="grid grid-cols-[1fr_3rem_2rem] text-xs font-bold px-2 py-1 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
-        <span>Players</span>
-        <span className="text-center">ELO</span>
-        <span className="text-center">In</span>
-      </div>
+      {header}
       <div className="flex-1 overflow-y-auto">
-        {sorted.map(u => (
-          <div key={u.username} className={rowCls(u)}>
-            <span className="flex-1 truncate flex items-center gap-0.5 min-w-0">
-              <button
-                onClick={() => navigate(`/profile/${u.username}`)}
-                className="truncate hover:text-violet-600 dark:hover:text-violet-400 transition-colors text-left"
-              >{u.username}</button>
-            </span>
-            <span className="w-12 text-center tabular-nums">{u.elo}</span>
-            <span className="w-8 flex justify-center">
-              {u.gameId && u.gameColor ? (
-                <Tip content={u.reviewing ? `Reviewing ${u.gameId}` : u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId}`}>
-                  <span
-                    className="inline-block w-3 h-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-400 dark:hover:ring-slate-500 transition-shadow"
-                    style={{ background: u.gameColor, opacity: u.spectating ? 0.5 : 1 }}
-                    onClick={() => onSpectate?.(u.gameId!)}
-                  />
-                </Tip>
-              ) : (
-                <Tip content="In lobby">
-                  <span className="inline-block w-3 h-3 rounded-full bg-slate-200 dark:bg-slate-600" />
-                </Tip>
-              )}
-            </span>
-          </div>
-        ))}
-        {users.length === 0 && (
-          <p className="text-xs text-slate-400 dark:text-gray-500 px-2 py-2">No players online</p>
-        )}
+        {rows}{empty}
       </div>
     </div>
   );

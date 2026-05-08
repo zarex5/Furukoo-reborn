@@ -306,6 +306,7 @@ export default function GamePage() {
               )}
               <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden px-6">
                 <Board
+                  uid="desktop"
                   fit
                   pieces={(viewedState ?? displayedState).pieces}
                   currentPlayer={gameState.currentPlayer}
@@ -362,6 +363,7 @@ export default function GamePage() {
         {/* Board — fills width */}
         <div className="px-3 mt-2">
           <Board
+            uid="mobile"
             pieces={(viewedState ?? displayedState).pieces}
             currentPlayer={gameState.currentPlayer}
             selectedSlot={selectedSlot}
@@ -392,12 +394,12 @@ export default function GamePage() {
         </div>
 
         {/* Chat */}
-        <div className="mx-3 mt-3 flex flex-col bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 280 }}>
+        <div className="mx-3 mt-3 flex flex-col bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 360 }}>
           <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin={gameId ?? ''} muted={isMuted} />
         </div>
 
         {/* Players */}
-        <div className="mx-3 mt-3 mb-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 200 }}>
+        <div className="mx-3 mt-3 mb-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 260 }}>
           <PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} />
         </div>
 

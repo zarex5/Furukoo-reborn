@@ -14,6 +14,8 @@ interface Props {
   responsive?: boolean;
   /** Fill parent container, maintaining aspect ratio (for desktop game layout). */
   fit?: boolean;
+  /** Unique prefix for SVG gradient IDs — prevents conflicts when multiple boards are in the DOM. */
+  uid?: string;
 }
 
 /**
@@ -118,6 +120,7 @@ export const Board: React.FC<Props> = ({
   isDark,
   responsive = false,
   fit = false,
+  uid = 'b',
 }) => {
   const C = isDark ? {
     emptyFill: '#4b5563', emptyStroke: '#6b7280', labelFill: '#d1d5db',
@@ -175,11 +178,11 @@ export const Board: React.FC<Props> = ({
     }
 
     let fillId: string;
-    if (isSelected) fillId = 'url(#g-sel)';
-    else if (isLegal) fillId = 'url(#g-leg)';
-    else if (owner === 'red') fillId = 'url(#g-red)';
-    else if (owner === 'black') fillId = isDark ? 'url(#g-blk-d)' : 'url(#g-blk-l)';
-    else fillId = isDark ? 'url(#g-empty-d)' : 'url(#g-empty-l)';
+    if (isSelected) fillId = `url(#${uid}-sel)`;
+    else if (isLegal) fillId = `url(#${uid}-leg)`;
+    else if (owner === 'red') fillId = `url(#${uid}-red)`;
+    else if (owner === 'black') fillId = isDark ? `url(#${uid}-blk-d)` : `url(#${uid}-blk-l)`;
+    else fillId = isDark ? `url(#${uid}-empty-d)` : `url(#${uid}-empty-l)`;
 
     let strokeColor = C.emptyStroke;
     if (isSelected) strokeColor = '#d97706';
@@ -245,35 +248,35 @@ export const Board: React.FC<Props> = ({
     >
       <defs>
         {/* Empty slots: darker center, much lighter edge */}
-        <radialGradient id="g-empty-l" cx="50%" cy="50%" r="70%">
+        <radialGradient id={`${uid}-empty-l`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#d6e2ec" />
           <stop offset="100%" stopColor="#f6fafd" />
         </radialGradient>
-        <radialGradient id="g-empty-d" cx="50%" cy="50%" r="70%">
+        <radialGradient id={`${uid}-empty-d`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#606f7e" />
           <stop offset="100%" stopColor="#8fa0b0" />
         </radialGradient>
         {/* Colored pieces: moderate highlight center */}
-        <radialGradient id="g-red" cx="50%" cy="50%" r="70%">
+        <radialGradient id={`${uid}-red`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#fca5a5" />
           <stop offset="100%" stopColor="#dc2626" />
         </radialGradient>
-        <radialGradient id="g-blk-l" cx="50%" cy="50%" r="70%">
+        <radialGradient id={`${uid}-blk-l`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#94a3b8" />
           <stop offset="55%" stopColor="#475569" />
           <stop offset="100%" stopColor="#0f172a" />
         </radialGradient>
-        <radialGradient id="g-blk-d" cx="50%" cy="50%" r="70%">
+        <radialGradient id={`${uid}-blk-d`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#6b7280" />
           <stop offset="55%" stopColor="#374151" />
           <stop offset="100%" stopColor="#030712" />
         </radialGradient>
-        <radialGradient id="g-sel" cx="50%" cy="50%" r="70%">
+        <radialGradient id={`${uid}-sel`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#fffbeb" />
           <stop offset="55%" stopColor="#fde68a" />
           <stop offset="100%" stopColor="#d97706" />
         </radialGradient>
-        <radialGradient id="g-leg" cx="50%" cy="50%" r="70%">
+        <radialGradient id={`${uid}-leg`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#f0fdf4" />
           <stop offset="55%" stopColor="#86efac" />
           <stop offset="100%" stopColor="#16a34a" />

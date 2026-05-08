@@ -273,7 +273,7 @@ export default function LobbyPage() {
           <button onClick={logout} className="px-3 py-2 rounded-lg text-sm font-bold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 active:bg-red-100">Out</button>
         </div>
 
-        {/* Waiting section */}
+        {/* Waiting section — ELO range table (same as desktop) */}
         <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
           <div className="px-4 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Waiting</span>
@@ -281,31 +281,35 @@ export default function LobbyPage() {
               <span className="text-xs font-mono font-bold text-violet-600 dark:text-violet-400">{allProposals.length} open</span>
             )}
           </div>
-          <div className="px-4 py-3">
-            {allProposals.length === 0 ? (
-              <p className="text-sm font-mono text-slate-400 dark:text-gray-500 text-center py-2">
-                No proposals yet — tap <strong>Play</strong> to be first!
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {allProposals.map(p => (
-                  <button
-                    key={p.username}
-                    onClick={() => p.username !== user?.username && handleAccept(p.username)}
-                    disabled={p.username === user?.username}
-                    className={`px-4 py-2 rounded-xl text-sm font-bold border transition
-                      ${p.username === user?.username
-                        ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700'
-                        : 'bg-green-50 text-green-800 border-green-200 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700'
-                      }`}
-                  >
-                    {p.username}
-                    <span className="ml-1 opacity-70 text-xs">{p.elo}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          <table className="w-full text-xs font-mono">
+            <tbody>
+              {ELO_RANGES.map(range => {
+                const row = proposals.filter(p => p.eloRange === range);
+                return (
+                  <tr key={range} className="border-b border-slate-100 dark:border-gray-800 last:border-0">
+                    <td className="px-3 py-1.5 text-slate-400 dark:text-gray-500 whitespace-nowrap w-28">{range}</td>
+                    <td className="px-3 py-1.5">
+                      <div className="flex flex-wrap gap-1.5">
+                        {row.map(p => (
+                          <button key={p.username}
+                            onClick={() => p.username !== user?.username && handleAccept(p.username)}
+                            disabled={p.username === user?.username}
+                            className={`px-2 py-0.5 rounded text-xs font-bold border transition
+                              ${p.username === user?.username
+                                ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700 cursor-default'
+                                : 'bg-green-50 text-green-800 border-green-300 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
+                              }`}
+                          >
+                            {p.username} ({p.elo})
+                          </button>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
 
         {/* Chat */}
@@ -313,9 +317,9 @@ export default function LobbyPage() {
           <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} />
         </div>
 
-        {/* Players */}
-        <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 220 }}>
-          <PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} />
+        {/* Players — auto-height, no fixed constraint */}
+        <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} mobile />
         </div>
 
         {/* Rules — collapsible */}
