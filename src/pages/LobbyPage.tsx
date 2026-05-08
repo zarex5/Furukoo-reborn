@@ -50,34 +50,46 @@ function InviteTicker() {
   );
 }
 
+const CREDITS = (
+  <div className="px-3 pb-1 border-t border-slate-100 dark:border-gray-800 text-xs font-mono text-slate-400 dark:text-gray-500 pt-2">
+    <p>Coded with ♥ by <span className="text-slate-500 dark:text-gray-400">iNo_</span> & <span className="text-violet-500 dark:text-violet-400">Claude</span> — Original game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span> & <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
+  </div>
+);
+
 function RulesBox({ mobile = false }: { mobile?: boolean }) {
-  const content = (
-    <div className={`${mobile ? '' : 'flex-1 overflow-y-auto'} px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed`}>
-      <div className="flex gap-3 items-start">
-        <div className="flex-none mt-1"><img src={boardPreview} alt="Board preview" className="w-20 h-20 object-contain rounded" /></div>
-        <div className="space-y-1.5">
-          <p><strong>Win</strong> — own all 4 sides of any square on the grid first.</p>
-          <p><strong>Place</strong> — take turns putting one of your 7 pieces on any free segment.</p>
-          <p><strong>Move</strong> — once all 14 pieces are placed, slide a piece to an adjacent free segment each turn.</p>
-          <p><strong>Clock</strong> — each move adds 3 s. Run out of time and you lose.</p>
-          <p><strong>Watch</strong> — click the colored circle next to any player to spectate their game live.</p>
-        </div>
+  const rulesContent = (
+    <div className="flex gap-3 items-start">
+      <div className="flex-none mt-1"><img src={boardPreview} alt="Board preview" className="w-20 h-20 object-contain rounded" /></div>
+      <div className="space-y-1.5">
+        <p><strong>Win</strong> — own all 4 sides of any square on the grid first.</p>
+        <p><strong>Place</strong> — take turns putting one of your 7 pieces on any free segment.</p>
+        <p><strong>Move</strong> — once all 14 pieces are placed, slide a piece to an adjacent free segment each turn.</p>
+        <p><strong>Clock</strong> — each move adds 3 s. Run out of time and you lose.</p>
+        <p><strong>Watch</strong> — click the colored circle next to any player to spectate their game live.</p>
       </div>
-      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-gray-800 text-slate-400 dark:text-gray-500">
-        <p>Coded with ♥ by <span className="text-slate-500 dark:text-gray-400">iNo_</span> & <span className="text-violet-500 dark:text-violet-400">Claude</span> — Original game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span> & <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
-      </div>
-      <InviteTicker />
     </div>
   );
 
-  if (mobile) return content;
+  if (mobile) {
+    return (
+      <div className="px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
+        {rulesContent}
+        {CREDITS}
+        <InviteTicker />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <div className="text-xs font-bold px-2 py-1 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
         How to play
       </div>
-      {content}
+      <div className="flex-1 overflow-y-auto px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
+        {rulesContent}
+      </div>
+      {CREDITS}
+      <InviteTicker />
     </div>
   );
 }
