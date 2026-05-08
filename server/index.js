@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
-const { slotKey, legalMoves, applyMove, calcEloDelta, eloInfo, getEloRange, INITIAL_TIME_MS } = require('./gameLogic');
+const { slotKey, legalMoves, applyMove, positionKey, calcEloDelta, eloInfo, getEloRange, INITIAL_TIME_MS } = require('./gameLogic');
 const bot = require('./bot');
 
 // ── App setup ────────────────────────────────────────────────────────────────
@@ -59,6 +59,8 @@ const GameSchema = new mongoose.Schema({
   moves:         { type: M, default: [] },
   winner:        { type: String, default: null },
   resignedBy:    { type: String, default: null },
+  drawnBy:       { type: String, default: null },
+  positionCounts: { type: M, default: {} },
   redTimeMs:     Number,
   blackTimeMs:   Number,
   lastMoveAt:    { type: Number, default: Date.now },
@@ -103,6 +105,7 @@ function saveGame(game) {
       redPlaced: game.redPlaced, blackPlaced: game.blackPlaced,
       phase: game.phase, moves: game.moves,
       winner: game.winner || null, resignedBy: game.resignedBy || null,
+      drawnBy: game.drawnBy || null, positionCounts: game.positionCounts || {},
       redTimeMs: game.redTimeMs, blackTimeMs: game.blackTimeMs,
       lastMoveAt: game.lastMoveAt,
       startedAt: game.startedAt || null,
@@ -173,7 +176,7 @@ function gamePlayerMeta(g, username) {
   return {
     gameId:        g.gameId,
     opponent:      g[oColor].username,
-    result:        g.winner === color ? 'win' : 'loss',
+    result:        g.winner === 'draw' ? 'draw' : g.winner === color ? 'win' : 'loss',
     eloDelta:      isRed ? g.redEloDelta   : g.blackEloDelta,
     eloAfter:      isRed ? g.redEloAfter   : g.blackEloAfter,
     myMoves:       (g.moves || []).filter(m => m.player === color).length,
@@ -373,6 +376,26 @@ function liveState(game) {
   };
 }
 
+// Apply a move and check for threefold-repetition draw.
+// Returns the next game state (with winner='draw' if applicable).
+function applyMoveWithDraw(game, to, from) {
+  const next = applyMove(game, to, from);
+  if (!next.winner) {
+    // Count the new position (pieces after move + whose turn it now is)
+    const posKey = positionKey(next.pieces, next.currentPlayer);
+    const counts = { ...(game.positionCounts || {}) };
+    counts[posKey] = (counts[posKey] || 0) + 1;
+    next.positionCounts = counts;
+    if (counts[posKey] >= 3) {
+      next.winner = 'draw';
+      next.drawnBy = 'repetition';
+    }
+  } else {
+    next.positionCounts = game.positionCounts || {};
+  }
+  return next;
+}
+
 // Internal move execution for the bot (bypasses socket auth, same logic as game:move)
 function botMove(gameId, to, from) {
   const game = activeGames.get(gameId);
@@ -385,11 +408,11 @@ function botMove(gameId, to, from) {
     if (game.pieces[slotKey(from)] !== game.currentPlayer) return;
     if (!legalMoves(from, game.pieces).some(s => slotKey(s) === slotKey(to))) return;
   }
-  const next = applyMove(game, to, from);
+  const next = applyMoveWithDraw(game, to, from);
   activeGames.set(gameId, next);
   io.to(`game:${gameId}`).emit('game:state', next);
   bot.onGameState(gameId, next);
-  if (next.winner) endGame(gameId, next.winner, 'board');
+  if (next.winner) endGame(gameId, next.winner, next.drawnBy ? 'repetition' : 'board');
   else saveGame(next);
 }
 
@@ -405,6 +428,7 @@ async function loadActiveGames() {
       redPlaced: g.redPlaced, blackPlaced: g.blackPlaced,
       phase: g.phase, moves: g.moves || [],
       winner: g.winner || null, resignedBy: g.resignedBy || null,
+      drawnBy: g.drawnBy || null, positionCounts: g.positionCounts || {},
       redTimeMs: g.redTimeMs, blackTimeMs: g.blackTimeMs,
       lastMoveAt: Date.now(), // reset so downtime doesn't eat the clock
       startedAt: g.startedAt || Date.now(),
@@ -523,7 +547,8 @@ io.on('connection', async (socket) => {
       eloInfo: info,
       pieces: {}, currentPlayer: 'red',
       redPlaced: 0, blackPlaced: 0, phase: 'placement',
-      moves: [], winner: null, resignedBy: null,
+      moves: [], winner: null, resignedBy: null, drawnBy: null,
+      positionCounts: {},
       redTimeMs: INITIAL_TIME_MS, blackTimeMs: INITIAL_TIME_MS,
       lastMoveAt: Date.now(),
       startedAt: Date.now(),
@@ -665,11 +690,11 @@ io.on('connection', async (socket) => {
       if (!legalMoves(from, game.pieces).some(s => slotKey(s) === slotKey(to))) return;
     }
 
-    const next = applyMove(game, to, from);
+    const next = applyMoveWithDraw(game, to, from);
     activeGames.set(gameId, next);
     io.to(`game:${gameId}`).emit('game:state', next);
     bot.onGameState(gameId, next);
-    if (next.winner) endGame(gameId, next.winner, 'board');
+    if (next.winner) endGame(gameId, next.winner, next.drawnBy ? 'repetition' : 'board');
     else saveGame(next);
   });
 
@@ -842,6 +867,7 @@ async function endGame(gameId, winner, reason) {
   // Update game record with final ELO data
   Game.findOneAndUpdate({ gameId }, { $set: {
     status: 'ended', winner,
+    drawnBy: game.drawnBy || null,
     redEloAfter: newRedElo, blackEloAfter: newBlackElo,
     redEloDelta: redDelta,  blackEloDelta: blackDelta,
     durationMs,
@@ -855,15 +881,21 @@ async function endGame(gameId, winner, reason) {
     if (u.gameId === gameId) { u.spectating = true; u.reviewing = true; }
   }
 
-  const winnerName = winner === 'red' ? game.red.username : game.black.username;
-  const reasonMsg  = reason === 'resign' ? ' (by resignation)' : reason === 'timeout' ? ' (on time)' : reason === 'disconnect' ? ' (opponent disconnected)' : '';
+  const isDraw = winner === 'draw';
+  const winnerName = isDraw ? null : (winner === 'red' ? game.red.username : game.black.username);
+  const reasonMsg  = reason === 'resign' ? ' (by resignation)' : reason === 'timeout' ? ' (on time)' : reason === 'disconnect' ? ' (opponent disconnected)' : reason === 'repetition' ? ' (threefold repetition)' : '';
 
   io.to(`game:${gameId}`).emit('game:over', {
     winner, reason, winnerName,
     redDelta, blackDelta, newRedElo, newBlackElo,
   });
-  sysChat(`${winnerName} wins${reasonMsg}!`, gameId);
-  sysChat(`${winnerName} won a game${reasonMsg}`, 'lobby');
+  if (isDraw) {
+    sysChat(`Draw${reasonMsg}!`, gameId);
+    sysChat(`${game.red.username} vs ${game.black.username} — draw${reasonMsg}`, 'lobby');
+  } else {
+    sysChat(`${winnerName} wins${reasonMsg}!`, gameId);
+    sysChat(`${winnerName} won a game${reasonMsg}`, 'lobby');
+  }
 
   activeGames.delete(gameId);
 

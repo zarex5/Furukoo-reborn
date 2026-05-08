@@ -5,6 +5,12 @@ const PIECES_PER_PLAYER = 7;
 const INITIAL_TIME_MS = 5 * 60 * 1000;
 const TIME_BONUS_MS = 3 * 1000;
 
+// Encodes a board position as a compact string for threefold-repetition tracking.
+// Key includes whose turn it is so 'red to move' ≠ 'black to move' with same pieces.
+function positionKey(pieces, currentPlayer) {
+  return currentPlayer[0] + ':' + Object.keys(pieces).sort().map(k => k + pieces[k][0]).join(',');
+}
+
 // Must match src/types.ts: `${line}${type}${slot}`
 function slotKey(s) {
   return `${s.line}${s.type}${s.slot}`;
@@ -112,4 +118,4 @@ function eloInfo(redElo, blackElo) {
   };
 }
 
-module.exports = { slotKey, adjacentSlots, legalMoves, allSquares, checkWinner, applyMove, calcEloDelta, eloInfo, getEloRange, PIECES_PER_PLAYER, INITIAL_TIME_MS, TIME_BONUS_MS };
+module.exports = { slotKey, adjacentSlots, legalMoves, allSquares, checkWinner, applyMove, positionKey, calcEloDelta, eloInfo, getEloRange, PIECES_PER_PLAYER, INITIAL_TIME_MS, TIME_BONUS_MS };
