@@ -18,7 +18,9 @@ export default function LoginPage() {
 
   const { isDark, toggleDark } = useDarkMode();
 
-  const kicked = new URLSearchParams(window.location.search).get('reason') === 'kicked';
+  const reason = new URLSearchParams(window.location.search).get('reason');
+  const kicked = reason === 'kicked';
+  const banned = reason === 'banned';
   const [mode,     setMode]     = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -86,6 +88,11 @@ export default function LoginPage() {
       {kicked && (
         <div className="w-80 px-4 py-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 text-xs font-mono text-amber-800 dark:text-amber-200 text-center">
           You were disconnected — this account connected from another location.
+        </div>
+      )}
+      {banned && (
+        <div className="w-80 px-4 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 text-xs font-mono text-red-800 dark:text-red-200 text-center">
+          Your account has been banned.
         </div>
       )}
 

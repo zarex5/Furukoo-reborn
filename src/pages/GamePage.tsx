@@ -36,7 +36,7 @@ const fmtDelta = (n: number) => (n >= 0 ? '+' : '') + n;
 
 export default function GamePage() {
   const { gameId }    = useParams<{ gameId: string }>();
-  const { user, updateElo } = useAuth();
+  const { user, isMuted, updateElo } = useAuth();
   const navigate      = useNavigate();
 
   const { isDark, toggleDark } = useDarkMode();
@@ -316,7 +316,7 @@ export default function GamePage() {
                 direction="vertical"
                 initialFirstPct={50}
                 first={<div className="h-full"><PlayersBox users={lobbyUsers} myUsername={user?.username ?? ''} gamePlayers={{ red: redName, black: blackName }} onSpectate={handleSpectate} /></div>}
-                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin={gameId ?? ''} /></div>}
+                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin={gameId ?? ''} muted={isMuted} /></div>}
               />
             </div>
           }
@@ -369,7 +369,7 @@ export default function GamePage() {
 
         {/* Chat */}
         <div className="mx-3 mt-3 flex flex-col bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 280 }}>
-          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin={gameId ?? ''} />
+          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin={gameId ?? ''} muted={isMuted} />
         </div>
 
         {/* Players */}

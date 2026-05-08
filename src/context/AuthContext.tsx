@@ -4,6 +4,7 @@ import { connectSocket, disconnectSocket, getSocket } from '../lib/socket';
 interface AuthUser { username: string; elo: number; token: string; isAdmin?: boolean; }
 interface AuthCtx {
   user: AuthUser | null;
+  isMuted: boolean;
   login: (u: AuthUser) => void;
   logout: () => void;
   updateElo: (elo: number) => void;
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return data;
     } catch { return null; }
   });
+  const [isMuted, setIsMuted] = useState(false);
 
   const login = (u: AuthUser) => {
     setUser(u);
@@ -49,9 +51,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       disconnectSocket();
       window.location.replace('/login?reason=banned');
     };
+    const onFlags = ({ isMuted: m }: { isMuted: boolean }) => setIsMuted(m);
     sock.on('session:kicked', onKicked);
     sock.on('auth:banned', onBanned);
-    return () => { sock.off('session:kicked', onKicked); sock.off('auth:banned', onBanned); };
+    sock.on('user:flags', onFlags);
+    return () => { sock.off('session:kicked', onKicked); sock.off('auth:banned', onBanned); sock.off('user:flags', onFlags); };
   }, [user]);
 
   const updateElo = (elo: number) => {
@@ -63,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  return <Ctx.Provider value={{ user, login, logout, updateElo }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, isMuted, login, logout, updateElo }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() { return useContext(Ctx); }

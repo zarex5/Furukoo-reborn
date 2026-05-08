@@ -99,9 +99,10 @@ interface ChatBoxProps {
   onSend: (text: string) => void;
   myUsername: string;
   origin: string;
+  muted?: boolean;
 }
 
-export function ChatBox({ messages, onSend, myUsername, origin }: ChatBoxProps) {
+export function ChatBox({ messages, onSend, myUsername, origin, muted = false }: ChatBoxProps) {
   const [draft, setDraft] = useState('');
   const [filtered, setFiltered] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -162,13 +163,15 @@ export function ChatBox({ messages, onSend, myUsername, origin }: ChatBoxProps) 
       </div>
       <div className="flex gap-1 px-2 py-1 border-t border-slate-100 dark:border-gray-800 flex-none">
         <input
-          className="flex-1 text-xs font-mono px-2 py-0.5 rounded border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-800 dark:text-white focus:outline-none focus:border-violet-400"
-          value={draft} onChange={e => setDraft(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder="Message…"
+          className="flex-1 text-xs font-mono px-2 py-0.5 rounded border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-800 dark:text-white focus:outline-none focus:border-violet-400 disabled:opacity-60 disabled:cursor-not-allowed"
+          value={muted ? '' : draft} onChange={e => !muted && setDraft(e.target.value)}
+          onKeyDown={e => !muted && e.key === 'Enter' && send()}
+          placeholder={muted ? 'You are muted' : 'Message…'}
+          disabled={muted}
+          readOnly={muted}
         />
-        <button onClick={send}
-          className="px-2 py-0.5 rounded text-xs bg-violet-600 text-white hover:bg-violet-700 transition font-bold">
+        <button onClick={send} disabled={muted}
+          className="px-2 py-0.5 rounded text-xs bg-violet-600 text-white hover:bg-violet-700 transition font-bold disabled:opacity-40 disabled:cursor-not-allowed">
           Send
         </button>
       </div>

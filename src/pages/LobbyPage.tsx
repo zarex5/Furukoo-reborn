@@ -95,7 +95,7 @@ function RulesBox({ mobile = false }: { mobile?: boolean }) {
 }
 
 export default function LobbyPage() {
-  const { user, logout, updateElo } = useAuth();
+  const { user, isMuted, logout, updateElo } = useAuth();
   const navigate = useNavigate();
 
   const { isDark, toggleDark } = useDarkMode();
@@ -245,7 +245,7 @@ export default function LobbyPage() {
                 direction="vertical"
                 initialFirstPct={50}
                 first={<div className="h-full"><PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} /></div>}
-                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" /></div>}
+                second={<div className="h-full"><ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} /></div>}
               />
             </div>
           }
@@ -310,7 +310,7 @@ export default function LobbyPage() {
 
         {/* Chat */}
         <div className="mx-3 mt-3 flex flex-col bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 300 }}>
-          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" />
+          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} />
         </div>
 
         {/* Players */}

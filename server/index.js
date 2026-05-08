@@ -381,7 +381,13 @@ app.put('/api/admin/players/:username/mute', requireAdmin, async (req, res) => {
     await User.updateOne({ username }, { $set: { isMuted: Boolean(isMuted) } });
     // Update live connectedUsers entry so mute takes effect immediately
     for (const [, u] of connectedUsers) {
-      if (u.username === username) { u.isMuted = Boolean(isMuted); break; }
+      if (u.username === username) {
+        u.isMuted = Boolean(isMuted);
+        // Notify the player's socket if it's a real socket (not a bot)
+        const sock = io.sockets.sockets.get(u.socketId);
+        if (sock) sock.emit('user:flags', { isMuted: Boolean(isMuted) });
+        break;
+      }
     }
     res.json({ ok: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
@@ -1077,6 +1083,7 @@ io.on('connection', async (socket) => {
     }
   }
 
+  socket.emit('user:flags', { isMuted: dbUser.isMuted || false });
   socket.emit('lobby:state', lobbySnapshot());
   sysChat(`${socket.username} just connected`, 'lobby');
   broadcastLobby();
