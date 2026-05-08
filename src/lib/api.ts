@@ -85,13 +85,14 @@ async function get<T>(path: string): Promise<T> {
 }
 
 export interface ProfileData {
-  username: string;
-  elo: number;
-  isBot?: boolean;
-  gamesPlayed: number;
+  username:     string;
+  elo:          number;
+  isBot?:       boolean;
+  gamesPlayed:  number;
   minutesPlayed: number;
-  joinDate: string;
-  isGuest: boolean;
+  joinDate:     string;
+  isGuest:      boolean;
+  messageCount: number;
 }
 
 export interface LeaderboardRow {

@@ -351,9 +351,15 @@ export default function ProfilePage() {
       <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col gap-8">
 
         {/* Title */}
-        <h1 className="text-xl font-bold text-slate-800 dark:text-white">
-          {username}{profile?.isBot && <span className="ml-2 text-xs font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 align-middle">BOT</span>}
-        </h1>
+        <div>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-white">
+            {username}{profile?.isBot && <span className="ml-2 text-xs font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 align-middle">BOT</span>}
+          </h1>
+          {profile
+            ? <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">Member since {fmtDate(profile.joinDate)}</p>
+            : <div className="mt-1 h-3 w-32 rounded bg-slate-200 dark:bg-gray-700 animate-pulse" />
+          }
+        </div>
 
         {error && <p className="text-red-500 text-sm font-mono">{error}</p>}
 
@@ -364,7 +370,7 @@ export default function ProfilePage() {
               <StatBox icon="⚡" value={profile.elo} label="Current ELO" />
               <StatBox icon="🎮" value={profile.gamesPlayed} label="Games played" />
               <StatBox icon="⏱️" value={profile.minutesPlayed === 0 ? '—' : `${profile.minutesPlayed}m`} label="Time played" />
-              <StatBox icon="📅" value={fmtDate(profile.joinDate)} label="Joined" />
+              <StatBox icon="💬" value={profile.messageCount} label="Messages sent" />
             </> : [0,1,2,3].map(i => (
               <div key={i} className="flex-1 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg p-4 flex flex-col items-center gap-2">
                 <Skeleton className="w-8 h-8" />
