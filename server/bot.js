@@ -1,6 +1,6 @@
 'use strict';
 
-const { slotKey, legalMoves, allSquares, checkWinner, PIECES_PER_PLAYER } = require('./gameLogic');
+const { slotKey, legalMoves, allSquares, checkWinner, positionKey, PIECES_PER_PLAYER } = require('./gameLogic');
 
 // ── Pre-computed constants ────────────────────────────────────────────────────
 
@@ -131,11 +131,16 @@ function getMoves(pieces, phase, color) {
   return moves;
 }
 
-// ── Minimax with alpha-beta (mutable pieces + undo/redo) ─────────────────────
+// ── Minimax with alpha-beta (mutable pieces + undo/redo, draw-aware) ──────────
+//
+// positionCounts: the real game's accumulated position counts (read-only view)
+// pathCounts: positions seen along the CURRENT search path (mutated & undone)
+// Draw score = -1e7: bot treats draws exactly like losses.
 
 let _searchDeadline = 0;
+const DRAW_SCORE = -1e7;
 
-function minimax(pieces, redPlaced, blackPlaced, phase, color, depth, alpha, beta, botColor) {
+function minimax(pieces, redPlaced, blackPlaced, phase, color, depth, alpha, beta, botColor, positionCounts, pathCounts) {
   if (depth === 0 || Date.now() > _searchDeadline) {
     return evaluate(pieces, botColor);
   }
@@ -143,13 +148,11 @@ function minimax(pieces, redPlaced, blackPlaced, phase, color, depth, alpha, bet
   const moves = getMoves(pieces, phase, color);
   if (!moves.length) return evaluate(pieces, botColor);
 
-  // Order moves by fast score (best first)
   const opp = color === 'red' ? 'black' : 'red';
   moves.sort((a, b) => fastScore(pieces, b.to, b.from, color) - fastScore(pieces, a.to, a.from, color));
 
   const max = color === botColor;
   let best = max ? -Infinity : Infinity;
-  const nextColor = opp;
 
   for (const m of moves) {
     if (Date.now() > _searchDeadline) break;
@@ -167,16 +170,28 @@ function minimax(pieces, redPlaced, blackPlaced, phase, color, depth, alpha, bet
     const nbp = color === 'black' ? blackPlaced + (m.from ? 0 : 1) : blackPlaced;
     const nphase = (nrp >= PIECES_PER_PLAYER && nbp >= PIECES_PER_PLAYER) ? 'movement' : 'placement';
 
-    const winner = checkWinnerFast(pieces, tk, color);
+    // Check threefold repetition: key = position after this move (opp to move)
+    const posKey = positionKey(pieces, opp);
+    const prevPathCount = pathCounts[posKey] || 0;
+    pathCounts[posKey] = prevPathCount + 1;
+    const totalCount = (positionCounts[posKey] || 0) + pathCounts[posKey];
 
     let score;
-    if (winner) {
-      score = winner === botColor ? 1e7 + depth * 10 : -1e7 - depth * 10;
+    if (totalCount >= 3) {
+      // This move causes a draw — penalize equally to a loss
+      score = DRAW_SCORE;
     } else {
-      score = minimax(pieces, nrp, nbp, nphase, nextColor, depth - 1, alpha, beta, botColor);
+      const winner = checkWinnerFast(pieces, tk, color);
+      if (winner) {
+        score = winner === botColor ? 1e7 + depth * 10 : -1e7 - depth * 10;
+      } else {
+        score = minimax(pieces, nrp, nbp, nphase, opp, depth - 1, alpha, beta, botColor, positionCounts, pathCounts);
+      }
     }
 
-    // Undo
+    // Undo path count
+    if (prevPathCount === 0) delete pathCounts[posKey]; else pathCounts[posKey] = prevPathCount;
+    // Undo move
     if (fk) pieces[fk] = prevFrom;
     if (prevTo === undefined) delete pieces[tk]; else pieces[tk] = prevTo;
 
@@ -197,14 +212,14 @@ function minimax(pieces, redPlaced, blackPlaced, phase, color, depth, alpha, bet
 
 function chooseBestMove(game, botColor) {
   const { pieces, currentPlayer, redPlaced, blackPlaced, phase } = game;
+  const positionCounts = game.positionCounts || {};
 
   const moves = getMoves(pieces, phase, botColor);
   if (!moves.length) return null;
 
-  // Order by fast score
   moves.sort((a, b) => fastScore(pieces, b.to, b.from, botColor) - fastScore(pieces, a.to, a.from, botColor));
 
-  // Immediate win? Take it.
+  // Immediate win (no draw check needed — winning move can't cause a draw)
   if (fastScore(pieces, moves[0].to, moves[0].from, botColor) >= 1e9) return moves[0];
 
   const maxDepth  = phase === 'placement' ? 4 : 5;
@@ -212,14 +227,14 @@ function chooseBestMove(game, botColor) {
   _searchDeadline = Date.now() + timeLimitMs;
 
   let bestMove = moves[0];
+  const opp = botColor === 'red' ? 'black' : 'red';
 
-  // Iterative deepening: each completed depth updates bestMove
   for (let depth = 1; depth <= maxDepth; depth++) {
     if (Date.now() > _searchDeadline) break;
 
     let depthBest = -Infinity;
     let depthBestMove = moves[0];
-    const opp = botColor === 'red' ? 'black' : 'red';
+    const pathCounts = {}; // fresh path-counts per depth iteration
 
     for (const m of moves) {
       if (Date.now() > _searchDeadline) break;
@@ -235,15 +250,28 @@ function chooseBestMove(game, botColor) {
       const nrp = botColor === 'red'   ? redPlaced   + (m.from ? 0 : 1) : redPlaced;
       const nbp = botColor === 'black' ? blackPlaced + (m.from ? 0 : 1) : blackPlaced;
       const nphase = (nrp >= PIECES_PER_PLAYER && nbp >= PIECES_PER_PLAYER) ? 'movement' : 'placement';
-      const winner = checkWinnerFast(pieces, tk, botColor);
+
+      // Track the position resulting from this move
+      const posKey = positionKey(pieces, opp);
+      const prevPathCount = pathCounts[posKey] || 0;
+      pathCounts[posKey] = prevPathCount + 1;
+      const totalCount = (positionCounts[posKey] || 0) + pathCounts[posKey];
 
       let score;
-      if (winner) {
-        score = 1e7 + depth * 10;
+      if (totalCount >= 3) {
+        score = DRAW_SCORE;
       } else {
-        score = minimax(pieces, nrp, nbp, nphase, opp, depth - 1, -Infinity, Infinity, botColor);
+        const winner = checkWinnerFast(pieces, tk, botColor);
+        if (winner) {
+          score = 1e7 + depth * 10;
+        } else {
+          score = minimax(pieces, nrp, nbp, nphase, opp, depth - 1, -Infinity, Infinity, botColor, positionCounts, pathCounts);
+        }
       }
 
+      // Undo path count
+      if (prevPathCount === 0) delete pathCounts[posKey]; else pathCounts[posKey] = prevPathCount;
+      // Undo move
       if (fk) pieces[fk] = prevFrom;
       if (prevTo === undefined) delete pieces[tk]; else pieces[tk] = prevTo;
 
@@ -253,12 +281,11 @@ function chooseBestMove(game, botColor) {
       }
     }
 
-    // Only commit full-depth result
     if (Date.now() <= _searchDeadline || depth === 1) {
       bestMove = depthBestMove;
     }
 
-    if (depthBest >= 1e7) break; // Forced win found
+    if (depthBest >= 1e7) break; // Forced win
   }
 
   return bestMove;
