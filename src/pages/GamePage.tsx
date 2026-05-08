@@ -234,9 +234,9 @@ export default function GamePage() {
 
       <ConnectionBanner />
 
-      {/* ── Banners (shared) ────────────────────────────────────────────── */}
+      {/* ── Banners (mobile only — desktop version is inside the board panel) ── */}
       {gameOver && (
-        <div className={`mx-3 mt-2 px-4 py-1.5 rounded-lg text-xs font-mono text-center border ${
+        <div className={`md:hidden mx-3 mt-2 px-4 py-1.5 rounded-lg text-xs font-mono text-center border ${
           gameOver.winner === 'draw'
             ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700'
             : 'bg-green-100 dark:bg-green-900/40 border-green-300 dark:border-green-700'
@@ -274,15 +274,37 @@ export default function GamePage() {
           direction="horizontal"
           initialFirstPct={66}
           first={
-            <div className="h-full flex flex-col overflow-hidden py-2 px-1 gap-1.5">
-              <div className="flex-none">
-                <PlayerPanel player="red" name={redName}
-                  isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
-                  timeMs={(viewedState ?? displayedState).redTimeMs}
-                  lastMove={lastRedMove} moveIndex={redMoveIdx}
-                  isWinner={gameOver?.winner === 'red'} />
+            <div className="h-full flex flex-col overflow-hidden py-2 px-1 gap-2">
+              <div className="flex-none flex justify-center">
+                <div className="w-full max-w-sm">
+                  <PlayerPanel player="red" name={redName}
+                    isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
+                    timeMs={(viewedState ?? displayedState).redTimeMs}
+                    lastMove={lastRedMove} moveIndex={redMoveIdx}
+                    isWinner={gameOver?.winner === 'red'} />
+                </div>
               </div>
-              <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+              {gameOver && (
+                <div className={`flex-none mx-4 px-4 py-1.5 rounded-lg text-xs font-mono text-center border ${
+                  gameOver.winner === 'draw'
+                    ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700'
+                    : 'bg-green-100 dark:bg-green-900/40 border-green-300 dark:border-green-700'
+                }`}>
+                  {gameOver.winner === 'draw'
+                    ? <span className="font-bold text-amber-800 dark:text-amber-300">Draw</span>
+                    : <span className="font-bold text-green-800 dark:text-green-300">{gameOver.winnerName} wins</span>
+                  }
+                  {gameOver.reason === 'repetition'  && ' — threefold repetition'}
+                  {gameOver.reason === 'resign'      && ' (by resignation)'}
+                  {gameOver.reason === 'timeout'     && ' (on time)'}
+                  {gameOver.reason === 'disconnect'  && ' (opponent disconnected)'}
+                  {'  ·  '}
+                  {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
+                  {'  ·  '}
+                  {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
+                </div>
+              )}
+              <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden px-6">
                 <Board
                   fit
                   pieces={(viewedState ?? displayedState).pieces}
@@ -294,12 +316,14 @@ export default function GamePage() {
                   isDark={isDark}
                 />
               </div>
-              <div className="flex-none">
-                <PlayerPanel player="black" name={blackName}
-                  isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
-                  timeMs={(viewedState ?? displayedState).blackTimeMs}
-                  lastMove={lastBlackMove} moveIndex={blackMoveIdx}
-                  isWinner={gameOver?.winner === 'black'} />
+              <div className="flex-none flex justify-center">
+                <div className="w-full max-w-sm">
+                  <PlayerPanel player="black" name={blackName}
+                    isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
+                    timeMs={(viewedState ?? displayedState).blackTimeMs}
+                    lastMove={lastBlackMove} moveIndex={blackMoveIdx}
+                    isWinner={gameOver?.winner === 'black'} />
+                </div>
               </div>
               <div className="flex-none flex items-center justify-center gap-1">
                 <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">⏮</button>
