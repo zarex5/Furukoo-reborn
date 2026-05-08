@@ -9,6 +9,7 @@ export interface OnlineUser {
   spectating: boolean;
   reviewing: boolean;
   isBot?: boolean;
+  botLevel?: number | null;
 }
 
 export interface ChatMsg {
@@ -57,7 +58,7 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate }: Playe
       <div className="flex-1 overflow-y-auto">
         {sorted.map(u => (
           <div key={u.username} className={rowCls(u)}>
-            <span className="flex-1 truncate">{u.isBot && <span className="mr-0.5">🤖</span>}{u.username}</span>
+            <span className="flex-1 truncate">{u.isBot && <span className="mr-0.5">🤖</span>}{u.username}{u.isBot && u.botLevel != null && <span className="ml-1 opacity-50 text-[10px]">Lv{u.botLevel}</span>}</span>
             <span className="w-12 text-center tabular-nums">{u.elo}</span>
             <span className="w-8 flex justify-center">
               {u.gameId && u.gameColor ? (

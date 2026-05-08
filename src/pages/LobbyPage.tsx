@@ -11,7 +11,7 @@ import { ConnectionBanner } from '../components/ConnectionBanner';
 import { DarkToggle } from '../components/DarkToggle';
 import { useDarkMode } from '../lib/darkMode';
 
-interface Proposal { username: string; elo: number; eloRange: string; isBot?: boolean; }
+interface Proposal { username: string; elo: number; eloRange: string; isBot?: boolean; botLevel?: number; }
 
 const ELO_RANGES = ['2400-3000','2200-2399','2000-2199','1800-1999','1600-1799','1400-1599','1200-1399','1000-1199'];
 
@@ -206,7 +206,7 @@ export default function LobbyPage() {
                                           : 'bg-green-50 text-green-800 border-green-300 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
                                         }`}
                                     >
-                                      {p.isBot && <span className="mr-0.5">🤖</span>}{p.username} ({p.elo})
+                                      {p.isBot && <span className="mr-0.5">🤖</span>}{p.username} ({p.elo}){p.isBot && p.botLevel != null && <span className="ml-1 opacity-60 text-[10px]">Lv{p.botLevel}</span>}
                                     </button>
                                   ))}
                                 </div>
@@ -283,6 +283,7 @@ export default function LobbyPage() {
                   >
                     {p.isBot && <span className="mr-0.5">🤖</span>}{p.username}
                     <span className="ml-1 opacity-70 text-xs">{p.elo}</span>
+                    {p.isBot && p.botLevel != null && <span className="ml-1 opacity-50 text-[10px]">Lv{p.botLevel}</span>}
                   </button>
                 ))}
               </div>

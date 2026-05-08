@@ -8,7 +8,10 @@ const bcrypt   = require('bcryptjs');
 const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
 const { slotKey, legalMoves, applyMove, positionKey, calcEloDelta, eloInfo, getEloRange, INITIAL_TIME_MS } = require('./gameLogic');
-const bot = require('./bot');
+const { BOT_CONFIGS, createBotInstance } = require('./bot');
+
+// All bot instances, keyed by username — populated after MongoDB connects
+const bots = new Map(); // username → bot instance
 
 // ── App setup ────────────────────────────────────────────────────────────────
 const app    = express();
@@ -25,11 +28,13 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/furukoo')
   .then(async () => {
     console.log('MongoDB connected');
     await loadActiveGames();
-    await bot.initBot(
-      { connectedUsers, gameProposals, activeGames },
-      { botMove, broadcastLobby, sysChat, getEloRange },
-      User,
-    );
+    const sharedState = { connectedUsers, gameProposals, activeGames };
+    const api         = { botMove, broadcastLobby, sysChat, getEloRange };
+    for (const cfg of BOT_CONFIGS) {
+      const inst = createBotInstance(cfg);
+      await inst.init(sharedState, api, User);
+      bots.set(cfg.username, inst);
+    }
   })
   .catch(e => console.error('MongoDB error:', e.message));
 
@@ -341,6 +346,7 @@ function lobbySnapshot() {
       spectating: u.spectating || false,
       reviewing: u.reviewing || false,
       isBot: u.isBot || false,
+      botLevel: u.botLevel ?? null,
     })),
     proposals: Array.from(gameProposals.values()),
   };
@@ -411,7 +417,7 @@ function botMove(gameId, to, from) {
   const next = applyMoveWithDraw(game, to, from);
   activeGames.set(gameId, next);
   io.to(`game:${gameId}`).emit('game:state', next);
-  bot.onGameState(gameId, next);
+  for (const inst of bots.values()) inst.onGameState(gameId, next);
   if (next.winner) endGame(gameId, next.winner, next.drawnBy ? 'repetition' : 'board');
   else saveGame(next);
 }
@@ -573,9 +579,9 @@ io.on('connection', async (socket) => {
 
     saveGame(game);
 
-    // Notify bot if Machine is one of the players
-    if (redU.username === bot.BOT_USERNAME)   bot.onBotGameStarted(gameId, 'red',   game);
-    if (blackU.username === bot.BOT_USERNAME) bot.onBotGameStarted(gameId, 'black', game);
+    // Notify whichever bot instance is playing (if any)
+    if (bots.has(redU.username))   bots.get(redU.username).onBotGameStarted(gameId, 'red',   game);
+    if (bots.has(blackU.username)) bots.get(blackU.username).onBotGameStarted(gameId, 'black', game);
 
     // Emit directly to each socket ID (belt-and-suspenders vs room-join race)
     const startedPayload = { gameId, gameColor, red: game.red, black: game.black, eloInfo: info };
@@ -693,7 +699,7 @@ io.on('connection', async (socket) => {
     const next = applyMoveWithDraw(game, to, from);
     activeGames.set(gameId, next);
     io.to(`game:${gameId}`).emit('game:state', next);
-    bot.onGameState(gameId, next);
+    for (const inst of bots.values()) inst.onGameState(gameId, next);
     if (next.winner) endGame(gameId, next.winner, next.drawnBy ? 'repetition' : 'board');
     else saveGame(next);
   });
@@ -899,10 +905,12 @@ async function endGame(gameId, winner, reason) {
 
   activeGames.delete(gameId);
 
-  // Notify bot if it was playing in this game
-  if (game.red.username === bot.BOT_USERNAME || game.black.username === bot.BOT_USERNAME) {
-    const botNewElo = game.red.username === bot.BOT_USERNAME ? newRedElo : newBlackElo;
-    bot.onBotGameEnded(botNewElo);
+  // Notify whichever bot instance was playing (if any)
+  for (const [name, inst] of bots) {
+    if (game.red.username === name || game.black.username === name) {
+      const botNewElo = game.red.username === name ? newRedElo : newBlackElo;
+      inst.onBotGameEnded(botNewElo);
+    }
   }
 
   broadcastLobby();
