@@ -465,7 +465,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-950 flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-none">
+      <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-none">
         <FurukooLogo />
         <div className="flex gap-2 ml-auto items-center">
           <button
