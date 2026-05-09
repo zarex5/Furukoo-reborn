@@ -1187,10 +1187,8 @@ async function endGame(gameId, winner, reason) {
   });
   if (isDraw) {
     sysChat(`Draw${reasonMsg}!`, gameId);
-    sysChat(`${game.red.username} vs ${game.black.username} — draw${reasonMsg}`, 'lobby');
   } else {
     sysChat(`${winnerName} wins${reasonMsg}!`, gameId);
-    sysChat(`${winnerName} won a game${reasonMsg}`, 'lobby');
   }
 
   activeGames.delete(gameId);
