@@ -253,8 +253,8 @@ export default function GamePage() {
   const navBtnCls = 'px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-30 transition';
 
   return (
-    <div className={`${isDark ? 'dark' : ''} h-screen overflow-hidden`}>
-    <div className="h-full bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
+    <div className={`${isDark ? 'dark' : ''} md:h-screen md:overflow-hidden`}>
+    <div className="md:h-full bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
 
       {/* Top bar */}
       <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-none">
@@ -401,7 +401,7 @@ export default function GamePage() {
       </div>
 
       {/* ── Mobile layout (<md) ──────────────────────────────────────────── */}
-      <div className="flex md:hidden flex-col flex-1 overflow-y-auto">
+      <div className="flex md:hidden flex-col pb-4">
 
         {/* Red player — compact */}
         <div className="mx-3 mt-2">
