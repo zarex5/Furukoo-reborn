@@ -43,4 +43,9 @@ export interface BoardState {
   /** Set when a player disconnects mid-game, cleared on reconnect */
   disconnectedColor: Player | null;
   disconnectedAt: number | null; // ms timestamp
+  /** ELO result fields — only present on ended games loaded from DB */
+  redEloAfter?: number | null;
+  blackEloAfter?: number | null;
+  redEloDelta?: number | null;
+  blackEloDelta?: number | null;
 }
