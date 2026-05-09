@@ -215,11 +215,15 @@ export default function GamePage() {
 
   const viewedState = (viewIndex !== -1 && stateHistory[viewIndex]) ? stateHistory[viewIndex] : displayedState;
 
-  // Banner: prefer gameOver (has ELO deltas) but fall back to gameState.winner for spectators/reviewers
-  const resultWinner   = gameOver?.winner   ?? gameState?.winner   ?? null;
-  const resultName     = gameOver?.winnerName ?? (resultWinner === 'red' ? gameMeta?.red.username : resultWinner === 'black' ? gameMeta?.black.username : null);
-  const resultReason   = gameOver?.reason   ?? (gameState?.resignedBy ? 'resign' : gameState?.drawnBy === 'repetition' ? 'repetition' : null);
-  const showResult     = !!resultWinner;
+  // Banner: prefer gameOver (has ELO deltas) but fall back to gameState fields for spectators/reviewers
+  const resultWinner  = gameOver?.winner  ?? gameState?.winner  ?? null;
+  const resultName    = gameOver?.winnerName ?? (resultWinner === 'red' ? gameMeta?.red.username : resultWinner === 'black' ? gameMeta?.black.username : null);
+  const resultReason  = gameOver?.reason  ?? (gameState?.resignedBy ? 'resign' : gameState?.drawnBy === 'repetition' ? 'repetition' : null);
+  const resultRedDelta   = gameOver?.redDelta   ?? gameState?.redEloDelta   ?? null;
+  const resultBlackDelta = gameOver?.blackDelta ?? gameState?.blackEloDelta ?? null;
+  const resultRedElo     = gameOver?.newRedElo  ?? gameState?.redEloAfter   ?? null;
+  const resultBlackElo   = gameOver?.newBlackElo ?? gameState?.blackEloAfter ?? null;
+  const showResult    = !!resultWinner;
 
   const handleResign  = () => getSocket()?.emit('game:resign', { gameId });
   const handleSend    = (text: string) => getSocket()?.emit('chat:send', { text, origin: gameId });
@@ -293,11 +297,11 @@ export default function GamePage() {
           {resultReason === 'resign'      && ' (by resignation)'}
           {resultReason === 'timeout'     && ' (on time)'}
           {resultReason === 'disconnect'  && ' (opponent disconnected)'}
-          {gameOver && <>
+          {resultRedDelta != null && resultRedElo != null && resultBlackDelta != null && resultBlackElo != null && <>
             {'  ·  '}
-            {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
+            {redName}: <span className={resultRedDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(resultRedDelta)}</span> → {resultRedElo}
             {'  ·  '}
-            {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
+            {blackName}: <span className={resultBlackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(resultBlackDelta)}</span> → {resultBlackElo}
           </>}
         </div>
       )}
@@ -321,15 +325,6 @@ export default function GamePage() {
           initialFirstPct={66}
           first={
             <div className="h-full flex flex-col overflow-hidden py-2 px-1 gap-2">
-              <div className="flex-none flex justify-center">
-                <div className="w-full max-w-sm">
-                  <PlayerPanel player="red" name={redName}
-                    isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
-                    timeMs={(viewedState ?? displayedState).redTimeMs}
-                    lastMove={lastRedMove} moveIndex={redMoveIdx}
-                    isWinner={gameOver?.winner === 'red'} />
-                </div>
-              </div>
               {showResult && (
                 <div className={`flex-none mx-4 px-4 py-1.5 rounded-lg text-xs font-mono text-center border ${
                   resultWinner === 'draw'
@@ -344,14 +339,23 @@ export default function GamePage() {
                   {resultReason === 'resign'      && ' (by resignation)'}
                   {resultReason === 'timeout'     && ' (on time)'}
                   {resultReason === 'disconnect'  && ' (opponent disconnected)'}
-                  {gameOver && <>
+                  {resultRedDelta != null && resultRedElo != null && resultBlackDelta != null && resultBlackElo != null && <>
                     {'  ·  '}
-                    {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
+                    {redName}: <span className={resultRedDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(resultRedDelta)}</span> → {resultRedElo}
                     {'  ·  '}
-                    {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
+                    {blackName}: <span className={resultBlackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(resultBlackDelta)}</span> → {resultBlackElo}
                   </>}
                 </div>
               )}
+              <div className="flex-none flex justify-center">
+                <div className="w-full max-w-sm">
+                  <PlayerPanel player="red" name={redName}
+                    isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
+                    timeMs={(viewedState ?? displayedState).redTimeMs}
+                    lastMove={lastRedMove} moveIndex={redMoveIdx}
+                    isWinner={gameOver?.winner === 'red'} />
+                </div>
+              </div>
               <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden px-6">
                 <Board
                   uid="desktop"
