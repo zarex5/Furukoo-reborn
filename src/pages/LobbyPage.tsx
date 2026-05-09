@@ -212,11 +212,13 @@ export default function LobbyPage() {
                       <thead>
                         <tr className="bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700">
                           <th className="text-left px-3 py-1 text-slate-500 dark:text-gray-400 font-bold w-36">ELO Range</th>
-                          <th className="text-left px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">
-                            Waiting
-                            {proposals.length > 0 && (
-                              <span className="ml-2 text-violet-600 dark:text-violet-400 font-bold">{proposals.length} open</span>
-                            )}
+                          <th className="px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">
+                            <div className="flex items-center justify-between">
+                              <span>Waiting</span>
+                              {proposals.length > 0 && (
+                                <span className="text-violet-600 dark:text-violet-400 font-bold">{proposals.length} open</span>
+                              )}
+                            </div>
                           </th>
                         </tr>
                       </thead>
@@ -296,11 +298,13 @@ export default function LobbyPage() {
             <thead>
               <tr className="bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700">
                 <th className="text-left px-3 py-1 text-slate-500 dark:text-gray-400 font-bold w-28">ELO Range</th>
-                <th className="text-left px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">
-                  Waiting
-                  {allProposals.length > 0 && (
-                    <span className="ml-2 text-violet-600 dark:text-violet-400 font-bold">{allProposals.length} open</span>
-                  )}
+                <th className="px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">
+                  <div className="flex items-center justify-between">
+                    <span>Waiting</span>
+                    {allProposals.length > 0 && (
+                      <span className="text-violet-600 dark:text-violet-400 font-bold">{allProposals.length} open</span>
+                    )}
+                  </div>
                 </th>
               </tr>
             </thead>
