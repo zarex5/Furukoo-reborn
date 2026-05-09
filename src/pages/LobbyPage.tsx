@@ -42,7 +42,7 @@ function InviteTicker() {
   const renderCycle = (prefix: string) =>
     INVITE_MSGS.flatMap((msg, i) => [
       <span key={`${prefix}m${i}`}>{msg}</span>,
-      <img key={`${prefix}s${i}`} src="/owl.jpg" alt="" className="inline-block w-3 h-3 object-cover opacity-60 mx-2" />,
+      <img key={`${prefix}s${i}`} src="/owl.jpg" alt="" className="inline-block w-5 h-4 object-cover opacity-60 mx-2" />,
     ]);
   return (
     <div className="overflow-hidden border-t border-slate-100 dark:border-gray-800 mt-1.5 pt-1.5 pb-1.5">
