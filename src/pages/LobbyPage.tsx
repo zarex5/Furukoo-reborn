@@ -236,7 +236,7 @@ export default function LobbyPage() {
                                       disabled={p.username === user?.username}
                                       className={`px-2 py-0.5 rounded text-xs font-bold font-sans transition border
                                         ${p.username === user?.username
-                                          ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700 cursor-default'
+                                          ? 'bg-slate-100 text-slate-500 border-slate-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 cursor-default'
                                           : 'bg-green-50 text-green-800 border-green-300 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
                                         }`}
                                     >
@@ -322,7 +322,7 @@ export default function LobbyPage() {
                             disabled={p.username === user?.username}
                             className={`px-2 py-0.5 rounded text-xs font-bold font-sans border transition
                               ${p.username === user?.username
-                                ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700 cursor-default'
+                                ? 'bg-slate-100 text-slate-500 border-slate-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 cursor-default'
                                 : 'bg-green-50 text-green-800 border-green-300 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
                               }`}
                           >
