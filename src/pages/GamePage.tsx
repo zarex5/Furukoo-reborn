@@ -211,7 +211,7 @@ export default function GamePage() {
   const navNext  = () => { const ni = curIdx + 1; setViewIndex(ni >= histLen - 1 ? -1 : ni); };
   const navLast  = () => setViewIndex(-1);
   const isAtLatest = viewIndex === -1;
-  const showPulse  = !isAtLatest && gameState?.currentPlayer === myColor && !gameOver;
+  const showPulse  = !isAtLatest && !gameOver && gameState?.currentPlayer === myColor;
 
   const viewedState = (viewIndex !== -1 && stateHistory[viewIndex]) ? stateHistory[viewIndex] : displayedState;
 
@@ -369,7 +369,7 @@ export default function GamePage() {
                 <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0} title="Previous move">◀</button>
                 <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">▶</button>
                 <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest} title="Latest move">⏭</button>
-                {!isAtLatest && <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">{curIdx}/{histLen - 1}</span>}
+                <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">{curIdx}/{histLen - 1}</span>
               </div>
             </div>
           }
@@ -428,7 +428,7 @@ export default function GamePage() {
           <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>◀</button>
           <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>▶</button>
           <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>⏭</button>
-          {!isAtLatest && <span className="text-xs font-mono text-slate-400 dark:text-gray-500">{curIdx}/{histLen - 1}</span>}
+          <span className="text-xs font-mono text-slate-400 dark:text-gray-500">{curIdx}/{histLen - 1}</span>
         </div>
 
         {/* Chat */}
