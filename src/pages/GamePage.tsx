@@ -79,7 +79,11 @@ export default function GamePage() {
     const onState = (g: BoardState) => {
       setGameState(g);
       setDisplayedState(g);
-      setStateHistory(prev => [...prev, g]);
+      setStateHistory(prev => {
+        const last = prev[prev.length - 1];
+        if (last && last.moves.length === g.moves.length) return [...prev.slice(0, -1), g];
+        return [...prev, g];
+      });
       setViewIndex(-1);
       lastTickRef.current = Date.now();
     };
