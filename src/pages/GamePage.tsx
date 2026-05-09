@@ -13,7 +13,7 @@ import { DarkToggle } from '../components/DarkToggle';
 import { useDarkMode } from '../lib/darkMode';
 import type { SlotId, Player, BoardState } from '../types';
 import { slotKey } from '../types';
-import { legalMoves } from '../gameLogic';
+import { legalMoves, applyMove, INITIAL_TIME_MS } from '../gameLogic';
 
 interface GameMeta {
   red:   { username: string; elo: number };
@@ -33,6 +33,26 @@ interface GameOver {
 }
 
 const fmtDelta = (n: number) => (n >= 0 ? '+' : '') + n;
+
+function buildHistoryFromMoves(finalState: BoardState): BoardState[] {
+  const moves = finalState.moves;
+  const initial: BoardState = {
+    pieces: {}, currentPlayer: 'red',
+    redPlaced: 0, blackPlaced: 0, phase: 'placement',
+    redTimeMs: INITIAL_TIME_MS, blackTimeMs: INITIAL_TIME_MS,
+    moves: [], winner: null, resignedBy: null, drawnBy: null,
+    disconnectedColor: null, disconnectedAt: null,
+  };
+  const history: BoardState[] = [initial];
+  let state = initial;
+  for (const move of moves) {
+    state = applyMove(state, move.to, move.from ?? null);
+    history.push(state);
+  }
+  // Replace the last entry with the real final state (has accurate times/winner)
+  history[history.length - 1] = finalState;
+  return history;
+}
 
 export default function GamePage() {
   const { gameId }    = useParams<{ gameId: string }>();
@@ -90,6 +110,10 @@ export default function GamePage() {
       setGameState(g);
       setDisplayedState(g);
       setStateHistory(prev => {
+        // If the incoming state has moves we haven't seen, rebuild history from scratch
+        if (g.moves.length > 0 && prev.length < g.moves.length) {
+          return buildHistoryFromMoves(g);
+        }
         const last = prev[prev.length - 1];
         if (last && last.moves.length === g.moves.length) return [...prev.slice(0, -1), g];
         return [...prev, g];
