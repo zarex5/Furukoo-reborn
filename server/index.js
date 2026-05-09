@@ -882,9 +882,12 @@ io.on('connection', async (socket) => {
         redPlaced: dbGame.redPlaced, blackPlaced: dbGame.blackPlaced,
         phase: dbGame.phase, moves: dbGame.moves || [],
         winner: dbGame.winner || null, resignedBy: dbGame.resignedBy || null,
+        drawnBy: dbGame.drawnBy || null,
         redTimeMs: dbGame.redTimeMs, blackTimeMs: dbGame.blackTimeMs,
         lastMoveAt: dbGame.lastMoveAt || Date.now(),
         disconnectedColor: null, disconnectedAt: null,
+        redEloAfter: dbGame.redEloAfter ?? null, blackEloAfter: dbGame.blackEloAfter ?? null,
+        redEloDelta: dbGame.redEloDelta ?? null, blackEloDelta: dbGame.blackEloDelta ?? null,
       };
     }
 
