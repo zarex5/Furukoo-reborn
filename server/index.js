@@ -938,7 +938,7 @@ io.on('connection', async (socket) => {
             const g = activeGames.get(gameId);
             if (!g || g.winner || g.disconnectedColor !== otherColor) return;
             const winner = otherColor === 'red' ? 'black' : 'red';
-            const next   = { ...g, winner, disconnectedColor: null, disconnectedAt: null };
+            const next   = { ...liveState(g), winner, disconnectedColor: null, disconnectedAt: null };
             activeGames.set(gameId, next);
             io.to(`game:${gameId}`).emit('game:state', next);
             endGame(gameId, winner, 'disconnect');
@@ -995,7 +995,7 @@ io.on('connection', async (socket) => {
     const color = game.red.username === u.username ? 'red' : game.black.username === u.username ? 'black' : null;
     if (!color) return;
     const winner = color === 'red' ? 'black' : 'red';
-    const next = { ...game, resignedBy: color, winner };
+    const next = { ...liveState(game), resignedBy: color, winner };
     activeGames.set(gameId, next);
     io.to(`game:${gameId}`).emit('game:state', next);
     endGame(gameId, winner, 'resign');
@@ -1015,7 +1015,7 @@ io.on('connection', async (socket) => {
     const remainingMs = game[`${loserColor}TimeMs`] - (game.currentPlayer === loserColor ? elapsed : 0);
     if (remainingMs > 3000) return; // 3 s grace for network/clock drift
     const winner = loserColor === 'red' ? 'black' : 'red';
-    const next = { ...game, winner, timedOutBy: loserColor };
+    const next = { ...liveState(game), winner, timedOutBy: loserColor };
     activeGames.set(gameId, next);
     io.to(`game:${gameId}`).emit('game:state', next);
     endGame(gameId, winner, 'timeout');
@@ -1079,7 +1079,7 @@ io.on('connection', async (socket) => {
             const g = activeGames.get(gid);
             if (!g || g.winner || g.disconnectedColor !== color) return;
             const winner = color === 'red' ? 'black' : 'red';
-            const next   = { ...g, winner, disconnectedColor: null, disconnectedAt: null };
+            const next   = { ...liveState(g), winner, disconnectedColor: null, disconnectedAt: null };
             activeGames.set(gid, next);
             io.to(`game:${gid}`).emit('game:state', next);
             endGame(gid, winner, 'disconnect');
