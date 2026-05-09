@@ -264,21 +264,24 @@ export default function LobbyPage() {
       <div className="flex md:hidden flex-col flex-1 overflow-y-auto">
 
         {/* Action bar */}
-        <div className="flex items-center gap-3 px-4 py-3 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
+        <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
           <button
             onClick={() => navigate(`/profile/${user?.username}`)}
-            className="flex-1 min-w-0 text-left px-3 py-2 rounded-lg text-sm font-mono bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 border border-slate-200 dark:border-gray-700"
+            className="flex-1 min-w-0 text-left px-2 py-0.5 rounded text-xs font-mono bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition border border-slate-200 dark:border-gray-700"
           >
             <span className="font-bold">{user?.username}</span>
             <span className="text-violet-500 font-bold ml-1">({user?.elo})</span>
           </button>
           {myGameId
-            ? <button onClick={handleRejoin}  className="px-5 py-2 rounded-lg text-sm font-bold bg-emerald-600 text-white active:bg-emerald-700">Rejoin</button>
+            ? <button onClick={handleRejoin}  className={`${btn} bg-emerald-600 text-white hover:bg-emerald-700`}>Rejoin</button>
             : hasProposal
-              ? <button onClick={handleRemove} className="px-5 py-2 rounded-lg text-sm font-bold bg-slate-200 dark:bg-gray-700 text-slate-700 dark:text-gray-200 active:bg-slate-300">Remove</button>
-              : <button onClick={handlePlay}   className="px-5 py-2 rounded-lg text-sm font-bold bg-violet-600 text-white active:bg-violet-700 shadow-sm">Play</button>
+              ? <button onClick={handleRemove} className={`${btn} bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200`}>Remove</button>
+              : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
           }
-          <button onClick={logout} className="px-3 py-2 rounded-lg text-sm font-bold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-300 active:bg-red-100">Out</button>
+          {user?.isAdmin && (
+            <button onClick={() => navigate('/admin')} className={`${btn} bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300`}>Admin</button>
+          )}
+          <button onClick={logout} className={`${btn} bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300`}>Logout</button>
         </div>
 
         {/* Waiting section — ELO range table (same as desktop) */}
