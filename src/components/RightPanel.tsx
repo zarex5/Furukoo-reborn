@@ -102,7 +102,7 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate, mobile 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
       {header}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-scroll overscroll-contain">
         {rows}{empty}
       </div>
     </div>
@@ -157,7 +157,7 @@ export function ChatBox({ messages, onSend, myUsername, origin, muted = false }:
           }`} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5 min-h-0">
+      <div className="flex-1 overflow-y-scroll overscroll-contain px-2 py-1 space-y-0.5 min-h-0">
         {visible.map(m => (
           <div key={m.id} className={`text-xs font-mono leading-snug ${
             m.type === 'system' ? 'text-slate-400 dark:text-gray-500 italic' :
