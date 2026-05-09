@@ -607,6 +607,8 @@ const gameProposals  = new Map();
 const activeGames    = new Map();
 // disconnectTimeouts: Map<"gameId:color", NodeJS.Timeout>
 const disconnectTimeouts = new Map();
+// pendingLobbyDisconnect: Map<username, TimeoutId> — suppresses disconnect/connect noise on refresh
+const pendingLobbyDisconnect = new Map();
 
 function lobbySnapshot() {
   return {
@@ -1038,8 +1040,12 @@ io.on('connection', async (socket) => {
     if (!u) return;
     gameProposals.delete(u.username);
     connectedUsers.delete(socket.id);
-    sysChat(`${u.username} just disconnected`, 'lobby');
     broadcastLobby();
+    const dt = setTimeout(() => {
+      pendingLobbyDisconnect.delete(u.username);
+      sysChat(`${u.username} just disconnected`, 'lobby');
+    }, 4000);
+    pendingLobbyDisconnect.set(u.username, dt);
 
     // If the player was in an active game, handle reconnect window (skip for spectators)
     if (u.gameId && !u.spectating) {
@@ -1123,7 +1129,13 @@ io.on('connection', async (socket) => {
 
   socket.emit('user:flags', { isMuted: dbUser.isMuted || false });
   socket.emit('lobby:state', lobbySnapshot());
-  sysChat(`${socket.username} just connected`, 'lobby');
+  const pending = pendingLobbyDisconnect.get(socket.username);
+  if (pending) {
+    clearTimeout(pending);
+    pendingLobbyDisconnect.delete(socket.username);
+  } else {
+    sysChat(`${socket.username} just connected`, 'lobby');
+  }
   broadcastLobby();
   const history = await Chat.find().sort({ createdAt: -1 }).limit(15).lean();
   socket.emit('chat:history', history.reverse());
