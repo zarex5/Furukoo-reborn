@@ -39,12 +39,16 @@ const INVITE_MSGS = [
 ];
 
 function InviteTicker() {
-  const content = INVITE_MSGS.join(' 🦉 ') + ' 🦉 ';
-  const doubled = content + content;
+  const renderCycle = (prefix: string) =>
+    INVITE_MSGS.flatMap((msg, i) => [
+      <span key={`${prefix}m${i}`}>{msg}</span>,
+      <img key={`${prefix}s${i}`} src="/owl.jpg" alt="" className="inline-block w-3 h-3 rounded-full object-cover opacity-60" />,
+    ]);
   return (
-    <div className="overflow-hidden border-t border-slate-100 dark:border-gray-800 mt-1.5 pt-1.5">
-      <span className="ticker-track text-xs font-mono text-slate-400 dark:text-gray-500 select-none">
-        {doubled}
+    <div className="overflow-hidden border-t border-slate-100 dark:border-gray-800 mt-1.5 pt-1.5 pb-1.5">
+      <span className="ticker-track inline-flex items-center gap-2 text-xs font-mono text-slate-400 dark:text-gray-500 select-none">
+        {renderCycle('a')}
+        {renderCycle('b')}
       </span>
     </div>
   );
@@ -58,15 +62,19 @@ const CREDITS = (
 
 function RulesBox({ mobile = false }: { mobile?: boolean }) {
   const rulesContent = (
-    <div className="flex gap-3 items-start">
-      <div className="flex-none mt-1"><img src={boardPreview} alt="Board preview" className="w-20 h-20 object-contain rounded" /></div>
-      <div className="space-y-1.5">
-        <p><strong>Win</strong> — own all 4 sides of any square on the grid first.</p>
-        <p><strong>Place</strong> — take turns putting one of your 7 pieces on any free segment.</p>
-        <p><strong>Move</strong> — once all 14 pieces are placed, slide a piece to an adjacent free segment each turn.</p>
-        <p><strong>Clock</strong> — each move adds 3 s. Run out of time and you lose.</p>
-        <p><strong>Watch</strong> — click the colored circle next to any player to spectate their game live.</p>
+    <div className="space-y-1.5">
+      <div className="flex gap-3 items-start">
+        <div className="flex-none mt-1"><img src={boardPreview} alt="Board preview" className="w-24 h-24 object-contain rounded-xl" /></div>
+        <div className="space-y-1.5">
+          <p>Furukoo is a strategy board game that plays in two phases:</p>
+          <p><strong>Placement phase —</strong> Players alternate placing 7 pieces each on the board</p>
+          <p><strong>Movement phase —</strong> Players move pieces to adjacent slots, trying to form a square</p>
+        </div>
       </div>
+      <p><strong>Win</strong> by forming four of your pieces in a square pattern.</p>
+      <p><strong>Lose</strong> by letting your opponent form a square, by resigning or running out of time (5 min + 3 sec/move).</p>
+      <p><strong>Draw</strong> by threefold position repetition.</p>
+      <div className="pt-1.5"><p><strong>Spectate</strong> any game live by clicking the colored circle next to a player.</p></div>
     </div>
   );
 
