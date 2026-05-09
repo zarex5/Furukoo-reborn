@@ -79,7 +79,7 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate, mobile 
   ));
 
   const header = (
-    <div className="grid grid-cols-[1fr_3rem_2rem] text-xs font-bold px-2 py-1 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
+    <div className="grid grid-cols-[1fr_3rem_2rem] text-xs font-bold px-4 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
       <span>Players</span>
       <span className="text-center">ELO</span>
       <span className="text-center">In</span>
@@ -139,7 +139,7 @@ export function ChatBox({ messages, onSend, myUsername, origin, muted = false }:
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
-      <div className="flex items-center gap-2 px-2 py-1.5 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex-none">
+      <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex-none">
         <span className="text-xs font-bold text-slate-500 dark:text-gray-400 flex-1">Chat</span>
         <span className="text-xs font-mono text-slate-400 dark:text-gray-500 select-none">
           {origin === 'lobby' ? 'lobby chat only' : 'game chat only'}

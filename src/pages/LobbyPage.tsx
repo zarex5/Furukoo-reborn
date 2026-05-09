@@ -158,7 +158,7 @@ export default function LobbyPage() {
   const btn = `px-3 py-0.5 rounded text-xs font-bold transition`;
   const allProposals = proposals; // flat list for mobile
 
-  const [rulesOpen, setRulesOpen] = useState(false);
+
 
   return (
     <div className={`${isDark ? 'dark' : ''} md:h-screen md:overflow-hidden`}>
@@ -324,8 +324,8 @@ export default function LobbyPage() {
         </div>
 
         {/* Chat */}
-        <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
-          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} mobile />
+        <div className="mx-3 mt-3 flex flex-col bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 240 }}>
+          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} />
         </div>
 
         {/* Players — auto-height, no fixed constraint */}
@@ -333,20 +333,14 @@ export default function LobbyPage() {
           <PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} mobile />
         </div>
 
-        {/* Rules — collapsible */}
+        {/* Rules */}
         <div className="mx-3 mt-3 mb-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
-          <button
-            onClick={() => setRulesOpen(o => !o)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-slate-600 dark:text-gray-300 bg-slate-50 dark:bg-gray-800"
-          >
-            <span>How to play</span>
-            <span className="text-slate-400 dark:text-gray-500 text-xs">{rulesOpen ? '▲' : '▼'}</span>
-          </button>
-          {rulesOpen && (
-            <div className="px-4 py-3">
-              <RulesBox mobile />
-            </div>
-          )}
+          <div className="px-4 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-500 dark:text-gray-400">
+            How to play
+          </div>
+          <div className="px-4 py-3">
+            <RulesBox mobile />
+          </div>
         </div>
 
       </div>
