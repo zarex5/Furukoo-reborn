@@ -261,7 +261,7 @@ export default function LobbyPage() {
       </div>
 
       {/* ── Mobile layout (<md) ──────────────────────────────────────────── */}
-      <div className="flex md:hidden flex-col flex-1 overflow-y-scroll overscroll-contain">
+      <div className="flex md:hidden flex-col flex-1 min-h-0 overflow-y-scroll overscroll-contain">
 
         {/* Action bar */}
         <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
