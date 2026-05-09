@@ -1162,6 +1162,7 @@ async function endGame(gameId, winner, reason) {
   // Update game record with final ELO data
   Game.findOneAndUpdate({ gameId }, { $set: {
     status: 'ended', winner,
+    resignedBy: game.resignedBy || null,
     drawnBy: game.drawnBy || null,
     redEloAfter: newRedElo, blackEloAfter: newBlackElo,
     redEloDelta: redDelta,  blackEloDelta: blackDelta,
