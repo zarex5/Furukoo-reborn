@@ -404,7 +404,7 @@ export default function GamePage() {
       <div className="flex md:hidden flex-col pb-4">
 
         {/* Red player — compact */}
-        <div className="mx-3 mt-2">
+        <div className="mx-3 mt-3">
           <PlayerPanel player="red" name={redName} compact
             isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
             timeMs={(viewedState ?? displayedState).redTimeMs}
