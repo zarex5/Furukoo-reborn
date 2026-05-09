@@ -1134,8 +1134,9 @@ io.on('connection', async (socket) => {
     sysChat(`${socket.username} just connected`, 'lobby');
   }
   broadcastLobby();
-  const history = await Chat.find().sort({ createdAt: -1 }).limit(15).lean();
-  socket.emit('chat:history', history.reverse());
+  const since = new Date(Date.now() - 15_000);
+  const history = await Chat.find({ createdAt: { $gte: since } }).sort({ createdAt: 1 }).lean();
+  socket.emit('chat:history', history);
 });
 
 // ── End game ────────────────────────────────────────────────────────────────
