@@ -1125,9 +1125,8 @@ io.on('connection', async (socket) => {
   socket.emit('lobby:state', lobbySnapshot());
   sysChat(`${socket.username} just connected`, 'lobby');
   broadcastLobby();
-  const since = new Date(Date.now() - 60_000);
-  const history = await Chat.find({ createdAt: { $gte: since } }).sort({ createdAt: 1 }).limit(500).lean();
-  socket.emit('chat:history', history);
+  const history = await Chat.find().sort({ createdAt: -1 }).limit(15).lean();
+  socket.emit('chat:history', history.reverse());
 });
 
 // ── End game ────────────────────────────────────────────────────────────────
