@@ -52,13 +52,10 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/furukoo')
     }
     const sharedState = { connectedUsers, gameProposals, activeGames };
     const api         = { botMove, broadcastLobby, sysChat, getEloRange };
-    // On first install (no bots in DB) seed defaults; otherwise only load what's in DB
-    // so admin deletions survive restarts.
+    // Load only bots that exist in DB — no auto-seeding on first install
     const dbBots = await User.find({ isBot: true }).lean().catch(() => []);
-    const botConfigs = dbBots.length === 0
-      ? BOT_CONFIGS
-      : dbBots.map(b => ({ username: b.username, initialElo: b.elo, level: b.botLevel || 5 }));
-    for (const cfg of botConfigs) {
+    for (const dbBot of dbBots) {
+      const cfg = { username: dbBot.username, initialElo: dbBot.elo, level: dbBot.botLevel || 5 };
       const inst = createBotInstance(cfg);
       await inst.init(sharedState, api, User);
       bots.set(inst.username, inst);
