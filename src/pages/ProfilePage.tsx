@@ -342,7 +342,7 @@ export default function ProfilePage() {
           <button
             onClick={() => navigate('/')}
             className="px-3 py-0.5 rounded text-xs font-bold bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition"
-          >← Lobby</button>
+          >Back to lobby</button>
           <DarkToggle isDark={isDark} onToggle={toggleDark} />
         </div>
       </div>
