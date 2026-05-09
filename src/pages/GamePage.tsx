@@ -170,7 +170,7 @@ export default function GamePage() {
   const curIdx   = viewIndex === -1 ? histLen - 1 : viewIndex;
   const navFirst = () => histLen > 0 && setViewIndex(0);
   const navPrev  = () => setViewIndex(Math.max(0, curIdx - 1));
-  const navNext  = () => { const ni = curIdx + 1; setViewIndex(ni >= histLen ? -1 : ni); };
+  const navNext  = () => { const ni = curIdx + 1; setViewIndex(ni >= histLen - 1 ? -1 : ni); };
   const navLast  = () => setViewIndex(-1);
   const isAtLatest = viewIndex === -1;
   const showPulse  = !isAtLatest && gameState?.currentPlayer === myColor && !gameOver;
