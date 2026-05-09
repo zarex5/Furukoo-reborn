@@ -157,6 +157,7 @@ export default function LobbyPage() {
 
   const btn = `px-3 py-0.5 rounded text-xs font-bold transition`;
   const allProposals = proposals; // flat list for mobile
+  const [rulesOpen, setRulesOpen] = useState(false);
 
 
 
@@ -343,14 +344,20 @@ export default function LobbyPage() {
           <PlayersBox users={users} myUsername={user?.username ?? ''} onSpectate={handleSpectate} mobile />
         </div>
 
-        {/* Rules */}
+        {/* Rules — collapsible */}
         <div className="mx-3 mt-3 mb-4 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
-          <div className="px-4 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-xs font-bold text-slate-500 dark:text-gray-400">
-            How to play
-          </div>
-          <div className="px-4 py-3">
-            <RulesBox mobile />
-          </div>
+          <button
+            onClick={() => setRulesOpen(o => !o)}
+            className="w-full flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-gray-800 text-xs font-bold text-slate-500 dark:text-gray-400"
+          >
+            <span>How to play</span>
+            <span className="text-slate-400 dark:text-gray-500">{rulesOpen ? '▲' : '▼'}</span>
+          </button>
+          {rulesOpen && (
+            <div className="px-4 py-3">
+              <RulesBox mobile />
+            </div>
+          )}
         </div>
 
       </div>
