@@ -234,7 +234,7 @@ export default function LobbyPage() {
                                     <button key={p.username}
                                       onClick={() => p.username !== user?.username && handleAccept(p.username)}
                                       disabled={p.username === user?.username}
-                                      className={`px-2 py-0.5 rounded text-xs font-bold transition border
+                                      className={`px-2 py-0.5 rounded text-xs font-bold font-sans transition border
                                         ${p.username === user?.username
                                           ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700 cursor-default'
                                           : 'bg-green-50 text-green-800 border-green-300 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
@@ -320,7 +320,7 @@ export default function LobbyPage() {
                           <button key={p.username}
                             onClick={() => p.username !== user?.username && handleAccept(p.username)}
                             disabled={p.username === user?.username}
-                            className={`px-2 py-0.5 rounded text-xs font-bold border transition
+                            className={`px-2 py-0.5 rounded text-xs font-bold font-sans border transition
                               ${p.username === user?.username
                                 ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700 cursor-default'
                                 : 'bg-green-50 text-green-800 border-green-300 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
