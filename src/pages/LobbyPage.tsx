@@ -82,7 +82,7 @@ function RulesBox({ mobile = false }: { mobile?: boolean }) {
     return (
       <div className="px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
         {rulesContent}
-        {CREDITS}
+        <div className="mt-3">{CREDITS}</div>
         <InviteTicker />
       </div>
     );
