@@ -42,15 +42,16 @@ export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, l
 
   if (compact) {
     return (
-      <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${borderColor} ${wrapBg}`}>
+      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${borderColor} ${wrapBg}`}>
         <div
-          className="w-3.5 h-3.5 rounded-full flex-shrink-0"
+          className="w-3 h-3 rounded-full flex-shrink-0"
           style={isRed ? { background: '#ef4444' } : { background: '#1e293b', border: '1.5px solid #475569' }}
         />
         <div className={`flex-1 min-w-0 ${cell} font-bold ${nameCls} truncate`}>
           {isWinner && <span className="mr-1">👑</span>}{name}
         </div>
-        <div className={`w-24 ${cell} font-bold text-sm ${timeCls}`}>{formatTime(timeMs)}</div>
+        <div className={`w-28 flex-shrink-0 ${cell} ${moveCls} truncate`}>{formatMoveInfo(lastMove, moveIndex)}</div>
+        <div className={`w-20 flex-shrink-0 ${cell} font-bold ${timeCls}`}>{formatTime(timeMs)}</div>
       </div>
     );
   }
