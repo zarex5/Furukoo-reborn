@@ -65,7 +65,7 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate, mobile 
           <Tip content={u.reviewing ? `Reviewing ${u.gameId}` : u.spectating ? `Spectating ${u.gameId}` : `Playing ${u.gameId}`}>
             <span
               className="inline-block w-3 h-3 rounded-full cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-400 dark:hover:ring-slate-500 transition-shadow"
-              style={{ background: u.gameColor, opacity: u.spectating ? 0.5 : 1 }}
+              style={{ background: u.gameColor, opacity: u.spectating ? 0.3 : 1 }}
               onClick={() => onSpectate?.(u.gameId!)}
             />
           </Tip>
