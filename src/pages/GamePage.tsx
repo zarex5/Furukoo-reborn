@@ -215,6 +215,12 @@ export default function GamePage() {
 
   const viewedState = (viewIndex !== -1 && stateHistory[viewIndex]) ? stateHistory[viewIndex] : displayedState;
 
+  // Banner: prefer gameOver (has ELO deltas) but fall back to gameState.winner for spectators/reviewers
+  const resultWinner   = gameOver?.winner   ?? gameState?.winner   ?? null;
+  const resultName     = gameOver?.winnerName ?? (resultWinner === 'red' ? gameMeta?.red.username : resultWinner === 'black' ? gameMeta?.black.username : null);
+  const resultReason   = gameOver?.reason   ?? (gameState?.resignedBy ? 'resign' : gameState?.drawnBy === 'repetition' ? 'repetition' : null);
+  const showResult     = !!resultWinner;
+
   const handleResign  = () => getSocket()?.emit('game:resign', { gameId });
   const handleSend    = (text: string) => getSocket()?.emit('chat:send', { text, origin: gameId });
   const handleBack    = () => navigate('/');
@@ -273,24 +279,26 @@ export default function GamePage() {
       <ConnectionBanner />
 
       {/* ── Banners (mobile only — desktop version is inside the board panel) ── */}
-      {gameOver && (
+      {showResult && (
         <div className={`md:hidden mx-3 mt-2 px-4 py-1.5 rounded-lg text-xs font-mono text-center border ${
-          gameOver.winner === 'draw'
+          resultWinner === 'draw'
             ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700'
             : 'bg-green-100 dark:bg-green-900/40 border-green-300 dark:border-green-700'
         }`}>
-          {gameOver.winner === 'draw'
+          {resultWinner === 'draw'
             ? <span className="font-bold text-amber-800 dark:text-amber-300">Draw</span>
-            : <span className="font-bold text-green-800 dark:text-green-300">{gameOver.winnerName} wins</span>
+            : <span className="font-bold text-green-800 dark:text-green-300">{resultName} wins</span>
           }
-          {gameOver.reason === 'repetition'  && ' — threefold repetition'}
-          {gameOver.reason === 'resign'      && ' (by resignation)'}
-          {gameOver.reason === 'timeout'     && ' (on time)'}
-          {gameOver.reason === 'disconnect'  && ' (opponent disconnected)'}
-          {'  ·  '}
-          {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
-          {'  ·  '}
-          {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
+          {resultReason === 'repetition'  && ' — threefold repetition'}
+          {resultReason === 'resign'      && ' (by resignation)'}
+          {resultReason === 'timeout'     && ' (on time)'}
+          {resultReason === 'disconnect'  && ' (opponent disconnected)'}
+          {gameOver && <>
+            {'  ·  '}
+            {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
+            {'  ·  '}
+            {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
+          </>}
         </div>
       )}
       {!gameOver && displayedState?.disconnectedColor && displayedState.disconnectedAt && (
@@ -322,24 +330,26 @@ export default function GamePage() {
                     isWinner={gameOver?.winner === 'red'} />
                 </div>
               </div>
-              {gameOver && (
+              {showResult && (
                 <div className={`flex-none mx-4 px-4 py-1.5 rounded-lg text-xs font-mono text-center border ${
-                  gameOver.winner === 'draw'
+                  resultWinner === 'draw'
                     ? 'bg-amber-50 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700'
                     : 'bg-green-100 dark:bg-green-900/40 border-green-300 dark:border-green-700'
                 }`}>
-                  {gameOver.winner === 'draw'
+                  {resultWinner === 'draw'
                     ? <span className="font-bold text-amber-800 dark:text-amber-300">Draw</span>
-                    : <span className="font-bold text-green-800 dark:text-green-300">{gameOver.winnerName} wins</span>
+                    : <span className="font-bold text-green-800 dark:text-green-300">{resultName} wins</span>
                   }
-                  {gameOver.reason === 'repetition'  && ' — threefold repetition'}
-                  {gameOver.reason === 'resign'      && ' (by resignation)'}
-                  {gameOver.reason === 'timeout'     && ' (on time)'}
-                  {gameOver.reason === 'disconnect'  && ' (opponent disconnected)'}
-                  {'  ·  '}
-                  {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
-                  {'  ·  '}
-                  {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
+                  {resultReason === 'repetition'  && ' — threefold repetition'}
+                  {resultReason === 'resign'      && ' (by resignation)'}
+                  {resultReason === 'timeout'     && ' (on time)'}
+                  {resultReason === 'disconnect'  && ' (opponent disconnected)'}
+                  {gameOver && <>
+                    {'  ·  '}
+                    {redName}: <span className={gameOver.redDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.redDelta)}</span> → {gameOver.newRedElo}
+                    {'  ·  '}
+                    {blackName}: <span className={gameOver.blackDelta >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>{fmtDelta(gameOver.blackDelta)}</span> → {gameOver.newBlackElo}
+                  </>}
                 </div>
               )}
               <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden px-6">
