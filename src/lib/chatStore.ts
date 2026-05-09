@@ -15,10 +15,7 @@ export const chatStore = {
     notify();
   },
   setHistory(msgs: ChatMsg[]) {
-    const existingIds = new Set(_messages.map(m => m.id));
-    const fresh = msgs.filter(m => !existingIds.has(m.id));
-    if (fresh.length === 0) return;
-    _messages = [...fresh, ..._messages].slice(-500);
+    _messages = msgs;
     notify();
   },
   get() { return _messages; },
