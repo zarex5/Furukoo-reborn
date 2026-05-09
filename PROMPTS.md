@@ -365,5 +365,203 @@ Please fix the previous git commit messages that do not start with an emoji and 
 please make sure that I can push the code to github as open source without any secrets leak, personal info, or vulnerability that could be exploted
 ```
 ```
-Can you update the readme with everything interesting that other game/site readmes have
+Can you update the readme with everything interesting that other game/site READMEs have
+Maybe include that the site is live at: furukoo.llegrand.fr
+```
+```
+Let's replace the game rules in How to play section by: (Text in *example* should be bold)
+Keep the board image (make it slightly larger)
+
+Furukoo is a strategy board game that plays in two phases:
+*Placement phase —* Players alternate placing 7 pieces each on the board
+*Movement phase —* Players move pieces to adjacent slots, trying to form a square
+
+*Win* by forming four of your pieces in a square pattern.
+*Lose* by letting your opponent form a square, by resigning or running out of time (5 min + 3 sec/move).
+*Draw* by threefold position repetition.
+
+*Spectate* any game live by clicking the colored circle next a player.
+```
+```
+-Round the board image a bit more. 
+-Put "Furukoo is a strategy board game that plays in two phases:" line with the Placement/Movement sentences right of the picture.
+-Add a extra break like between the Draw and Spectate sentences.
+```
+```
+Add a bit more margin between the moving "Invite your friends" and the bottom of the card
+```
+```
+Please create a CLAUDE.md and put in there do each change one by one with a commit for each (even if the prompt has multiple ones), with a nice and short commit message (keep it under 15 words and feel free to start the message with an emoji related to the change).
+```
+```
+also commit message should start with an uppercase
+```
+```
+There seems to be a small issue with the buttons to see previous moves of the game, if I do one back, I need to do two forward to see the latest move
+```
+```
+Game replay is still buggy now there's an extra move at start when nothing happens between 1st and 2nd
+```
+```
+If I refresh the page during a game I should not lose the ability to see the previous moves
+```
+```
+When spectating a game over for a long time I should be able to see the previous moves, replay the game
+```
+```
+Can you use /Users/<user>/Downloads/owl.jpg as favicon and separator of the "Invite your friends" instead of the own emoji
+```
+```
+Game replay says 1/2 on the initial empty board when a single piece was played, it should be 0/1
+```
+```
+For the owl separator, remove the rounded and add more margin to the left and right
+```
+```
+And make it w-5 h-4 not h-3 h-3
+```
+```
+Please always display the move count (eg. 0/1) even if we're at the latest/live. Also, no need to make the "go to last move" pulse if the game is over.
+```
+```
+When reviewing the game the top banner win/lose that's displayed when a game finished should be displayed too.
+```
+```
+This banner should be above the red player box (name/moves/time).
+And in spec mode it should contain the exact same text as when the game ends (eg. Machine wins (by resignation) · Machine: +7 → 1552 · <user>: -7 → 1187)
+```
+```
+When I refresh the page it doesn't say "by resignation" anymore
+```
+```
+<user> just joined game 7w7kca73j is written twice in chat
+```
+```
+In replay mode when a game is won by forming a square it seems an extra position (second to last) is added at the end. So the last is my move 16, previous is 17, and previous 16.
+```
+```
+On desktop all the button in the header should always have the same style/height, seems resign is much larger than play/admin/etc
+```
+```
+The below issues are for the mobile version only, do not change the desktop version:
+On mobile the first row (name/play/login) is too big.
+Also it should display “Logout” not “Out”.
+And should have the admin button for admins.
+The behavior should be the exact same as on desktop (Remove, Rejoin, etc).
+Inside the boxes (how to play, chat, players, etc) it seems it’s not possible to scroll.
+The board pieces are quite hard to click on a small device, maybe we could add some more tolerance.
+On the replay buttons in game, the first (go to first move) and last (go to last move) are not like on PC, but are emojis, please fix that.
+```
+```
+In the login page just put "ELO won't be saved and account cannot be recovered." under the button (should fit in one line)
+```
+```
+Still too big, please use a smaller font
+```
+```
+Scroll still doesn't to work on mobile. It works in chat but not in the Waiting box and "how to play box"
+```
+```
+Still can't scroll in waiting/how to play
+```
+```
+Still doesn't work. Nevermind. Just make it so there's no need to scroll. Waiting box should have enough height to display everything, same for Player box they should all be visible. How to play too, when open display everything. Also please harmonize the style of the headers on mobile between Waiting/chat/players/How to play
+```
+```
+Harmonize the desktop/mobile versions, both should say ELO Range / Waiting / <n> open.
+On mobile the How to play section should be closable/expendable, and closed by default.
+Add a bit of margin-top top the credits section so it's not stuck just under the last rules line on mobile.
+```
+```
+In game on mobile the player's sections are a bit too big and should also contain the moves box just like on desktop. 
+Also in game (still mobile only) the chat section is too tiny, make it the same size as in the lobby, and same for the player box should have enough height to fix all the players.
+```
+```
+Lets put the <n> open on the very right of the box
+```
+```
+On the profile page let's add a "User" emoji before the name
+```
+```
+On mobile, in game, the chat is still all tiny (can just see the input new message box), and same for the Players box, just fits the header we can't see any players.
+```
+```
+On mobile add a bit of margin top above the first players box
+```
+```
+Replace the furukoo logo by the one in /Users/<user>/Downloads/logo.png
+```
+```
+Make the logo larger on the login page
+```
+```
+In the Waiting section, why is there such a large space between the player name and ELO? even inside players name space seems larger than usual
+```
+```
+I meant inside the boxes that have this style fyi px-2 py-0.5 rounded text-xs font-bold border transition bg-green-50 text-green-800 border-green-300 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer
+```
+```
+Replace the owl logo by the owl-updated in my downloads folder
+```
+```
+Instead of 60 seconds a player connecting/refreshing should only see the 15 last
+```
+```
+The admin page header seems to have a bit more height that other pages, please fix
+```
+```
+Replace the board image in how to play by the board-update in my downloads folder
+```
+```
+When the game is over it seems it is not possible to send chat messages anymore, please fix 
+```
+```
+On profile page button should not have an arrow and just say "Back to lobby"
+```
+```
+The win message is duplicated: (please only have one, origin: game id)
+Machine wins (by resignation)!
+Machine won a game (by resignation)
+```
+```
+When spectating/reviewing the button back should be the same as in profile page (grey + Back to lobby).
+Also, in the waiting section my game proposal should be in grey not purple.
+```
+```
+In the players table, ELO and In are too much on the right compared to their content, please fix.
+```
+```
+I don't see it changed, ELO and In still too much right
+```
+```
+On game end seems the timers are reset to 5mn
+```
+```
+In the Players box header, use px-3 instead of px-2 and gap-3 instead of gap-2
+```
+```
+When a square is completed, there's a background that appear but it's fully square could you round it a bit
+```
+```
+For the circle color of spectating/reviewing please use an opacity of 0.3 instead of 0.5
+```
+```
+can we not write <user> just disconnected <user> just connected if the user just refresh its page?
+```
+```
+I delete a bot (eg. Automaton) but when I restart the server it comes back, please fix 
+```
+```
+If I disconnect, it should reset the chat (only 15 seconds visible)
+```
+```
+There should be no bots automatically created on init
+```
+```
+I keep seeing messages even after disconnecting for more than 15 secs and reconnecting, chat should be empty!
+```
+```
+In the admin page the back button should also be "Back to lobby" without an arrow
+```
+Can you commit the updated promts
 ```
