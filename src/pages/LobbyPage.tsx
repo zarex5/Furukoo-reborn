@@ -211,7 +211,12 @@ export default function LobbyPage() {
                       <thead>
                         <tr className="bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700">
                           <th className="text-left px-3 py-1 text-slate-500 dark:text-gray-400 font-bold w-36">ELO Range</th>
-                          <th className="text-left px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">Waiting</th>
+                          <th className="text-left px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">
+                            Waiting
+                            {proposals.length > 0 && (
+                              <span className="ml-2 text-violet-600 dark:text-violet-400 font-bold">{proposals.length} open</span>
+                            )}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -286,13 +291,18 @@ export default function LobbyPage() {
 
         {/* Waiting section — ELO range table (same as desktop) */}
         <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
-          <div className="px-4 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wide">Waiting</span>
-            {allProposals.length > 0 && (
-              <span className="text-xs font-mono font-bold text-violet-600 dark:text-violet-400">{allProposals.length} open</span>
-            )}
-          </div>
           <table className="w-full text-xs font-mono">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700">
+                <th className="text-left px-3 py-1 text-slate-500 dark:text-gray-400 font-bold w-28">ELO Range</th>
+                <th className="text-left px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">
+                  Waiting
+                  {allProposals.length > 0 && (
+                    <span className="ml-2 text-violet-600 dark:text-violet-400 font-bold">{allProposals.length} open</span>
+                  )}
+                </th>
+              </tr>
+            </thead>
             <tbody>
               {ELO_RANGES.map(range => {
                 const row = proposals.filter(p => p.eloRange === range);
