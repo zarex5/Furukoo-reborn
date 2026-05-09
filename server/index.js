@@ -1,12 +1,14 @@
 'use strict';
 require('dotenv').config();
-const express  = require('express');
-const http     = require('http');
+const express    = require('express');
+const http       = require('http');
 const { Server } = require('socket.io');
-const mongoose = require('mongoose');
-const bcrypt   = require('bcryptjs');
-const jwt      = require('jsonwebtoken');
-const crypto   = require('crypto');
+const mongoose   = require('mongoose');
+const bcrypt     = require('bcryptjs');
+const jwt        = require('jsonwebtoken');
+const crypto     = require('crypto');
+const helmet     = require('helmet');
+const rateLimit  = require('express-rate-limit');
 const { slotKey, legalMoves, applyMove, positionKey, calcEloDelta, eloInfo, getEloRange, INITIAL_TIME_MS } = require('./gameLogic');
 const { BOT_CONFIGS, LEVEL_PARAMS, createBotInstance } = require('./bot');
 
@@ -17,19 +19,37 @@ const bots = new Map(); // username → bot instance
 const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server, {
-  // In production replace '*' with your actual origin, e.g. 'https://furukoo.com'
   cors: { origin: process.env.ALLOWED_ORIGIN || '*' },
 });
 
+app.use(helmet());
 app.use(express.json());
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later' },
+});
+const guestLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many guest accounts created, please try again later' },
+});
 
 // ── MongoDB ──────────────────────────────────────────────────────────────────
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/furukoo')
   .then(async () => {
     console.log('MongoDB connected');
     await loadActiveGames();
-    // Give zarex5 admin rights (idempotent)
-    await User.updateOne({ username: 'zarex5' }, { $set: { isAdmin: true } }).catch(() => {});
+    // Promote ADMIN_USERNAME to admin on startup (idempotent, optional)
+    if (process.env.ADMIN_USERNAME) {
+      await User.updateOne({ username: process.env.ADMIN_USERNAME }, { $set: { isAdmin: true } }).catch(() => {});
+    }
     const sharedState = { connectedUsers, gameProposals, activeGames };
     const api         = { botMove, broadcastLobby, sysChat, getEloRange };
     // Seed bots from BOT_CONFIGS, then load any extra bots created via admin panel
@@ -138,9 +158,13 @@ function saveGame(game) {
 }
 
 if (!process.env.JWT_SECRET) {
-  console.warn('⚠️  JWT_SECRET not set — using insecure default. Set this env var in production.');
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: JWT_SECRET env var must be set in production');
+    process.exit(1);
+  }
+  console.warn('⚠️  JWT_SECRET not set — using random per-process secret (all sessions invalidated on restart)');
 }
-const JWT_SECRET = process.env.JWT_SECRET || 'furukoo-dev-secret';
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const sign = (user) => jwt.sign(
   { userId: user._id.toString(), username: user.username, isAdmin: user.isAdmin || false },
   JWT_SECRET,
@@ -148,11 +172,12 @@ const sign = (user) => jwt.sign(
 );
 
 // ── Auth REST ────────────────────────────────────────────────────────────────
-app.post('/api/register', async (req, res) => {
+app.post('/api/register', authLimiter, async (req, res) => {
   try {
     const { username, password, email } = req.body || {};
     if (!username?.trim() || !password) return res.status(400).json({ error: 'Username and password required' });
     if (username.trim().length < 2)      return res.status(400).json({ error: 'Username must be at least 2 characters' });
+    if (typeof password !== 'string' || password.length > 128) return res.status(400).json({ error: 'Password must be 128 characters or fewer' });
     if (!email?.trim())                  return res.status(400).json({ error: 'Email is required' });
     const passwordHash = await bcrypt.hash(password, 10);
     const user = await User.create({ username: username.trim(), passwordHash, email: email?.trim() || '' });
@@ -163,9 +188,8 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-app.post('/api/guest', async (req, res) => {
+app.post('/api/guest', guestLimiter, async (req, res) => {
   try {
-    const crypto = require('crypto');
     let username, exists;
     do {
       const digits = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
@@ -180,9 +204,10 @@ app.post('/api/guest', async (req, res) => {
   }
 });
 
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', authLimiter, async (req, res) => {
   try {
     const { username, password } = req.body || {};
+    if (typeof password !== 'string' || password.length > 128) return res.status(400).json({ error: 'Invalid credentials' });
     const user = await User.findOne({ username: username?.trim() });
     if (!user) return res.status(401).json({ error: 'Invalid credentials' });
     const ok = await bcrypt.compare(password, user.passwordHash);
@@ -334,7 +359,10 @@ app.get('/api/admin/players', requireAdmin, async (req, res) => {
     const search = req.query.search?.trim() || '';
     const limit  = 10;
     const query  = { isBot: { $ne: true }, guest: { $ne: true } };
-    if (search) query.username = { $regex: search, $options: 'i' };
+    if (search) {
+      const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.username = { $regex: escaped, $options: 'i' };
+    }
     const [total, players] = await Promise.all([
       User.countDocuments(query),
       User.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit)
@@ -840,6 +868,7 @@ io.on('connection', async (socket) => {
 
   // ── Join game room (page load / reload / direct URL / spectating) ──
   socket.on('game:join', async (gameId) => {
+    if (typeof gameId !== 'string') return;
     let game = activeGames.get(gameId);
 
     // Active game not found — try DB (ended games are still viewable)
@@ -977,6 +1006,10 @@ io.on('connection', async (socket) => {
     if (!u) return;
     const loserColor = game.red.username === u.username ? 'red' : game.black.username === u.username ? 'black' : null;
     if (!loserColor) return;
+    // Server-side verification: the loser's clock must actually be at (or near) zero
+    const elapsed = Date.now() - game.lastMoveAt;
+    const remainingMs = game[`${loserColor}TimeMs`] - (game.currentPlayer === loserColor ? elapsed : 0);
+    if (remainingMs > 3000) return; // 3 s grace for network/clock drift
     const winner = loserColor === 'red' ? 'black' : 'red';
     const next = { ...game, winner, timedOutBy: loserColor };
     activeGames.set(gameId, next);
@@ -986,6 +1019,7 @@ io.on('connection', async (socket) => {
 
   // ── Leave game room (navigating away from game page) ──
   socket.on('game:leave', (gameId) => {
+    if (typeof gameId !== 'string') return;
     const u = connectedUsers.get(socket.id);
     if (!u || u.gameId !== gameId) return;
     u.gameId = null; u.gameColor = null; u.spectating = false; u.reviewing = false;
