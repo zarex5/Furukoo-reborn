@@ -379,10 +379,10 @@ export default function GamePage() {
                 </div>
               </div>
               <div className="flex-none flex items-center justify-center gap-1">
-                <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">⏮</button>
-                <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0} title="Previous move">◀</button>
-                <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">▶</button>
-                <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest} title="Latest move">⏭</button>
+                <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">{'⏮︎'}</button>
+                <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0} title="Previous move">{'◀︎'}</button>
+                <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">{'▶︎'}</button>
+                <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest} title="Latest move">{'⏭︎'}</button>
                 <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">{curIdx}/{histLen - 1}</span>
               </div>
             </div>
@@ -438,10 +438,10 @@ export default function GamePage() {
 
         {/* History nav */}
         <div className="flex items-center justify-center gap-2 mt-3">
-          <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>⏮</button>
-          <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>◀</button>
-          <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>▶</button>
-          <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>⏭</button>
+          <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>{'⏮︎'}</button>
+          <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>{'◀︎'}</button>
+          <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>{'▶︎'}</button>
+          <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>{'⏭︎'}</button>
           <span className="text-xs font-mono text-slate-400 dark:text-gray-500">{curIdx}/{histLen - 1}</span>
         </div>
 
