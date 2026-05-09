@@ -354,6 +354,7 @@ export const Board: React.FC<Props> = ({
                 y={topLeft.y}
                 width={bottomRight.x - topLeft.x}
                 height={bottomRight.y - topLeft.y}
+                rx={6}
                 fill={fill}
               />
             );
