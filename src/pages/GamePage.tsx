@@ -49,9 +49,19 @@ export default function GamePage() {
   const [lobbyUsers, setLobbyUsers] = useState<OnlineUser[]>([]);
   const messages = useChatMessages();
 
-  // History navigation
-  const [stateHistory, setStateHistory] = useState<BoardState[]>([]);
-  const [viewIndex,    setViewIndex]    = useState(-1); // -1 = latest
+  // History navigation — persisted in sessionStorage so refresh doesn't lose it
+  const [stateHistory, setStateHistory] = useState<BoardState[]>(() => {
+    try {
+      const saved = sessionStorage.getItem(`history:${gameId}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [viewIndex, setViewIndex] = useState(-1); // -1 = latest
+
+  useEffect(() => {
+    if (gameId && stateHistory.length > 0)
+      sessionStorage.setItem(`history:${gameId}`, JSON.stringify(stateHistory));
+  }, [stateHistory, gameId]);
 
   // Local timer
   const [displayedState, setDisplayedState] = useState<BoardState | null>(null);
