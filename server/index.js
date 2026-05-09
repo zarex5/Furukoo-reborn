@@ -688,8 +688,8 @@ function botMove(gameId, to, from) {
   activeGames.set(gameId, next);
   io.to(`game:${gameId}`).emit('game:state', next);
   for (const inst of bots.values()) inst.onGameState(gameId, next);
+  saveGame(next);
   if (next.winner) endGame(gameId, next.winner, next.drawnBy ? 'repetition' : 'board');
-  else saveGame(next);
 }
 
 // Restore activeGames from DB on startup (called after mongoose connects)
@@ -981,8 +981,8 @@ io.on('connection', async (socket) => {
     activeGames.set(gameId, next);
     io.to(`game:${gameId}`).emit('game:state', next);
     for (const inst of bots.values()) inst.onGameState(gameId, next);
+    saveGame(next);
     if (next.winner) endGame(gameId, next.winner, next.drawnBy ? 'repetition' : 'board');
-    else saveGame(next);
   });
 
   // ── Resign ──
