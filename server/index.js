@@ -753,7 +753,7 @@ io.on('connection', async (socket) => {
   // ── Unified chat ──
   socket.on('chat:send', ({ text, origin }) => {
     if (typeof text !== 'string' || !text.trim() || typeof origin !== 'string') return;
-    if (origin !== 'lobby' && !activeGames.has(origin)) return;
+    if (origin !== 'lobby' && !activeGames.has(origin) && !socket.rooms.has(`game:${origin}`)) return;
     const u = connectedUsers.get(socket.id);
     if (!u || u.isMuted) return;
     const msg = {
