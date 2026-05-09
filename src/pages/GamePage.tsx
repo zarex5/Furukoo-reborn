@@ -269,8 +269,8 @@ export default function GamePage() {
                 : `Spectating ${redName} vs ${blackName}`}
           </span>
           {isSpectating || gameOver
-            ? <button onClick={handleBack} className="px-3 py-0.5 rounded text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 transition">
-                Back
+            ? <button onClick={handleBack} className="px-3 py-0.5 rounded text-xs font-bold bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition">
+                Back to lobby
               </button>
             : <button onClick={handleResign} className="px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
                 Resign
