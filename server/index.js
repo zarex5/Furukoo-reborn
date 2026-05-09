@@ -19,7 +19,7 @@ const bots = new Map(); // username → bot instance
 const app    = express();
 const server = http.createServer(app);
 const io     = new Server(server, {
-  cors: { origin: process.env.ALLOWED_ORIGIN || '*' },
+  cors: { origin: process.env.ALLOWED_ORIGIN ? process.env.ALLOWED_ORIGIN.split(',').map(s => s.trim()) : '*' },
 });
 
 app.use(helmet());
