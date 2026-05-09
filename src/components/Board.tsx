@@ -196,24 +196,42 @@ export const Board: React.FC<Props> = ({
     const rr = Math.round(SHORT / 2);
     const rw = isV ? SHORT : LONG;
     const rh = isV ? LONG : SHORT;
+    // Expanded hit area on the short axis for easier touch
+    const HIT = SHORT + 16;
+    const hw = isV ? HIT : LONG;
+    const hh = isV ? LONG : HIT;
 
     return (
-      <rect
-        key={key}
-        x={pos.cx - rw / 2}
-        y={pos.cy - rh / 2}
-        width={rw}
-        height={rh}
-        rx={rr}
-        ry={rr}
-        fill={fillId}
-        stroke={strokeColor}
-        strokeWidth={1.5}
-        style={{ cursor: isClickable ? 'pointer' : 'default' }}
-        onClick={isClickable ? () => onSlotClick(slotId) : undefined}
-      >
-        <title>{label}</title>
-      </rect>
+      <>
+        <rect
+          key={key}
+          x={pos.cx - rw / 2}
+          y={pos.cy - rh / 2}
+          width={rw}
+          height={rh}
+          rx={rr}
+          ry={rr}
+          fill={fillId}
+          stroke={strokeColor}
+          strokeWidth={1.5}
+          style={{ cursor: isClickable ? 'pointer' : 'default' }}
+          onClick={isClickable ? () => onSlotClick(slotId) : undefined}
+        >
+          <title>{label}</title>
+        </rect>
+        {isClickable && (
+          <rect
+            key={key + '-hit'}
+            x={pos.cx - hw / 2}
+            y={pos.cy - hh / 2}
+            width={hw}
+            height={hh}
+            fill="transparent"
+            style={{ cursor: 'pointer' }}
+            onClick={() => onSlotClick(slotId)}
+          />
+        )}
+      </>
     );
   }
 
