@@ -161,8 +161,8 @@ export default function LobbyPage() {
   const [rulesOpen, setRulesOpen] = useState(false);
 
   return (
-    <div className={`${isDark ? 'dark' : ''} h-screen overflow-hidden`}>
-    <div className="h-full bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
+    <div className={`${isDark ? 'dark' : ''} md:h-screen md:overflow-hidden`}>
+    <div className="md:h-full bg-slate-100 dark:bg-gray-950 text-slate-800 dark:text-white flex flex-col">
 
       {/* ── Shared top bar ───────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700 flex-none">
@@ -261,7 +261,7 @@ export default function LobbyPage() {
       </div>
 
       {/* ── Mobile layout (<md) ──────────────────────────────────────────── */}
-      <div className="flex md:hidden flex-col flex-1 min-h-0 overflow-y-scroll overscroll-contain">
+      <div className="flex md:hidden flex-col pb-4">
 
         {/* Action bar */}
         <div className="flex items-center gap-2 px-3 py-1 bg-white dark:bg-gray-900 border-b border-slate-200 dark:border-gray-700">
@@ -324,8 +324,8 @@ export default function LobbyPage() {
         </div>
 
         {/* Chat */}
-        <div className="mx-3 mt-3 flex flex-col bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 300 }}>
-          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} />
+        <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} mobile />
         </div>
 
         {/* Players — auto-height, no fixed constraint */}
