@@ -472,7 +472,7 @@ export default function AdminPage() {
             onClick={() => navigate('/')}
             className="px-2 py-0.5 rounded text-xs font-mono bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition border border-slate-200 dark:border-gray-700"
           >
-            ← Lobby
+            Back to lobby
           </button>
           <button
             onClick={logout}
