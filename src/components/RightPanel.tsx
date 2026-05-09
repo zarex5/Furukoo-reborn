@@ -79,10 +79,10 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate, mobile 
   ));
 
   const header = (
-    <div className="grid grid-cols-[1fr_3rem_2rem] gap-2 text-xs font-bold px-2 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
-      <span>Players</span>
-      <span className="text-center">ELO</span>
-      <span className="text-center">In</span>
+    <div className="flex items-center gap-2 text-xs font-bold px-2 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
+      <span className="flex-1">Players</span>
+      <span className="w-12 text-center">ELO</span>
+      <span className="w-8 text-center">In</span>
     </div>
   );
 
