@@ -145,7 +145,7 @@ export default function LoginPage() {
           className="w-full py-1.5 rounded text-sm font-bold transition border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-slate-600 dark:text-gray-300 hover:bg-slate-50 dark:hover:bg-gray-800 disabled:opacity-40">
           {guestLoading ? '…' : 'Play as Guest'}
         </button>
-        <p className="text-xs font-mono text-slate-400 dark:text-gray-500 text-center whitespace-nowrap">
+        <p className="text-[10px] font-mono text-slate-400 dark:text-gray-500 text-center whitespace-nowrap">
           ELO won't be saved and account cannot be recovered.
         </p>
       </div>
