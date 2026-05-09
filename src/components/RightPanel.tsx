@@ -44,7 +44,7 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate, mobile 
   const rowCls = (u: OnlineUser) => {
     const isGamePlayer = gamePlayers && (u.username === gamePlayers.red || u.username === gamePlayers.black);
     const isMe = u.username === myUsername;
-    let base = 'flex items-center gap-2 px-2 py-0.5 text-xs font-mono border-b border-slate-100 dark:border-gray-800 last:border-0';
+    let base = 'flex items-center gap-3 px-3 py-0.5 text-xs font-mono border-b border-slate-100 dark:border-gray-800 last:border-0';
     if (isGamePlayer) base += ' font-bold text-slate-900 dark:text-white';
     else base += ' text-slate-500 dark:text-gray-400';
     if (isMe) base += ' bg-violet-50 dark:bg-violet-950/30';
@@ -79,7 +79,7 @@ export function PlayersBox({ users, myUsername, gamePlayers, onSpectate, mobile 
   ));
 
   const header = (
-    <div className="flex items-center gap-2 text-xs font-bold px-2 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
+    <div className="flex items-center gap-3 text-xs font-bold px-3 py-2 bg-slate-50 dark:bg-gray-800 border-b border-slate-200 dark:border-gray-700 text-slate-500 dark:text-gray-400 flex-none">
       <span className="flex-1">Players</span>
       <span className="w-12 text-center">ELO</span>
       <span className="w-8 text-center">In</span>
