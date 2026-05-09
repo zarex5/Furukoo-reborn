@@ -353,7 +353,7 @@ export default function ProfilePage() {
         {/* Title */}
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-white">
-            {username}{profile?.isBot && <span className="ml-2 text-xs font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 align-middle">BOT</span>}
+            <span className="mr-2">👤</span>{username}{profile?.isBot && <span className="ml-2 text-xs font-mono px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-700 text-slate-500 dark:text-gray-400 align-middle">BOT</span>}
           </h1>
           {profile
             ? <p className="text-xs text-slate-400 dark:text-gray-500 mt-0.5">Member since {fmtDate(profile.joinDate)}</p>
