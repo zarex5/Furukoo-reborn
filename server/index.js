@@ -899,13 +899,14 @@ io.on('connection', async (socket) => {
     // Treat as spectator if not a player, or if the game is already over
     const isPlayer = (isRed || isBlack) && !game.winner;
 
+    const alreadyInGame = u.gameId === gameId;
     u.gameId     = gameId;
     u.gameColor  = game.color;
     u.spectating = !isPlayer;
     socket.join(`game:${gameId}`);
 
     if (!isPlayer) {
-      sysChat(`${u.username} just joined game ${gameId}`, gameId);
+      if (!alreadyInGame) sysChat(`${u.username} just joined game ${gameId}`, gameId);
     } else {
       const color         = isRed ? 'red' : 'black';
       const otherColor    = color === 'red' ? 'black' : 'red';
@@ -919,7 +920,7 @@ io.on('connection', async (socket) => {
         game.disconnectedColor = null;
         game.disconnectedAt    = null;
         sysChat(`${u.username} reconnected`, gameId);
-      } else {
+      } else if (!alreadyInGame) {
         sysChat(`${u.username} just joined game ${gameId}`, gameId);
       }
 
