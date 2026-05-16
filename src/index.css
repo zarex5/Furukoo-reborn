@@ -24,6 +24,11 @@ body { margin: 0; font-family: system-ui, sans-serif; }
 .dark ::-webkit-scrollbar-thumb:hover  { background: #6d28d9; } /* violet-700 */
 .dark ::-webkit-scrollbar-thumb:active { background: #6d28d9; }
 
+@keyframes piece-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
 @keyframes strike {
   from { width: 0 }
   to   { width: 100% }

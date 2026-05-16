@@ -16,6 +16,8 @@ interface Props {
   fit?: boolean;
   /** Unique prefix for SVG gradient IDs — prevents conflicts when multiple boards are in the DOM. */
   uid?: string;
+  /** When set, pieces of this color gently pulse to hint the player it's their turn. */
+  pulsePieceColor?: Player | null;
 }
 
 /**
@@ -121,6 +123,7 @@ export const Board: React.FC<Props> = ({
   responsive = false,
   fit = false,
   uid = 'b',
+  pulsePieceColor = null,
 }) => {
   const C = isDark ? {
     emptyFill: '#4b5563', emptyStroke: '#6b7280', labelFill: '#d1d5db',
@@ -214,7 +217,10 @@ export const Board: React.FC<Props> = ({
           fill={fillId}
           stroke={strokeColor}
           strokeWidth={1.5}
-          style={{ cursor: isClickable ? 'pointer' : 'default' }}
+          style={{
+            cursor: isClickable ? 'pointer' : 'default',
+            animation: (owner === pulsePieceColor && !isSelected) ? 'piece-pulse 1s ease-in-out infinite' : undefined,
+          }}
           onClick={isClickable ? () => onSlotClick(slotId) : undefined}
         >
           <title>{label}</title>

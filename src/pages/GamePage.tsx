@@ -270,6 +270,8 @@ export default function GamePage() {
 
   const isMyTurn = !!myColor && !gameOver && gameState?.currentPlayer === myColor;
   const showMyTurnPulse = isMyTurn && myTurnIdleMs > 5000;
+  const pulsePieceColor = (isMyTurn && myTurnIdleMs > 15000 && gameState?.phase === 'movement' && isAtLatest)
+    ? myColor : null;
 
   function playerPanelProps(player: Player) {
     const s = viewedState ?? displayedState;
@@ -401,6 +403,7 @@ export default function GamePage() {
                   disabled={boardDisabled}
                   phase={gameState.phase}
                   isDark={isDark}
+                  pulsePieceColor={pulsePieceColor}
                 />
               </div>
               <div className="flex-none flex justify-center">
