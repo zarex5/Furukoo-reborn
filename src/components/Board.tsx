@@ -18,6 +18,8 @@ interface Props {
   uid?: string;
   /** When set, pieces of this color gently pulse to hint the player it's their turn. */
   pulsePieceColor?: Player | null;
+  /** Last move played — used for slot highlights and 300ms piece animation. */
+  lastMove?: { from: SlotId | null; to: SlotId } | null;
 }
 
 /**
@@ -29,61 +31,17 @@ interface Props {
  * - V lines are at odd columns: col 1,3,5,7,9,11  → visual col index 2k-1 for k=1..6
  * - H lines are at odd rows:    row 1,3,5,7,9,11  → visual row index 2j-1 for j=1..6
  * - Slot positions on V line k:
- *   slot 1 = above row 1 → visual row 0 (above grid, so we add a row 0)
- *   Actually we extend the grid: use rows 0..12
- *   slot s on kV → visual row: s*2 - 2  (s=1 → row 0, s=7 → row 12)
- *   Wait: the 6 H lines occupy visual rows 1,3,5,7,9,11 (0-indexed in a 13-row grid)
- *   Slots between H lines and at edges:
- *     kV slot 1: above 1H → visual row 0
- *     kV slot 2: between 1H (row 1) and 2H (row 3) → visual row 2
- *     kV slot s: visual row (s-1)*2
- *     kV slot 7: below 6H → visual row 12
- *
- *   kV line is at visual col (k-1)*2 + 1 = 2k-1 (1-indexed in 13-col grid → 0-indexed: 2k-2)
- *   Hmm, let me use 0-indexed for the 13×13 grid (rows 0..12, cols 0..12):
- *     V line k occupies column 2*(k-1)   for k=1..6  → cols 0,2,4,6,8,10
- *     H line j occupies row    2*(j-1)   for j=1..6  → rows 0,2,4,6,8,10
- *
- *   Slot positions (center of slot):
- *     kV slot s → col 2*(k-1), row 2*(s-1) - 1  ... hmm this puts slot 1 at row -1
- *
- * Let me use a simpler approach with offsets:
- *   Grid has 13 rows and 13 columns (0..12):
- *     H lines at visual rows: 1, 3, 5, 7, 9, 11  (j=1..6: row = 2*j-1)
- *     V lines at visual cols: 1, 3, 5, 7, 9, 11  (k=1..6: col = 2*k-1)
- *
- *   V slots on line k (col = 2k-1):
- *     slot 1: above 1H → between visual row -1 and row 1 → center at row 0
- *     slot 2: between 1H (row 1) and 2H (row 3) → center at row 2
- *     slot s: center at visual row 2*(s-1)  (s=1→0, s=2→2, ..., s=7→12)
+ *   slot 1 = above row 1 → between visual row -1 and row 1 → center at row 0
+ *   slot s on kV → visual row: 2*(s-1)  (s=1 → row 0, s=7 → row 12)
  *
  *   H slots on line j (row = 2j-1):
- *     slot 1: left of 1V → center at col 0
  *     slot k: center at visual col 2*(k-1)
  *
  * So the visual grid is 13×13 (rows 0..12, cols 0..12)
  * We'll use a CSS grid with 13 columns and 13 rows, each CELL_SIZE wide/tall.
  * Intersections (corners of squares) are at odd rows AND odd cols: (2j-1, 2k-1)
  * V-slot cells are at even rows and odd cols: (2*(s-1), 2*(k)-1)
- *   → 2*(s-1) is even for s=1..7, and col = 2k-1 is odd for k=1..6
- * H-slot cells are at odd rows and even cols: (2*(j-1), 2*(k-1))...
- *   wait: slot center at col 2*(k-1) is even, row 2*(j-1) — but H line is at row 2j-1 (ODD)
- *
- * Something's off. Let me redo:
- *   H line j occupies visual ROW 2j-1 (odd: 1,3,5,7,9,11 for j=1..6)
- *   H slot k on line j: center at (row = 2j-1, col = 2*(k-1)) [even col]
- *     slot 1: col 0; slot 7: col 12
- *
- *   V line k occupies visual COL 2k-1 (odd: 1,3,5,7,9,11 for k=1..6)
- *   V slot s on line k: center at (row = 2*(s-1), col = 2k-1) [even row]
- *     slot 1: row 0; slot 7: row 12
- *
- *   Intersections at (row=2j-1, col=2k-1) — odd row AND odd col
- *   V slots at (row=even, col=odd)
- *   H slots at (row=odd, col=even)
- *   Empty corners at (row=even, col=even) — these are "outside" the lines
- *
- * This gives us a clean separation!
+ * H-slot cells are at odd rows and even cols
  */
 
 const CELL = 28; // px per grid cell
@@ -110,7 +68,19 @@ function intersectionPos(j: number, k: number) {
   return { x: (2 * k - 1) * CELL + CELL / 2, y: (2 * j - 1) * CELL + CELL / 2 };
 }
 
+function slotPos(id: SlotId) {
+  return id.type === 'V' ? vSlotPos(id.line, id.slot) : hSlotPos(id.line, id.slot);
+}
+
 const TOTAL = GRID_CELLS * CELL;
+
+interface MovingPiece {
+  player: Player;
+  toSlotKey: string;
+  fromCx: number; fromCy: number;
+  toCx: number; toCy: number;
+  isToV: boolean;
+}
 
 export const Board: React.FC<Props> = ({
   pieces,
@@ -124,6 +94,7 @@ export const Board: React.FC<Props> = ({
   fit = false,
   uid = 'b',
   pulsePieceColor = null,
+  lastMove = null,
 }) => {
   const C = isDark ? {
     emptyFill: '#4b5563', emptyStroke: '#6b7280', labelFill: '#d1d5db',
@@ -132,6 +103,40 @@ export const Board: React.FC<Props> = ({
     emptyFill: '#e2e8f0', emptyStroke: '#94a3b8', labelFill: '#475569',
     redSquare: 'rgba(239,68,68,0.18)', blackSquare: 'rgba(15,23,42,0.15)',
   };
+
+  // --- 300ms piece animation ---
+  const [movingPiece, setMovingPiece] = React.useState<MovingPiece | null>(null);
+  const animTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastMoveFromKey = lastMove?.from ? slotKey(lastMove.from) : null;
+  const lastMoveToKey   = lastMove ? slotKey(lastMove.to) : null;
+
+  React.useEffect(() => {
+    if (!lastMove?.from) { setMovingPiece(null); return; }
+    const owner = pieces[slotKey(lastMove.to)];
+    if (!owner) { setMovingPiece(null); return; }
+    const from = slotPos(lastMove.from);
+    const to   = slotPos(lastMove.to);
+    if (animTimerRef.current) clearTimeout(animTimerRef.current);
+    setMovingPiece({
+      player: owner,
+      toSlotKey: slotKey(lastMove.to),
+      fromCx: from.cx, fromCy: from.cy,
+      toCx: to.cx, toCy: to.cy,
+      isToV: lastMove.to.type === 'V',
+    });
+    animTimerRef.current = setTimeout(() => setMovingPiece(null), 350);
+    return () => { if (animTimerRef.current) clearTimeout(animTimerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastMoveFromKey, lastMoveToKey]);
+
+  // --- Slot highlights (last-move indicator) ---
+  const highlightedSlots = React.useMemo(() => {
+    if (!lastMove) return new Set<string>();
+    const s = new Set([slotKey(lastMove.to)]);
+    if (lastMove.from) s.add(slotKey(lastMove.from));
+    return s;
+  }, [lastMove]);
+
   const legalDests = React.useMemo(() => {
     if (!selectedSlot || disabled) return new Set<string>();
     return new Set(legalMoves(selectedSlot, pieces).map(slotKey));
@@ -163,35 +168,38 @@ export const Board: React.FC<Props> = ({
 
   function renderSlot(slotId: SlotId) {
     const key = slotKey(slotId);
-    const owner = pieces[key];
+    const isAnimatingDest = movingPiece?.toSlotKey === key;
+    // Hide the static piece at the animation destination — the overlay animated piece handles it
+    const owner = isAnimatingDest ? undefined : pieces[key];
     const isSelected = selectedSlot && slotKey(selectedSlot) === key;
     const isLegal = legalDests.has(key);
+    const isHighlighted = highlightedSlots.has(key);
     const isClickable =
       !disabled &&
       (isLegal ||
         isSelected ||
-        (owner === currentPlayer && phase === 'movement') ||
-        (phase === 'placement' && !owner));
+        (pieces[key] === currentPlayer && phase === 'movement') ||
+        (phase === 'placement' && !pieces[key]));
 
-    let pos: { cx: number; cy: number };
-    if (slotId.type === 'V') {
-      pos = vSlotPos(slotId.line, slotId.slot);
-    } else {
-      pos = hSlotPos(slotId.line, slotId.slot);
-    }
+    const pos = slotPos(slotId);
 
     let fillId: string;
     if (isSelected) fillId = `url(#${uid}-sel)`;
     else if (isLegal) fillId = `url(#${uid}-leg)`;
     else if (owner === 'red') fillId = `url(#${uid}-red)`;
     else if (owner === 'black') fillId = isDark ? `url(#${uid}-blk-d)` : `url(#${uid}-blk-l)`;
+    else if (isHighlighted) fillId = isDark ? `url(#${uid}-hi-d)` : `url(#${uid}-hi-l)`;
     else fillId = isDark ? `url(#${uid}-empty-d)` : `url(#${uid}-empty-l)`;
 
     let strokeColor = C.emptyStroke;
     if (isSelected) strokeColor = '#d97706';
     else if (isLegal) strokeColor = '#16a34a';
-    else if (owner === 'red') strokeColor = '#b91c1c';
-    else if (owner === 'black') strokeColor = isDark ? '#374151' : '#334155';
+    else if (owner === 'red') strokeColor = isHighlighted ? '#ef4444' : '#b91c1c';
+    else if (owner === 'black') strokeColor = isHighlighted
+      ? (isDark ? '#9ca3af' : '#64748b')
+      : (isDark ? '#374151' : '#334155');
+
+    const strokeWidth = isHighlighted && !isSelected ? 2.5 : 1.5;
 
     const label = `${slotId.line}${slotId.type}${slotId.slot}`;
     const isV = slotId.type === 'V';
@@ -216,7 +224,7 @@ export const Board: React.FC<Props> = ({
           ry={rr}
           fill={fillId}
           stroke={strokeColor}
-          strokeWidth={1.5}
+          strokeWidth={strokeWidth}
           style={{
             cursor: isClickable ? 'pointer' : 'default',
             animation: (owner === pulsePieceColor && !isSelected) ? 'piece-pulse 1s ease-in-out infinite' : undefined,
@@ -271,14 +279,23 @@ export const Board: React.FC<Props> = ({
       style={{ display: 'block' }}
     >
       <defs>
-        {/* Empty slots: darker center, much lighter edge */}
+        {/* Empty slots: slightly lighter */}
         <radialGradient id={`${uid}-empty-l`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#d6e2ec" />
-          <stop offset="100%" stopColor="#f6fafd" />
+          <stop offset="0%" stopColor="#e8f1f8" />
+          <stop offset="100%" stopColor="#f9fdff" />
         </radialGradient>
         <radialGradient id={`${uid}-empty-d`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#606f7e" />
           <stop offset="100%" stopColor="#8fa0b0" />
+        </radialGradient>
+        {/* Highlighted empty slots (last-move indicator): darker */}
+        <radialGradient id={`${uid}-hi-l`} cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#b8cfe0" />
+          <stop offset="100%" stopColor="#d8eaf5" />
+        </radialGradient>
+        <radialGradient id={`${uid}-hi-d`} cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#3d5060" />
+          <stop offset="100%" stopColor="#6a8090" />
         </radialGradient>
         {/* Colored pieces: moderate highlight center */}
         <radialGradient id={`${uid}-red`} cx="50%" cy="50%" r="70%">
@@ -369,6 +386,43 @@ export const Board: React.FC<Props> = ({
 
         {/* Slots */}
         {slots.map(renderSlot)}
+
+        {/* Animated piece overlay — travels from previous slot to new slot over 300ms */}
+        {movingPiece && (() => {
+          const isV = movingPiece.isToV;
+          const rw = isV ? SHORT : LONG;
+          const rh = isV ? LONG : SHORT;
+          const rr = Math.round(SHORT / 2);
+          const dx = movingPiece.fromCx - movingPiece.toCx;
+          const dy = movingPiece.fromCy - movingPiece.toCy;
+          const fillId = movingPiece.player === 'red'
+            ? `url(#${uid}-red)`
+            : isDark ? `url(#${uid}-blk-d)` : `url(#${uid}-blk-l)`;
+          const stroke = movingPiece.player === 'red' ? '#b91c1c' : isDark ? '#374151' : '#334155';
+          return (
+            <rect
+              x={movingPiece.toCx - rw / 2}
+              y={movingPiece.toCy - rh / 2}
+              width={rw}
+              height={rh}
+              rx={rr}
+              ry={rr}
+              fill={fillId}
+              stroke={stroke}
+              strokeWidth={1.5}
+              style={{ pointerEvents: 'none' }}
+            >
+              <animateTransform
+                attributeName="transform"
+                type="translate"
+                from={`${dx} ${dy}`}
+                to="0 0"
+                dur="300ms"
+                fill="freeze"
+              />
+            </rect>
+          );
+        })()}
       </g>
     </svg>
   );

@@ -14,6 +14,7 @@ import { useDarkMode } from '../lib/darkMode';
 import type { SlotId, Player, BoardState } from '../types';
 import { slotKey } from '../types';
 import { legalMoves, applyMove, INITIAL_TIME_MS } from '../gameLogic';
+import { useMemo } from 'react';
 
 interface GameMeta {
   red:   { username: string; elo: number };
@@ -268,6 +269,12 @@ export default function GamePage() {
   const topPlayer:    Player = myColor ?? 'red';
   const bottomPlayer: Player = topPlayer === 'red' ? 'black' : 'red';
 
+  const activeBoardLastMove = useMemo(() => {
+    if (!gameState?.moves.length) return null;
+    const last = gameState.moves[gameState.moves.length - 1];
+    return { from: last.from ?? null, to: last.to };
+  }, [gameState?.moves.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const isMyTurn = !!myColor && !gameOver && gameState?.currentPlayer === myColor;
   const showMyTurnPulse = isMyTurn && myTurnIdleMs > 5000;
   const pulsePieceColor = (isMyTurn && myTurnIdleMs > 15000 && gameState?.phase === 'movement' && isAtLatest)
@@ -404,6 +411,7 @@ export default function GamePage() {
                   phase={gameState.phase}
                   isDark={isDark}
                   pulsePieceColor={pulsePieceColor}
+                  lastMove={activeBoardLastMove}
                 />
               </div>
               <div className="flex-none flex justify-center">
