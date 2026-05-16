@@ -179,7 +179,7 @@ export const api = {
   admin: {
     bots:      () => getAuth<AdminBot[]>('/admin/bots'),
     createBot: (username: string, level: number) => postAuth('/admin/bots', { username, level }),
-    updateBot: (username: string, updates: { username?: string; level?: number; enabled?: boolean }) =>
+    updateBot: (username: string, updates: { username?: string; level?: number; enabled?: boolean; elo?: number }) =>
       putAuth(`/admin/bots/${encodeURIComponent(username)}`, updates as Record<string, unknown>),
     deleteBot: (username: string) => {
       const headers = { ...authHeaders(), 'Content-Type': 'application/json' };
@@ -201,5 +201,19 @@ export const api = {
       putAuth(`/admin/players/${encodeURIComponent(username)}/mute`, { isMuted }),
     setBan:   (username: string, isBanned: boolean) =>
       putAuth(`/admin/players/${encodeURIComponent(username)}/ban`, { isBanned }),
+    setPlayerElo: (username: string, elo: number) =>
+      putAuth(`/admin/players/${encodeURIComponent(username)}/elo`, { elo }),
+    deletePlayer: (username: string) => {
+      const headers = { ...authHeaders(), 'Content-Type': 'application/json' };
+      return fetch(`/api/admin/players/${encodeURIComponent(username)}`, { method: 'DELETE', headers })
+        .then(async res => {
+          if (!res.ok) {
+            const text = await res.text();
+            let data: Record<string, string> = {};
+            try { data = JSON.parse(text); } catch { /* */ }
+            throw new Error(data.error || `Server error (${res.status})`);
+          }
+        });
+    },
   },
 };

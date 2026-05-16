@@ -140,6 +140,8 @@ function DeleteBotModal({ username, onClose, onDeleted }: { username: string; on
 function BotRow({ bot, onUpdated, onError }: { bot: AdminBot; onUpdated: () => void; onError: (msg: string) => void }) {
   const [editName, setEditName] = useState(false);
   const [nameVal, setNameVal] = useState(bot.username);
+  const [editElo, setEditElo] = useState(false);
+  const [eloVal, setEloVal] = useState(String(bot.elo));
   const [saving, setSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
 
@@ -159,6 +161,12 @@ function BotRow({ bot, onUpdated, onError }: { bot: AdminBot; onUpdated: () => v
     const trimmed = nameVal.trim();
     if (!trimmed || trimmed === bot.username) { setEditName(false); setNameVal(bot.username); return; }
     update({ username: trimmed }).then(() => setEditName(false));
+  };
+
+  const saveElo = () => {
+    const n = Math.max(100, Math.round(Number(eloVal)));
+    if (isNaN(n) || n === bot.elo) { setEditElo(false); setEloVal(String(bot.elo)); return; }
+    update({ elo: n }).then(() => setEditElo(false));
   };
 
   const LEVEL_LABELS: Record<number, string> = {
@@ -203,7 +211,27 @@ function BotRow({ bot, onUpdated, onError }: { bot: AdminBot; onUpdated: () => v
           </select>
         </div>
       </td>
-      <td className="px-4 py-2.5 text-center font-mono text-sm text-slate-600 dark:text-gray-400">{bot.elo}</td>
+      <td className="px-4 py-2.5 text-center">
+        {editElo ? (
+          <div className="flex items-center gap-1 justify-center">
+            <input
+              autoFocus
+              type="number"
+              value={eloVal}
+              onChange={e => setEloVal(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveElo(); if (e.key === 'Escape') { setEditElo(false); setEloVal(String(bot.elo)); } }}
+              className="px-1.5 py-0.5 text-sm rounded border border-violet-400 bg-white dark:bg-gray-800 text-slate-800 dark:text-white focus:outline-none w-20 text-center font-mono"
+            />
+            <button onClick={saveElo} disabled={saving} className="text-xs text-violet-600 dark:text-violet-400 font-bold disabled:opacity-50">✓</button>
+            <button onClick={() => { setEditElo(false); setEloVal(String(bot.elo)); }} className="text-xs text-slate-400">✕</button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 justify-center group">
+            <span className="font-mono text-sm text-slate-600 dark:text-gray-400">{bot.elo}</span>
+            <button onClick={() => setEditElo(true)} className="text-slate-300 dark:text-gray-600 hover:text-slate-500 dark:hover:text-gray-400 text-xs opacity-0 group-hover:opacity-100 transition">✎</button>
+          </div>
+        )}
+      </td>
       <td className="px-4 py-2.5 text-center font-mono text-sm text-slate-600 dark:text-gray-400">{bot.gamesPlayed}</td>
       <td className="px-4 py-2.5">
         <Toggle
@@ -294,14 +322,62 @@ function BotsSection() {
 
 // ── Players section ───────────────────────────────────────────────────────────
 
-function PlayerRow({ player, onUpdated, onError }: { player: AdminPlayer; onUpdated: () => void; onError: (msg: string) => void }) {
+function DeletePlayerModal({ username, onClose, onDeleted }: { username: string; onClose: () => void; onDeleted: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleDelete = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await api.admin.deletePlayer(username);
+      onDeleted();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete player');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-sm mx-4 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-slate-200 dark:border-gray-700 p-6">
+        <h3 className="text-base font-bold text-slate-800 dark:text-white mb-2">Delete player</h3>
+        <p className="text-sm text-slate-500 dark:text-gray-400 mb-4">
+          Are you sure you want to permanently delete <strong className="text-slate-700 dark:text-gray-200">{username}</strong>? This cannot be undone.
+        </p>
+        {error && <ErrorBanner msg={error} onDismiss={() => setError('')} />}
+        <div className="flex gap-2 justify-end">
+          <button onClick={onClose} className="px-3 py-1.5 rounded text-sm text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-gray-800 transition">Cancel</button>
+          <button onClick={handleDelete} disabled={loading}
+            className="px-4 py-1.5 rounded text-sm font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition">
+            {loading ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlayerRow({ player, onUpdated, onError, currentUsername }: { player: AdminPlayer; onUpdated: () => void; onError: (msg: string) => void; currentUsername: string }) {
   const [busy, setBusy] = useState<string | null>(null);
+  const [editElo, setEditElo] = useState(false);
+  const [eloVal, setEloVal] = useState(String(player.elo));
+  const [showDelete, setShowDelete] = useState(false);
+  const isSelf = player.username === currentUsername;
 
   const act = async (action: () => Promise<void>, key: string) => {
     setBusy(key);
     try { await action(); onUpdated(); }
     catch (e) { onError(e instanceof Error ? e.message : 'Action failed'); }
     finally { setBusy(null); }
+  };
+
+  const saveElo = () => {
+    const n = Math.max(100, Math.round(Number(eloVal)));
+    if (isNaN(n) || n === player.elo) { setEditElo(false); setEloVal(String(player.elo)); return; }
+    act(() => api.admin.setPlayerElo(player.username, n), 'elo').then(() => setEditElo(false));
   };
 
   const fmt = (d: string) => new Date(d).toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -311,7 +387,27 @@ function PlayerRow({ player, onUpdated, onError }: { player: AdminPlayer; onUpda
       <td className="px-4 py-2.5 font-mono text-sm text-slate-700 dark:text-gray-200 max-w-[130px] truncate">
         {player.username}
       </td>
-      <td className="px-4 py-2.5 text-center font-mono text-sm text-slate-600 dark:text-gray-400">{player.elo}</td>
+      <td className="px-4 py-2.5 text-center">
+        {editElo ? (
+          <div className="flex items-center gap-1 justify-center">
+            <input
+              autoFocus
+              type="number"
+              value={eloVal}
+              onChange={e => setEloVal(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveElo(); if (e.key === 'Escape') { setEditElo(false); setEloVal(String(player.elo)); } }}
+              className="px-1.5 py-0.5 text-sm rounded border border-violet-400 bg-white dark:bg-gray-800 text-slate-800 dark:text-white focus:outline-none w-20 text-center font-mono"
+            />
+            <button onClick={saveElo} disabled={busy === 'elo'} className="text-xs text-violet-600 dark:text-violet-400 font-bold disabled:opacity-50">✓</button>
+            <button onClick={() => { setEditElo(false); setEloVal(String(player.elo)); }} className="text-xs text-slate-400">✕</button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 justify-center group">
+            <span className="font-mono text-sm text-slate-600 dark:text-gray-400">{player.elo}</span>
+            <button onClick={() => setEditElo(true)} className="text-slate-300 dark:text-gray-600 hover:text-slate-500 dark:hover:text-gray-400 text-xs opacity-0 group-hover:opacity-100 transition">✎</button>
+          </div>
+        )}
+      </td>
       <td className="px-4 py-2.5 text-center text-sm text-slate-500 dark:text-gray-400">{player.gamesPlayed}</td>
       <td className="px-4 py-2.5 text-center text-sm text-slate-500 dark:text-gray-400">{player.messageCount}</td>
       <td className="px-4 py-2.5 text-xs text-slate-400 dark:text-gray-500 whitespace-nowrap">{fmt(player.joinDate)}</td>
@@ -336,11 +432,27 @@ function PlayerRow({ player, onUpdated, onError }: { player: AdminPlayer; onUpda
           disabled={busy === 'ban'}
         />
       </td>
+      <td className="px-4 py-2.5">
+        <button
+          onClick={() => setShowDelete(true)}
+          disabled={isSelf}
+          className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 disabled:opacity-30 disabled:cursor-not-allowed transition"
+          title={isSelf ? 'Cannot delete yourself' : 'Delete player'}
+        >✕</button>
+      </td>
+      {showDelete && (
+        <DeletePlayerModal
+          username={player.username}
+          onClose={() => setShowDelete(false)}
+          onDeleted={onUpdated}
+        />
+      )}
     </tr>
   );
 }
 
 function PlayersSection() {
+  const { user } = useAuth();
   const [data, setData] = useState<AdminPlayersPage | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -405,11 +517,12 @@ function PlayersSection() {
                   <th className="px-4 py-2">Admin</th>
                   <th className="px-4 py-2">Muted</th>
                   <th className="px-4 py-2">Banned</th>
+                  <th className="px-4 py-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {data.players.map(p => (
-                  <PlayerRow key={p.username} player={p} onUpdated={load} onError={setError} />
+                  <PlayerRow key={p.username} player={p} onUpdated={load} onError={setError} currentUsername={user?.username ?? ''} />
                 ))}
               </tbody>
             </table>
@@ -444,7 +557,7 @@ type Tab = 'bots' | 'players';
 export default function AdminPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>('bots');
+  const [tab, setTab] = useState<Tab>('players');
   const { isDark, toggleDark } = useDarkMode();
 
   if (!user?.isAdmin) {
@@ -491,8 +604,8 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="flex border-b border-slate-200 dark:border-gray-700 mb-6">
-          <button className={tabCls('bots')}   onClick={() => setTab('bots')}>Bots</button>
           <button className={tabCls('players')} onClick={() => setTab('players')}>Players</button>
+          <button className={tabCls('bots')}   onClick={() => setTab('bots')}>Bots</button>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-700 p-5">

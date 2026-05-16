@@ -235,11 +235,13 @@ async function requireAdmin(req, res, next) {
 app.get('/api/admin/bots', requireAdmin, async (req, res) => {
   try {
     const botUsers = await User.find({ isBot: true }).sort({ createdAt: 1 }).lean();
+    const botIds = botUsers.map(u => u._id.toString());
     const gameCounts = await Game.aggregate([
-      { $match: { status: 'ended' } },
-      { $project: { usernames: ['$red.username', '$black.username'] } },
-      { $unwind: '$usernames' },
-      { $group: { _id: '$usernames', count: { $sum: 1 } } },
+      { $match: { status: 'ended', $or: [{ 'red.userId': { $in: botIds } }, { 'black.userId': { $in: botIds } }] } },
+      { $project: { userIds: ['$red.userId', '$black.userId'] } },
+      { $unwind: '$userIds' },
+      { $match: { userIds: { $in: botIds } } },
+      { $group: { _id: '$userIds', count: { $sum: 1 } } },
     ]);
     const countMap = Object.fromEntries(gameCounts.map(g => [g._id, g.count]));
     res.json(botUsers.map(u => ({
@@ -247,7 +249,7 @@ app.get('/api/admin/bots', requireAdmin, async (req, res) => {
       elo:         u.elo,
       level:       u.botLevel ?? 5,
       enabled:     u.botEnabled !== false,
-      gamesPlayed: countMap[u.username] || 0,
+      gamesPlayed: countMap[u._id.toString()] || 0,
       inGame:      bots.get(u.username)?.inGame || false,
     })));
   } catch { res.status(500).json({ error: 'Server error' }); }
@@ -285,7 +287,7 @@ app.post('/api/admin/bots', requireAdmin, async (req, res) => {
 app.put('/api/admin/bots/:username', requireAdmin, async (req, res) => {
   try {
     const oldUsername = req.params.username;
-    const { username: newUsername, level, enabled } = req.body || {};
+    const { username: newUsername, level, enabled, elo } = req.body || {};
     const inst = bots.get(oldUsername);
     if (!inst) return res.status(404).json({ error: 'Bot not found' });
 
@@ -313,6 +315,10 @@ app.put('/api/admin/bots/:username', requireAdmin, async (req, res) => {
     if (enabled !== undefined) {
       dbUpdates.botEnabled = Boolean(enabled);
       cfgUpdates.enabled   = Boolean(enabled);
+    }
+    if (elo !== undefined) {
+      const eloVal = Math.max(100, Math.round(Number(elo)));
+      if (!isNaN(eloVal)) { dbUpdates.elo = eloVal; cfgUpdates.elo = eloVal; }
     }
 
     await User.updateOne({ username: oldUsername }, { $set: dbUpdates });
@@ -431,6 +437,34 @@ app.put('/api/admin/players/:username/ban', requireAdmin, async (req, res) => {
         }
       }
     }
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.put('/api/admin/players/:username/elo', requireAdmin, async (req, res) => {
+  try {
+    const { username } = req.params;
+    const eloVal = Math.max(100, Math.round(Number(req.body.elo)));
+    if (isNaN(eloVal)) return res.status(400).json({ error: 'Invalid ELO value' });
+    await User.updateOne({ username, isBot: { $ne: true } }, { $set: { elo: eloVal } });
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.delete('/api/admin/players/:username', requireAdmin, async (req, res) => {
+  try {
+    const { username } = req.params;
+    if (username === req.adminUsername) return res.status(400).json({ error: 'Cannot delete yourself' });
+    const user = await User.findOne({ username, isBot: { $ne: true }, guest: { $ne: true } });
+    if (!user) return res.status(404).json({ error: 'Player not found' });
+    for (const [, u] of connectedUsers) {
+      if (u.username === username) {
+        const sock = io.sockets.sockets.get(u.socketId);
+        if (sock) { sock.emit('auth:banned'); sock.disconnect(true); }
+        break;
+      }
+    }
+    await User.deleteOne({ _id: user._id });
     res.json({ ok: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });

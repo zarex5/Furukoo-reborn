@@ -460,6 +460,15 @@ function createBotInstance(config) {
       if (prop) prop.botLevel = _cfg.level;
     }
 
+    // Sync elo in botUser, connectedUsers, and proposal
+    if (updates.elo != null && botUser) {
+      botUser.elo = updates.elo;
+      const entry = _sharedState?.connectedUsers.get(getSocketId());
+      if (entry) entry.elo = updates.elo;
+      const prop = _sharedState?.gameProposals.get(_cfg.username);
+      if (prop) prop.elo = updates.elo;
+    }
+
     // Enabled → remove proposal; disabled → try to requeue
     if (updates.enabled === false && _sharedState) {
       _sharedState.gameProposals.delete(_cfg.username);
