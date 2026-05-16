@@ -181,8 +181,15 @@ export default function LobbyPage() {
   const [users,     setUsers]     = useState<OnlineUser[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [hasProposal, setHasProposal] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const messages = useChatMessages();
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const myProposal = proposals.find(p => p.username === user?.username);
   const myProposalIsPrivate = myProposal?.isPrivate ?? false;
@@ -214,7 +221,20 @@ export default function LobbyPage() {
 
     // Re-request state on mount — the socket stays connected during navigation
     // so the server won't push a fresh snapshot when we navigate back via browser history.
-    if (socket.connected) socket.emit('lobby:request');
+    if (socket.connected) {
+      socket.emit('lobby:request');
+
+      const params = new URLSearchParams(window.location.search);
+      const joinUser = params.get('join');
+      if (joinUser) {
+        navigate('/', { replace: true });
+        if (joinUser === user?.username) {
+          setToast("You can't accept your own game");
+        } else {
+          socket.emit('game:accept', joinUser);
+        }
+      }
+    }
 
     return () => {
       socket.off('lobby:state',  onLobby);
@@ -448,6 +468,13 @@ export default function LobbyPage() {
         </div>
 
       </div>
+
+      {/* ── Toast ─────────────────────────────────────────────────────────── */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg bg-slate-800 dark:bg-gray-100 text-white dark:text-gray-900 text-xs font-mono shadow-xl pointer-events-none">
+          {toast}
+        </div>
+      )}
     </div>
     </div>
   );
