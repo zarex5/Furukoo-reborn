@@ -810,7 +810,10 @@ io.on('connection', async (socket) => {
     if (u.gameId || gameProposals.has(u.username)) return;
     gameProposals.set(u.username, { username: u.username, elo: u.elo, eloRange: getEloRange(u.elo), isPrivate: false });
     sysChat(`${u.username} just proposed a game`, 'lobby');
-    broadcastLobby();
+    // Immediately notify the proposer so they can interact with their proposal (copy link, toggle private)
+    // before it becomes visible to others after 1 second.
+    socket.emit('lobby:state', lobbySnapshot());
+    setTimeout(() => broadcastLobby(), 1000);
   });
 
   socket.on('game:togglePrivate', () => {

@@ -10,6 +10,7 @@ import { FurukooLogo } from '../components/FurukooLogo';
 import { ConnectionBanner } from '../components/ConnectionBanner';
 import { DarkToggle } from '../components/DarkToggle';
 import { useDarkMode } from '../lib/darkMode';
+import { Tip } from '../components/Tip';
 
 interface Proposal { username: string; elo: number; eloRange: string; isBot?: boolean; botLevel?: number; isPrivate?: boolean; }
 
@@ -141,10 +142,18 @@ function ProposalDropdown({ username, isPrivate, onCopyLink, onTogglePrivate, on
     ? `px-2 py-0.5 rounded text-xs font-bold font-sans transition border bg-slate-100 text-slate-500 border-slate-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 cursor-pointer hover:bg-slate-200 dark:hover:bg-gray-600 flex items-center gap-1`
     : `px-3 py-0.5 rounded text-xs font-bold transition bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200 flex items-center gap-1`;
 
+  const lockIcon = (
+    <Tip content="Private game — only accessible via your shared link">
+      <svg className="w-3 h-3 inline-block" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 1a4 4 0 0 1 4 4v1h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h1V5a4 4 0 0 1 4-4zm0 1a3 3 0 0 0-3 3v1h6V5a3 3 0 0 0-3-3zm0 7a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
+      </svg>
+    </Tip>
+  );
+
   return (
     <div ref={ref} className="relative inline-block">
       <button ref={btnRef} onClick={toggle} className={triggerClass}>
-        {isPrivate && <span title="">🔒</span>}
+        {isPrivate && lockIcon}
         {compact ? `${username} (play)` : 'Play'}
         <svg className="w-3 h-3 ml-0.5 opacity-60" viewBox="0 0 12 12" fill="currentColor">
           <path d="M6 8L1 3h10z" />
@@ -259,7 +268,8 @@ export default function LobbyPage() {
   const handleSpectate = (gameId: string) => navigate(`/game/${gameId}`);
 
   const btn = `px-3 py-0.5 rounded text-xs font-bold transition`;
-  const allProposals = proposals; // flat list for mobile
+  const visibleProposals = proposals.filter(p => !p.isPrivate || p.username === user?.username);
+  const allProposals = visibleProposals; // flat list for mobile
   const [rulesOpen, setRulesOpen] = useState(false);
 
   const dropdownProps = {
@@ -324,8 +334,8 @@ export default function LobbyPage() {
                           <th className="px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">
                             <div className="flex items-center justify-between">
                               <span>Waiting</span>
-                              {proposals.length > 0 && (
-                                <span className="text-violet-600 dark:text-violet-400 font-bold">{proposals.length} open</span>
+                              {visibleProposals.length > 0 && (
+                                <span className="text-violet-600 dark:text-violet-400 font-bold">{visibleProposals.length} open</span>
                               )}
                             </div>
                           </th>
