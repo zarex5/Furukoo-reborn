@@ -323,7 +323,8 @@ export default function GamePage() {
     };
   }
 
-  const navBtnCls = 'px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-30 transition';
+  const navBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-30 transition';
+  const resignBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition';
 
   return (
     <div className={`${isDark ? 'dark' : ''} md:h-screen md:overflow-hidden`}>
@@ -341,14 +342,9 @@ export default function GamePage() {
                 ? `Reviewing ${redName} vs ${blackName}`
                 : `Spectating ${redName} vs ${blackName}`}
           </span>
-          {isSpectating || gameOver
-            ? <button onClick={handleBack} className="px-3 py-0.5 rounded text-xs font-bold bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition">
-                Back to lobby
-              </button>
-            : <button onClick={handleResign} className="px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
-                Resign
-              </button>
-          }
+          <button onClick={handleBack} className="px-3 py-0.5 rounded text-xs font-bold bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300 hover:bg-slate-200 dark:hover:bg-gray-700 transition">
+            Back to lobby
+          </button>
           <DarkToggle isDark={isDark} onToggle={toggleDark} />
         </div>
       </div>
@@ -445,15 +441,18 @@ export default function GamePage() {
                   <PlayerPanel {...playerPanelProps(bottomPlayer)} />
                 </div>
               </div>
-              <div className="flex-none flex items-center justify-center gap-1">
-                <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0} title="First move">{'⏮︎'}</button>
-                <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0} title="Previous move">{'◀︎'}</button>
-                <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">{'▶︎'}</button>
-                <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest} title="Latest move">{'⏭︎'}</button>
-                <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">{curIdx}/{histLen - 1}</span>
+              <div className="flex-none flex items-center justify-center gap-1 flex-wrap">
+                <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>⏮ First</button>
+                <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>◀ Prev</button>
+                <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>▶ Next</button>
+                <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>⏭ Last</button>
+                <span className="text-xs font-mono text-slate-400 dark:text-gray-500 mx-1">{curIdx}/{histLen - 1}</span>
+                {!isSpectating && !gameOver && (
+                  <button className={resignBtnCls} onClick={handleResign}>Resign</button>
+                )}
                 <button
                   onClick={() => setSoundEnabled(!soundEnabled)}
-                  className={`${navBtnCls} ml-2`}
+                  className={`${navBtnCls} ml-1`}
                   title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
                 >
                   {soundEnabled ? '🔊' : '🔇'}
@@ -503,12 +502,15 @@ export default function GamePage() {
         </div>
 
         {/* History nav + sound toggle */}
-        <div className="flex items-center justify-center gap-2 mt-3">
-          <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>{'⏮︎'}</button>
-          <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>{'◀︎'}</button>
-          <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>{'▶︎'}</button>
-          <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>{'⏭︎'}</button>
-          <span className="text-xs font-mono text-slate-400 dark:text-gray-500">{curIdx}/{histLen - 1}</span>
+        <div className="flex items-center justify-center gap-1 mt-3 flex-wrap px-3">
+          <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>⏮ First</button>
+          <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>◀ Prev</button>
+          <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>▶ Next</button>
+          <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>⏭ Last</button>
+          <span className="text-xs font-mono text-slate-400 dark:text-gray-500 mx-1">{curIdx}/{histLen - 1}</span>
+          {!isSpectating && !gameOver && (
+            <button className={resignBtnCls} onClick={handleResign}>Resign</button>
+          )}
           <button onClick={() => setSoundEnabled(!soundEnabled)} className={navBtnCls} title={soundEnabled ? 'Mute' : 'Sound on'}>
             {soundEnabled ? '🔊' : '🔇'}
           </button>
