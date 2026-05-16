@@ -5,9 +5,11 @@ interface AuthUser { username: string; elo: number; token: string; isAdmin?: boo
 interface AuthCtx {
   user: AuthUser | null;
   isMuted: boolean;
+  soundEnabled: boolean;
   login: (u: AuthUser) => void;
   logout: () => void;
   updateElo: (elo: number) => void;
+  setSoundEnabled: (v: boolean) => void;
 }
 
 const Ctx = createContext<AuthCtx>(null!);
@@ -23,6 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch { return null; }
   });
   const [isMuted, setIsMuted] = useState(false);
+  const [soundEnabled, setSoundEnabledState] = useState(true);
 
   const login = (u: AuthUser) => {
     setUser(u);
@@ -51,7 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       disconnectSocket();
       window.location.replace('/login?reason=banned');
     };
-    const onFlags = ({ isMuted: m }: { isMuted: boolean }) => setIsMuted(m);
+    const onFlags = ({ isMuted: m, soundEnabled: s }: { isMuted: boolean; soundEnabled?: boolean }) => {
+      setIsMuted(m);
+      if (s !== undefined) setSoundEnabledState(s);
+    };
     sock.on('session:kicked', onKicked);
     sock.on('auth:banned', onBanned);
     sock.on('user:flags', onFlags);
@@ -67,7 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  return <Ctx.Provider value={{ user, isMuted, login, logout, updateElo }}>{children}</Ctx.Provider>;
+  const setSoundEnabled = (v: boolean) => {
+    setSoundEnabledState(v);
+    getSocket()?.emit('user:setSoundEnabled', { soundEnabled: v });
+  };
+
+  return (
+    <Ctx.Provider value={{ user, isMuted, soundEnabled, login, logout, updateElo, setSoundEnabled }}>
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useAuth() { return useContext(Ctx); }

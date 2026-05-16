@@ -57,7 +57,7 @@ function buildHistoryFromMoves(finalState: BoardState): BoardState[] {
 
 export default function GamePage() {
   const { gameId }    = useParams<{ gameId: string }>();
-  const { user, isMuted, updateElo } = useAuth();
+  const { user, isMuted, updateElo, soundEnabled, setSoundEnabled } = useAuth();
   const navigate      = useNavigate();
 
   const { isDark, toggleDark } = useDarkMode();
@@ -70,7 +70,28 @@ export default function GamePage() {
   const [lobbyUsers, setLobbyUsers] = useState<OnlineUser[]>([]);
   const [myTurnIdleMs, setMyTurnIdleMs] = useState(0);
   const lastMoveTimeRef = useRef<number>(Date.now());
+  const prevMovesLengthRef = useRef(0);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const soundEnabledRef = useRef(soundEnabled);
   const messages = useChatMessages();
+
+  useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
+
+  function playMoveSound(type: 'place' | 'move') {
+    if (!soundEnabledRef.current) return;
+    try {
+      const ctx = audioCtxRef.current ??= new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = type === 'place' ? 800 : 600;
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } catch { /* AudioContext may be blocked before user gesture */ }
+  }
 
   // History navigation — persisted in sessionStorage so refresh doesn't lose it
   const [stateHistory, setStateHistory] = useState<BoardState[]>(() => {
@@ -125,6 +146,11 @@ export default function GamePage() {
       lastTickRef.current = Date.now();
       lastMoveTimeRef.current = Date.now();
       setMyTurnIdleMs(0);
+      if (g.moves.length > prevMovesLengthRef.current) {
+        const last = g.moves[g.moves.length - 1];
+        playMoveSound(last.from ? 'move' : 'place');
+      }
+      prevMovesLengthRef.current = g.moves.length;
     };
 
     const onOver = (data: GameOver) => {
@@ -425,6 +451,13 @@ export default function GamePage() {
                 <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}   title="Next move">{'▶︎'}</button>
                 <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest} title="Latest move">{'⏭︎'}</button>
                 <span className="text-xs font-mono text-slate-400 dark:text-gray-500 ml-1">{curIdx}/{histLen - 1}</span>
+                <button
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className={`${navBtnCls} ml-2`}
+                  title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}
+                >
+                  {soundEnabled ? '🔊' : '🔇'}
+                </button>
               </div>
             </div>
           }
@@ -469,13 +502,16 @@ export default function GamePage() {
           <PlayerPanel {...playerPanelProps(bottomPlayer)} compact />
         </div>
 
-        {/* History nav */}
+        {/* History nav + sound toggle */}
         <div className="flex items-center justify-center gap-2 mt-3">
           <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>{'⏮︎'}</button>
           <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>{'◀︎'}</button>
           <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>{'▶︎'}</button>
           <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>{'⏭︎'}</button>
           <span className="text-xs font-mono text-slate-400 dark:text-gray-500">{curIdx}/{histLen - 1}</span>
+          <button onClick={() => setSoundEnabled(!soundEnabled)} className={navBtnCls} title={soundEnabled ? 'Mute' : 'Sound on'}>
+            {soundEnabled ? '🔊' : '🔇'}
+          </button>
         </div>
 
         {/* Chat */}

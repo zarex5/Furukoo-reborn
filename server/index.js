@@ -76,6 +76,7 @@ const UserSchema = new mongoose.Schema({
   isMuted:      { type: Boolean, default: false },
   isBanned:     { type: Boolean, default: false },
   messageCount: { type: Number, default: 0 },
+  soundEnabled: { type: Boolean, default: true },
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
@@ -834,6 +835,14 @@ io.on('connection', async (socket) => {
     }
   });
 
+  socket.on('user:setSoundEnabled', ({ soundEnabled }) => {
+    if (typeof soundEnabled !== 'boolean') return;
+    const u = connectedUsers.get(socket.id);
+    if (!u) return;
+    u.soundEnabled = soundEnabled;
+    User.findByIdAndUpdate(u.userId, { $set: { soundEnabled } }).catch(() => {});
+  });
+
   // ── Accept proposal → start game ──
   socket.on('game:accept', (proposerUsername) => {
     const accepter = connectedUsers.get(socket.id);
@@ -1149,9 +1158,10 @@ io.on('connection', async (socket) => {
 
   const entry = connectedUsers.get(socket.id);
   if (entry) {
-    entry.elo     = dbUser.elo;
-    entry.isMuted = dbUser.isMuted || false;
-    entry.isAdmin = dbUser.isAdmin || false;
+    entry.elo         = dbUser.elo;
+    entry.isMuted     = dbUser.isMuted || false;
+    entry.isAdmin     = dbUser.isAdmin || false;
+    entry.soundEnabled = dbUser.soundEnabled !== false;
     // After a server restart, restore gameId for players with an active game
     const ongoing = Array.from(activeGames.values()).find(
       g => !g.winner && (g.red.username === socket.username || g.black.username === socket.username)
@@ -1167,7 +1177,7 @@ io.on('connection', async (socket) => {
     }
   }
 
-  socket.emit('user:flags', { isMuted: dbUser.isMuted || false });
+  socket.emit('user:flags', { isMuted: dbUser.isMuted || false, soundEnabled: dbUser.soundEnabled !== false });
   socket.emit('lobby:state', lobbySnapshot());
   const pending = pendingLobbyDisconnect.get(socket.username);
   if (pending) {
