@@ -11,6 +11,7 @@ interface Props {
   moveIndex: number;
   isWinner?: boolean;
   compact?: boolean;
+  showPulse?: boolean;
 }
 
 function formatMoveInfo(move: Move | null, idx: number): string {
@@ -22,12 +23,12 @@ function formatMoveInfo(move: Move | null, idx: number): string {
   return `${n}. ${from}-${to}`;
 }
 
-export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, lastMove, moveIndex, isWinner, compact = false }) => {
+export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, lastMove, moveIndex, isWinner, compact = false, showPulse = false }) => {
   const isRed = player === 'red';
   const borderColor = isRed ? 'border-red-400 dark:border-red-500' : 'border-slate-400 dark:border-gray-600';
   const wrapBg = isActive
     ? 'bg-white dark:bg-gray-800'
-    : 'bg-slate-50 dark:bg-gray-900 opacity-60';
+    : 'bg-slate-50 dark:bg-gray-900 opacity-40';
   const cell = 'px-2 py-0.5 rounded text-xs font-mono text-center border';
 
   const nameCls = isActive
@@ -40,9 +41,18 @@ export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, l
     ? 'bg-red-50 text-red-700 border-red-400 dark:bg-red-900 dark:text-red-300 dark:border-red-500'
     : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600';
 
+  const activeStyle: React.CSSProperties = isActive
+    ? { boxShadow: 'inset 0 0 0 2px #22d3ee' }
+    : {};
+
+  const pulseClass = showPulse ? 'animate-pulse' : '';
+
   if (compact) {
     return (
-      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${borderColor} ${wrapBg}`}>
+      <div
+        className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border ${borderColor} ${wrapBg} ${pulseClass}`}
+        style={activeStyle}
+      >
         <div
           className="w-3 h-3 rounded-full flex-shrink-0"
           style={isRed ? { background: '#ef4444' } : { background: '#1e293b', border: '1.5px solid #475569' }}
@@ -57,7 +67,10 @@ export const PlayerPanel: React.FC<Props> = ({ player, name, isActive, timeMs, l
   }
 
   return (
-    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg border ${borderColor} ${wrapBg}`}>
+    <div
+      className={`flex items-center gap-2 px-3 py-1 rounded-lg border ${borderColor} ${wrapBg} ${pulseClass}`}
+      style={activeStyle}
+    >
       <div
         className="w-3 h-3 rounded-full flex-shrink-0"
         style={isRed ? { background: '#ef4444' } : { background: '#1e293b', border: '1.5px solid #475569' }}

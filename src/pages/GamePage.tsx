@@ -67,6 +67,8 @@ export default function GamePage() {
   const [myColor,    setMyColor]    = useState<Player | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(null);
   const [lobbyUsers, setLobbyUsers] = useState<OnlineUser[]>([]);
+  const [myTurnIdleMs, setMyTurnIdleMs] = useState(0);
+  const lastMoveTimeRef = useRef<number>(Date.now());
   const messages = useChatMessages();
 
   // History navigation — persisted in sessionStorage so refresh doesn't lose it
@@ -120,6 +122,8 @@ export default function GamePage() {
       });
       setViewIndex(-1);
       lastTickRef.current = Date.now();
+      lastMoveTimeRef.current = Date.now();
+      setMyTurnIdleMs(0);
     };
 
     const onOver = (data: GameOver) => {
@@ -174,6 +178,16 @@ export default function GamePage() {
 
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [displayedState?.currentPlayer, !!displayedState?.winner, gameId, myColor]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Idle turn tracker — drives "my turn" pulse after 5s and piece pulse after 15s
+  useEffect(() => {
+    if (!myColor || gameOver || gameState?.currentPlayer !== myColor || gameState?.winner) {
+      setMyTurnIdleMs(0);
+      return;
+    }
+    const id = setInterval(() => setMyTurnIdleMs(Date.now() - lastMoveTimeRef.current), 1000);
+    return () => clearInterval(id);
+  }, [myColor, gameState?.currentPlayer, !!gameState?.winner, !!gameOver]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSlotClick = useCallback((slot: SlotId) => {
     if (!gameState || !myColor || gameState.currentPlayer !== myColor || gameOver) return;
@@ -254,6 +268,9 @@ export default function GamePage() {
   const topPlayer:    Player = myColor ?? 'red';
   const bottomPlayer: Player = topPlayer === 'red' ? 'black' : 'red';
 
+  const isMyTurn = !!myColor && !gameOver && gameState?.currentPlayer === myColor;
+  const showMyTurnPulse = isMyTurn && myTurnIdleMs > 5000;
+
   function playerPanelProps(player: Player) {
     const s = viewedState ?? displayedState;
     return {
@@ -264,6 +281,7 @@ export default function GamePage() {
       lastMove:  player === 'red' ? lastRedMove : lastBlackMove,
       moveIndex: player === 'red' ? redMoveIdx  : blackMoveIdx,
       isWinner:  gameOver?.winner === player,
+      showPulse: player === myColor && showMyTurnPulse,
     };
   }
 
