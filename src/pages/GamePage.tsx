@@ -275,13 +275,16 @@ export default function GamePage() {
     const s = viewedState ?? displayedState;
     return {
       player,
-      name:      player === 'red' ? redName : blackName,
-      isActive:  s.currentPlayer === player && !gameOver,
-      timeMs:    player === 'red' ? s.redTimeMs : s.blackTimeMs,
-      lastMove:  player === 'red' ? lastRedMove : lastBlackMove,
-      moveIndex: player === 'red' ? redMoveIdx  : blackMoveIdx,
-      isWinner:  gameOver?.winner === player,
-      showPulse: player === myColor && showMyTurnPulse,
+      name:         player === 'red' ? redName : blackName,
+      isActive:     s.currentPlayer === player && !gameOver,
+      timeMs:       player === 'red' ? s.redTimeMs : s.blackTimeMs,
+      lastMove:     player === 'red' ? lastRedMove : lastBlackMove,
+      moveIndex:    player === 'red' ? redMoveIdx  : blackMoveIdx,
+      isWinner:     gameOver?.winner === player,
+      showPulse:    player === myColor && showMyTurnPulse,
+      phase:        displayedState.phase,
+      piecesPlaced: player === 'red' ? displayedState.redPlaced : displayedState.blackPlaced,
+      isDark,
     };
   }
 
