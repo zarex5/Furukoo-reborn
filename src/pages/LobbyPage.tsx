@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import boardPreview from '../assets/board-preview.png';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +11,7 @@ import { ConnectionBanner } from '../components/ConnectionBanner';
 import { DarkToggle } from '../components/DarkToggle';
 import { useDarkMode } from '../lib/darkMode';
 
-interface Proposal { username: string; elo: number; eloRange: string; isBot?: boolean; botLevel?: number; }
+interface Proposal { username: string; elo: number; eloRange: string; isBot?: boolean; botLevel?: number; isPrivate?: boolean; }
 
 const ELO_RANGES = ['2400-3000','2200-2399','2000-2199','1800-1999','1600-1799','1400-1599','1200-1399','1000-1199'];
 
@@ -102,6 +102,77 @@ function RulesBox({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
+interface ProposalDropdownProps {
+  username: string;
+  isPrivate: boolean;
+  onCopyLink: () => void;
+  onTogglePrivate: () => void;
+  onRemove: () => void;
+  /** Compact style used inside the table badge */
+  compact?: boolean;
+}
+
+function ProposalDropdown({ username, isPrivate, onCopyLink, onTogglePrivate, onRemove, compact = false }: ProposalDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  const toggle = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setOpenUp(rect.bottom + 120 > window.innerHeight);
+    }
+    setOpen(o => !o);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const item = 'w-full text-left px-3 py-1.5 text-xs font-mono hover:bg-slate-100 dark:hover:bg-gray-700 transition whitespace-nowrap flex items-center gap-2';
+
+  const triggerClass = compact
+    ? `px-2 py-0.5 rounded text-xs font-bold font-sans transition border bg-slate-100 text-slate-500 border-slate-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 cursor-pointer hover:bg-slate-200 dark:hover:bg-gray-600 flex items-center gap-1`
+    : `px-3 py-0.5 rounded text-xs font-bold transition bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200 flex items-center gap-1`;
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button ref={btnRef} onClick={toggle} className={triggerClass}>
+        {isPrivate && <span title="">🔒</span>}
+        {compact ? `${username} (play)` : 'Play'}
+        <svg className="w-3 h-3 ml-0.5 opacity-60" viewBox="0 0 12 12" fill="currentColor">
+          <path d="M6 8L1 3h10z" />
+        </svg>
+      </button>
+      {open && (
+        <div className={`absolute ${openUp ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 z-50 min-w-max bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden`}>
+          <button className={item} onClick={() => { onCopyLink(); setOpen(false); }}>
+            <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H4zm0 1h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M6.5 6.5h3v1h-3z"/></svg>
+            Copy link to game
+          </button>
+          <button className={item} onClick={() => { onTogglePrivate(); setOpen(false); }}>
+            {isPrivate
+              ? <><svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 16 16" fill="currentColor"><path d="M3 6V5a5 5 0 0 1 10 0v1h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h1zm1 0h8V5a4 4 0 0 0-8 0v1z"/></svg>Make public</>
+              : <><svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a4 4 0 0 1 4 4v1h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h1V5a4 4 0 0 1 4-4zm0 1a3 3 0 0 0-3 3v1h6V5a3 3 0 0 0-3-3zm0 7a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/></svg>Make private</>
+            }
+          </button>
+          <div className="border-t border-slate-100 dark:border-gray-700" />
+          <button className={`${item} text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20`} onClick={() => { onRemove(); setOpen(false); }}>
+            <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zM2 5h12v1H2V5zm3.5-3h5a1 1 0 0 1 1 1v1h-7V3a1 1 0 0 1 1-1z"/></svg>
+            Remove proposition
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LobbyPage() {
   const { user, isMuted, logout, updateElo } = useAuth();
   const navigate = useNavigate();
@@ -112,6 +183,18 @@ export default function LobbyPage() {
   const [hasProposal, setHasProposal] = useState(false);
 
   const messages = useChatMessages();
+
+  const myProposal = proposals.find(p => p.username === user?.username);
+  const myProposalIsPrivate = myProposal?.isPrivate ?? false;
+
+  const handleCopyLink = useCallback(() => {
+    const link = `${window.location.origin}/?join=${user?.username}`;
+    navigator.clipboard.writeText(link).catch(() => {});
+  }, [user?.username]);
+
+  const handleTogglePrivate = useCallback(() => {
+    getSocket()?.emit('game:togglePrivate');
+  }, []);
 
   useEffect(() => {
     const socket = getSocket();
@@ -159,7 +242,13 @@ export default function LobbyPage() {
   const allProposals = proposals; // flat list for mobile
   const [rulesOpen, setRulesOpen] = useState(false);
 
-
+  const dropdownProps = {
+    username: user?.username ?? '',
+    isPrivate: myProposalIsPrivate,
+    onCopyLink: handleCopyLink,
+    onTogglePrivate: handleTogglePrivate,
+    onRemove: handleRemove,
+  };
 
   return (
     <div className={`${isDark ? 'dark' : ''} md:h-screen md:overflow-hidden`}>
@@ -181,7 +270,7 @@ export default function LobbyPage() {
             {myGameId
               ? <button onClick={handleRejoin} className={`${btn} bg-emerald-600 text-white hover:bg-emerald-700`}>Rejoin</button>
               : hasProposal
-                ? <button onClick={handleRemove} className={`${btn} bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200`}>Remove</button>
+                ? <ProposalDropdown {...dropdownProps} />
                 : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
             }
             {user?.isAdmin && (
@@ -224,24 +313,21 @@ export default function LobbyPage() {
                       </thead>
                       <tbody>
                         {ELO_RANGES.map(range => {
-                          const row = proposals.filter(p => p.eloRange === range);
+                          const row = proposals.filter(p => p.eloRange === range && (p.username === user?.username || !p.isPrivate));
                           return (
                             <tr key={range} className="border-b border-slate-100 dark:border-gray-800 last:border-0">
                               <td className="px-3 py-1 text-slate-500 dark:text-gray-400">{range}</td>
                               <td className="px-3 py-1">
                                 <div className="flex flex-wrap gap-2">
                                   {row.map(p => (
-                                    <button key={p.username}
-                                      onClick={() => p.username !== user?.username && handleAccept(p.username)}
-                                      disabled={p.username === user?.username}
-                                      className={`px-2 py-0.5 rounded text-xs font-bold font-sans transition border
-                                        ${p.username === user?.username
-                                          ? 'bg-slate-100 text-slate-500 border-slate-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 cursor-default'
-                                          : 'bg-green-50 text-green-800 border-green-300 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
-                                        }`}
-                                    >
-                                      {p.username} ({p.elo})
-                                    </button>
+                                    p.username === user?.username
+                                      ? <ProposalDropdown key={p.username} {...dropdownProps} compact />
+                                      : <button key={p.username}
+                                          onClick={() => handleAccept(p.username)}
+                                          className="px-2 py-0.5 rounded text-xs font-bold font-sans transition border bg-green-50 text-green-800 border-green-300 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer"
+                                        >
+                                          {p.username} ({p.elo})
+                                        </button>
                                   ))}
                                 </div>
                               </td>
@@ -283,7 +369,7 @@ export default function LobbyPage() {
           {myGameId
             ? <button onClick={handleRejoin}  className={`${btn} bg-emerald-600 text-white hover:bg-emerald-700`}>Rejoin</button>
             : hasProposal
-              ? <button onClick={handleRemove} className={`${btn} bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200`}>Remove</button>
+              ? <ProposalDropdown {...dropdownProps} />
               : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
           }
           {user?.isAdmin && (
@@ -310,24 +396,21 @@ export default function LobbyPage() {
             </thead>
             <tbody>
               {ELO_RANGES.map(range => {
-                const row = proposals.filter(p => p.eloRange === range);
+                const row = proposals.filter(p => p.eloRange === range && (p.username === user?.username || !p.isPrivate));
                 return (
                   <tr key={range} className="border-b border-slate-100 dark:border-gray-800 last:border-0">
                     <td className="px-3 py-1.5 text-slate-400 dark:text-gray-500 whitespace-nowrap w-28">{range}</td>
                     <td className="px-3 py-1.5">
                       <div className="flex flex-wrap gap-1.5">
                         {row.map(p => (
-                          <button key={p.username}
-                            onClick={() => p.username !== user?.username && handleAccept(p.username)}
-                            disabled={p.username === user?.username}
-                            className={`px-2 py-0.5 rounded text-xs font-bold font-sans border transition
-                              ${p.username === user?.username
-                                ? 'bg-slate-100 text-slate-500 border-slate-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 cursor-default'
-                                : 'bg-green-50 text-green-800 border-green-300 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer'
-                              }`}
-                          >
-                            {p.username} ({p.elo})
-                          </button>
+                          p.username === user?.username
+                            ? <ProposalDropdown key={p.username} {...dropdownProps} compact />
+                            : <button key={p.username}
+                                onClick={() => handleAccept(p.username)}
+                                className="px-2 py-0.5 rounded text-xs font-bold font-sans border transition bg-green-50 text-green-800 border-green-300 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer"
+                              >
+                                {p.username} ({p.elo})
+                              </button>
                         ))}
                       </div>
                     </td>

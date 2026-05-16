@@ -808,8 +808,17 @@ io.on('connection', async (socket) => {
     // Allow re-entry from spectating (game over)
     if (u.spectating) { u.gameId = null; u.gameColor = null; u.spectating = false; u.reviewing = false; broadcastLobby(); }
     if (u.gameId || gameProposals.has(u.username)) return;
-    gameProposals.set(u.username, { username: u.username, elo: u.elo, eloRange: getEloRange(u.elo) });
+    gameProposals.set(u.username, { username: u.username, elo: u.elo, eloRange: getEloRange(u.elo), isPrivate: false });
     sysChat(`${u.username} just proposed a game`, 'lobby');
+    broadcastLobby();
+  });
+
+  socket.on('game:togglePrivate', () => {
+    const u = connectedUsers.get(socket.id);
+    if (!u) return;
+    const proposal = gameProposals.get(u.username);
+    if (!proposal) return;
+    proposal.isPrivate = !proposal.isPrivate;
     broadcastLobby();
   });
 
