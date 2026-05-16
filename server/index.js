@@ -880,7 +880,7 @@ io.on('connection', async (socket) => {
       eloInfo: info,
       pieces: {}, currentPlayer: 'red',
       redPlaced: 0, blackPlaced: 0, phase: 'placement',
-      moves: [], winner: null, resignedBy: null, drawnBy: null,
+      moves: [], winner: null, resignedBy: null, drawnBy: null, drawOffer: null,
       positionCounts: {},
       redTimeMs: INITIAL_TIME_MS, blackTimeMs: INITIAL_TIME_MS,
       lastMoveAt: Date.now(),
@@ -1050,6 +1050,47 @@ io.on('connection', async (socket) => {
     activeGames.set(gameId, next);
     io.to(`game:${gameId}`).emit('game:state', next);
     endGame(gameId, winner, 'resign');
+  });
+
+  // ── Draw offer ──
+  socket.on('game:offerDraw', ({ gameId }) => {
+    if (typeof gameId !== 'string') return;
+    const game = activeGames.get(gameId);
+    if (!game || game.winner) return;
+    const u = connectedUsers.get(socket.id);
+    if (!u) return;
+    const color = game.red.username === u.username ? 'red' : game.black.username === u.username ? 'black' : null;
+    if (!color || game.drawOffer) return;
+    game.drawOffer = color;
+    io.to(`game:${gameId}`).emit('game:state', liveState(game));
+    sysChat(`${u.username} offers a draw.`, gameId);
+  });
+
+  socket.on('game:retractDraw', ({ gameId }) => {
+    if (typeof gameId !== 'string') return;
+    const game = activeGames.get(gameId);
+    if (!game || game.winner) return;
+    const u = connectedUsers.get(socket.id);
+    if (!u) return;
+    const color = game.red.username === u.username ? 'red' : game.black.username === u.username ? 'black' : null;
+    if (!color || game.drawOffer !== color) return;
+    game.drawOffer = null;
+    io.to(`game:${gameId}`).emit('game:state', liveState(game));
+    sysChat(`${u.username} retracts the draw offer.`, gameId);
+  });
+
+  socket.on('game:acceptDraw', ({ gameId }) => {
+    if (typeof gameId !== 'string') return;
+    const game = activeGames.get(gameId);
+    if (!game || game.winner) return;
+    const u = connectedUsers.get(socket.id);
+    if (!u) return;
+    const color = game.red.username === u.username ? 'red' : game.black.username === u.username ? 'black' : null;
+    if (!color || game.drawOffer === color || !game.drawOffer) return;
+    const next = { ...liveState(game), winner: 'draw', drawnBy: 'agreement', drawOffer: null };
+    activeGames.set(gameId, next);
+    io.to(`game:${gameId}`).emit('game:state', next);
+    endGame(gameId, 'draw', 'agreement');
   });
 
   // ── Timeout (client reports own clock hit 0) ──
@@ -1242,7 +1283,7 @@ async function endGame(gameId, winner, reason) {
 
   const isDraw = winner === 'draw';
   const winnerName = isDraw ? null : (winner === 'red' ? game.red.username : game.black.username);
-  const reasonMsg  = reason === 'resign' ? ' (by resignation)' : reason === 'timeout' ? ' (on time)' : reason === 'disconnect' ? ' (opponent disconnected)' : reason === 'repetition' ? ' (threefold repetition)' : '';
+  const reasonMsg  = reason === 'resign' ? ' (by resignation)' : reason === 'timeout' ? ' (on time)' : reason === 'disconnect' ? ' (opponent disconnected)' : reason === 'repetition' ? ' (threefold repetition)' : reason === 'agreement' ? ' (by agreement)' : '';
 
   io.to(`game:${gameId}`).emit('game:over', {
     winner, reason, winnerName,

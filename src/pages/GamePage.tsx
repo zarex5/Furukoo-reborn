@@ -41,7 +41,7 @@ function buildHistoryFromMoves(finalState: BoardState): BoardState[] {
     pieces: {}, currentPlayer: 'red',
     redPlaced: 0, blackPlaced: 0, phase: 'placement',
     redTimeMs: INITIAL_TIME_MS, blackTimeMs: INITIAL_TIME_MS,
-    moves: [], winner: null, resignedBy: null, drawnBy: null,
+    moves: [], winner: null, resignedBy: null, drawnBy: null, drawOffer: null,
     disconnectedColor: null, disconnectedAt: null,
   };
   const history: BoardState[] = [initial];
@@ -259,14 +259,24 @@ export default function GamePage() {
   // Banner: prefer gameOver (has ELO deltas) but fall back to gameState fields for spectators/reviewers
   const resultWinner  = gameOver?.winner  ?? gameState?.winner  ?? null;
   const resultName    = gameOver?.winnerName ?? (resultWinner === 'red' ? gameMeta?.red.username : resultWinner === 'black' ? gameMeta?.black.username : null);
-  const resultReason  = gameOver?.reason  ?? (gameState?.resignedBy ? 'resign' : gameState?.drawnBy === 'repetition' ? 'repetition' : null);
+  const resultReason  = gameOver?.reason  ?? (gameState?.resignedBy ? 'resign' : gameState?.drawnBy === 'repetition' ? 'repetition' : gameState?.drawnBy === 'agreement' ? 'agreement' : null);
   const resultRedDelta   = gameOver?.redDelta   ?? gameState?.redEloDelta   ?? null;
   const resultBlackDelta = gameOver?.blackDelta ?? gameState?.blackEloDelta ?? null;
   const resultRedElo     = gameOver?.newRedElo  ?? gameState?.redEloAfter   ?? null;
   const resultBlackElo   = gameOver?.newBlackElo ?? gameState?.blackEloAfter ?? null;
   const showResult    = !!resultWinner;
 
-  const handleResign  = () => getSocket()?.emit('game:resign', { gameId });
+  const [drawModal, setDrawModal] = useState<'offer' | 'accept' | null>(null);
+
+  const handleResign    = () => getSocket()?.emit('game:resign', { gameId });
+  const handleOfferDraw = () => setDrawModal('offer');
+  const handleRetractDraw = () => getSocket()?.emit('game:retractDraw', { gameId });
+  const handleAcceptDraw  = () => setDrawModal('accept');
+  const confirmDraw = () => {
+    if (drawModal === 'offer')  getSocket()?.emit('game:offerDraw',  { gameId });
+    if (drawModal === 'accept') getSocket()?.emit('game:acceptDraw', { gameId });
+    setDrawModal(null);
+  };
   const handleSend    = (text: string) => getSocket()?.emit('chat:send', { text, origin: gameId });
   const handleBack    = () => navigate('/');
   const handleSpectate = (gid: string) => navigate(`/game/${gid}`);
@@ -323,8 +333,14 @@ export default function GamePage() {
     };
   }
 
+  // Draw offer state derived from live game state
+  const drawOffer = gameState.drawOffer ?? null;
+  const iAmOffering  = !!myColor && drawOffer === myColor;
+  const opponentOffering = !!myColor && !!drawOffer && drawOffer !== myColor;
+
   const navBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-30 transition';
   const resignBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition';
+  const drawBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 transition';
 
   return (
     <div className={`${isDark ? 'dark' : ''} md:h-screen md:overflow-hidden`}>
@@ -363,6 +379,7 @@ export default function GamePage() {
             : <span className="font-bold text-green-800 dark:text-green-300">{resultName} wins</span>
           }
           {resultReason === 'repetition'  && ' — threefold repetition'}
+          {resultReason === 'agreement'   && ' — by agreement'}
           {resultReason === 'resign'      && ' (by resignation)'}
           {resultReason === 'timeout'     && ' (on time)'}
           {resultReason === 'disconnect'  && ' (opponent disconnected)'}
@@ -405,6 +422,7 @@ export default function GamePage() {
                     : <span className="font-bold text-green-800 dark:text-green-300">{resultName} wins</span>
                   }
                   {resultReason === 'repetition'  && ' — threefold repetition'}
+                  {resultReason === 'agreement'   && ' — by agreement'}
                   {resultReason === 'resign'      && ' (by resignation)'}
                   {resultReason === 'timeout'     && ' (on time)'}
                   {resultReason === 'disconnect'  && ' (opponent disconnected)'}
@@ -449,6 +467,15 @@ export default function GamePage() {
                 <span className="text-xs font-mono text-slate-400 dark:text-gray-500 mx-1">{curIdx}/{histLen - 1}</span>
                 {!isSpectating && !gameOver && (
                   <button className={resignBtnCls} onClick={handleResign}>Resign</button>
+                )}
+                {!isSpectating && !gameOver && !iAmOffering && !opponentOffering && (
+                  <button className={drawBtnCls} onClick={handleOfferDraw}>½ Draw</button>
+                )}
+                {!isSpectating && !gameOver && iAmOffering && (
+                  <button className={drawBtnCls} onClick={handleRetractDraw}>Retract draw</button>
+                )}
+                {!isSpectating && !gameOver && opponentOffering && (
+                  <button className={`${drawBtnCls} animate-pulse`} onClick={handleAcceptDraw}>Accept draw</button>
                 )}
                 <button
                   onClick={() => setSoundEnabled(!soundEnabled)}
@@ -511,6 +538,15 @@ export default function GamePage() {
           {!isSpectating && !gameOver && (
             <button className={resignBtnCls} onClick={handleResign}>Resign</button>
           )}
+          {!isSpectating && !gameOver && !iAmOffering && !opponentOffering && (
+            <button className={drawBtnCls} onClick={handleOfferDraw}>½ Draw</button>
+          )}
+          {!isSpectating && !gameOver && iAmOffering && (
+            <button className={drawBtnCls} onClick={handleRetractDraw}>Retract draw</button>
+          )}
+          {!isSpectating && !gameOver && opponentOffering && (
+            <button className={`${drawBtnCls} animate-pulse`} onClick={handleAcceptDraw}>Accept draw</button>
+          )}
           <button onClick={() => setSoundEnabled(!soundEnabled)} className={navBtnCls} title={soundEnabled ? 'Mute' : 'Sound on'}>
             {soundEnabled ? '🔊' : '🔇'}
           </button>
@@ -527,6 +563,25 @@ export default function GamePage() {
         </div>
 
       </div>
+
+      {/* Draw confirmation modal */}
+      {drawModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl px-6 py-5 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+            <p className="text-sm font-bold text-slate-700 dark:text-gray-200 text-center">
+              {drawModal === 'offer' ? 'Offer a draw to your opponent?' : 'Accept the draw offer?'}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={confirmDraw} className="px-4 py-1 rounded text-sm font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 transition">
+                {drawModal === 'offer' ? 'Offer draw' : 'Accept draw'}
+              </button>
+              <button onClick={() => setDrawModal(null)} className="px-4 py-1 rounded text-sm font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </div>
   );

@@ -40,6 +40,7 @@ export interface BoardState {
   winner: Player | 'draw' | null;
   resignedBy: Player | null;
   drawnBy: string | null;
+  drawOffer: Player | null;
   /** Set when a player disconnects mid-game, cleared on reconnect */
   disconnectedColor: Player | null;
   disconnectedAt: number | null; // ms timestamp
