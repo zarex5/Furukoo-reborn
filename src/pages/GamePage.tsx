@@ -250,6 +250,23 @@ export default function GamePage() {
   const redMoveIdx    = (viewedState?.moves ?? []).filter(m => m.player === 'red').length;
   const blackMoveIdx  = (viewedState?.moves ?? []).filter(m => m.player === 'black').length;
 
+  // Show current player's panel at top; spectators see red on top
+  const topPlayer:    Player = myColor ?? 'red';
+  const bottomPlayer: Player = topPlayer === 'red' ? 'black' : 'red';
+
+  function playerPanelProps(player: Player) {
+    const s = viewedState ?? displayedState;
+    return {
+      player,
+      name:      player === 'red' ? redName : blackName,
+      isActive:  s.currentPlayer === player && !gameOver,
+      timeMs:    player === 'red' ? s.redTimeMs : s.blackTimeMs,
+      lastMove:  player === 'red' ? lastRedMove : lastBlackMove,
+      moveIndex: player === 'red' ? redMoveIdx  : blackMoveIdx,
+      isWinner:  gameOver?.winner === player,
+    };
+  }
+
   const navBtnCls = 'px-2 py-0.5 rounded text-xs font-mono font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-30 transition';
 
   return (
@@ -349,11 +366,7 @@ export default function GamePage() {
               )}
               <div className="flex-none flex justify-center">
                 <div className="w-full max-w-sm">
-                  <PlayerPanel player="red" name={redName}
-                    isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
-                    timeMs={(viewedState ?? displayedState).redTimeMs}
-                    lastMove={lastRedMove} moveIndex={redMoveIdx}
-                    isWinner={gameOver?.winner === 'red'} />
+                  <PlayerPanel {...playerPanelProps(topPlayer)} />
                 </div>
               </div>
               <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden px-6">
@@ -371,11 +384,7 @@ export default function GamePage() {
               </div>
               <div className="flex-none flex justify-center">
                 <div className="w-full max-w-sm">
-                  <PlayerPanel player="black" name={blackName}
-                    isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
-                    timeMs={(viewedState ?? displayedState).blackTimeMs}
-                    lastMove={lastBlackMove} moveIndex={blackMoveIdx}
-                    isWinner={gameOver?.winner === 'black'} />
+                  <PlayerPanel {...playerPanelProps(bottomPlayer)} />
                 </div>
               </div>
               <div className="flex-none flex items-center justify-center gap-1">
@@ -403,13 +412,9 @@ export default function GamePage() {
       {/* ── Mobile layout (<md) ──────────────────────────────────────────── */}
       <div className="flex md:hidden flex-col pb-4">
 
-        {/* Red player — compact */}
+        {/* Top player — compact */}
         <div className="mx-3 mt-3">
-          <PlayerPanel player="red" name={redName} compact
-            isActive={(viewedState ?? displayedState).currentPlayer === 'red' && !gameOver}
-            timeMs={(viewedState ?? displayedState).redTimeMs}
-            lastMove={lastRedMove} moveIndex={redMoveIdx}
-            isWinner={gameOver?.winner === 'red'} />
+          <PlayerPanel {...playerPanelProps(topPlayer)} compact />
         </div>
 
         {/* Board — fills width */}
@@ -427,13 +432,9 @@ export default function GamePage() {
           />
         </div>
 
-        {/* Black player — compact */}
+        {/* Bottom player — compact */}
         <div className="mx-3 mt-2">
-          <PlayerPanel player="black" name={blackName} compact
-            isActive={(viewedState ?? displayedState).currentPlayer === 'black' && !gameOver}
-            timeMs={(viewedState ?? displayedState).blackTimeMs}
-            lastMove={lastBlackMove} moveIndex={blackMoveIdx}
-            isWinner={gameOver?.winner === 'black'} />
+          <PlayerPanel {...playerPanelProps(bottomPlayer)} compact />
         </div>
 
         {/* History nav */}
