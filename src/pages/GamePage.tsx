@@ -338,7 +338,7 @@ export default function GamePage() {
   const iAmOffering  = !!myColor && drawOffer === myColor;
   const opponentOffering = !!myColor && !!drawOffer && drawOffer !== myColor;
 
-  const navBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-30 transition';
+  const navBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-slate-200 text-slate-600 hover:bg-slate-300 border border-slate-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:border-gray-600 disabled:opacity-30 transition';
   const resignBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition';
   const drawBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 transition';
 
@@ -470,7 +470,7 @@ export default function GamePage() {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={soundEnabled ? (isDark ? '#a78bfa' : '#475569') : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
                   </svg>
-                  <span className={`relative inline-block w-8 h-4 rounded-full transition-colors ${soundEnabled ? 'bg-violet-500' : 'bg-slate-300 dark:bg-gray-600'}`}>
+                  <span className={`relative inline-block w-8 h-4 rounded-full transition-colors ${soundEnabled ? 'bg-slate-500' : 'bg-slate-300 dark:bg-gray-600'}`}>
                     <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${soundEnabled ? 'translate-x-4' : ''}`} />
                   </span>
                 </button>
@@ -542,7 +542,7 @@ export default function GamePage() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={soundEnabled ? (isDark ? '#a78bfa' : '#475569') : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
             </svg>
-            <span className={`relative inline-block w-8 h-4 rounded-full transition-colors ${soundEnabled ? 'bg-violet-500' : 'bg-slate-300 dark:bg-gray-600'}`}>
+            <span className={`relative inline-block w-8 h-4 rounded-full transition-colors ${soundEnabled ? 'bg-slate-500' : 'bg-slate-300 dark:bg-gray-600'}`}>
               <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${soundEnabled ? 'translate-x-4' : ''}`} />
             </span>
           </button>
