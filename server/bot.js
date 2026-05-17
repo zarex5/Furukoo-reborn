@@ -65,12 +65,12 @@ function evaluate(pieces, botColor) {
     if (bc > 0 && oc > 0) continue;
     if (bc === 4) return 1e8;
     if (oc === 4) return -1e8;
-    if (bc === 3) score += 600;
-    else if (bc === 2) score += 40;
-    else if (bc === 1) score += 4;
-    if (oc === 3) score -= 800;
+    if (bc === 3) score += 1000;
+    else if (bc === 2) score += 80;
+    else if (bc === 1) score += 5;
+    if (oc === 3) score -= 700;
     else if (oc === 2) score -= 50;
-    else if (oc === 1) score -= 5;
+    else if (oc === 1) score -= 4;
   }
   return score;
 }
@@ -95,8 +95,8 @@ function fastScore(pieces, to, from, color) {
     }
     if (bc === 4) { score = 1e9; break; }
     if (bc > 0 && oc > 0) continue;
-    if (bc === 3) score += 600; else if (bc === 2) score += 40; else if (bc === 1) score += 4;
-    if (oc === 3) score -= 800; else if (oc === 2) score -= 50;
+    if (bc === 3) score += 1000; else if (bc === 2) score += 80; else if (bc === 1) score += 5;
+    if (oc === 3) score -= 700; else if (oc === 2) score -= 50;
   }
   if (fk && score < 1e9) {
     for (const i of (SLOT_TO_SQUARES[fk] || [])) {
