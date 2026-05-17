@@ -281,6 +281,12 @@ export default function GamePage() {
   const handleBack    = () => navigate('/');
   const handleSpectate = (gid: string) => navigate(`/game/${gid}`);
 
+  const activeBoardLastMove = useMemo(() => {
+    if (!gameState?.moves.length) return null;
+    const last = gameState.moves[gameState.moves.length - 1];
+    return { from: last.from ?? null, to: last.to };
+  }, [gameState?.moves.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!gameState || !gameMeta || !displayedState) {
     return (
       <div className={`${isDark ? 'dark' : ''} h-screen overflow-hidden`}>
@@ -304,12 +310,6 @@ export default function GamePage() {
   // Show current player's panel at top; spectators see red on top
   const topPlayer:    Player = myColor ?? 'red';
   const bottomPlayer: Player = topPlayer === 'red' ? 'black' : 'red';
-
-  const activeBoardLastMove = useMemo(() => {
-    if (!gameState?.moves.length) return null;
-    const last = gameState.moves[gameState.moves.length - 1];
-    return { from: last.from ?? null, to: last.to };
-  }, [gameState?.moves.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isMyTurn = !!myColor && !gameOver && gameState?.currentPlayer === myColor;
   const showMyTurnPulse = isMyTurn && myTurnIdleMs > 5000;
