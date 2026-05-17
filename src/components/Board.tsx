@@ -104,13 +104,15 @@ export const Board: React.FC<Props> = ({
     redSquare: 'rgba(239,68,68,0.18)', blackSquare: 'rgba(15,23,42,0.15)',
   };
 
-  // --- 600ms piece animation ---
+  // --- 1000ms piece animation ---
   const [movingPiece, setMovingPiece] = React.useState<MovingPiece | null>(null);
   const animTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialRef = React.useRef(true); // suppress animation on first render (page load)
   const lastMoveFromKey = lastMove?.from ? slotKey(lastMove.from) : null;
   const lastMoveToKey   = lastMove ? slotKey(lastMove.to) : null;
 
   React.useEffect(() => {
+    if (isInitialRef.current) { isInitialRef.current = false; return; }
     if (!lastMove?.from) { setMovingPiece(null); return; }
     const owner = pieces[slotKey(lastMove.to)];
     if (!owner) { setMovingPiece(null); return; }
@@ -124,7 +126,7 @@ export const Board: React.FC<Props> = ({
       toCx: to.cx, toCy: to.cy,
       isToV: lastMove.to.type === 'V',
     });
-    animTimerRef.current = setTimeout(() => setMovingPiece(null), 650);
+    animTimerRef.current = setTimeout(() => setMovingPiece(null), 1050);
     return () => { if (animTimerRef.current) clearTimeout(animTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMoveFromKey, lastMoveToKey]);
@@ -417,7 +419,7 @@ export const Board: React.FC<Props> = ({
                 type="translate"
                 from={`${dx} ${dy}`}
                 to="0 0"
-                dur="600ms"
+                dur="1000ms"
                 fill="freeze"
               />
             </rect>

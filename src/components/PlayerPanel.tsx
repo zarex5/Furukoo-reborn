@@ -26,15 +26,16 @@ function formatMoveInfo(move: Move | null, idx: number): string {
   return `${n}. ${from}-${to}`;
 }
 
-function PlacementTracker({ player, piecesPlaced, isDark }: { player: Player; piecesPlaced: number; isDark: boolean }) {
+function PlacementTracker({ player, piecesPlaced, isDark, phase }: { player: Player; piecesPlaced: number; isDark: boolean; phase?: 'placement' | 'movement' }) {
   const isRed = player === 'red';
   const prevRef = useRef(piecesPlaced);
-  const [showStrike, setShowStrike] = useState(false);
+  const [showStrike, setShowStrike] = useState(phase === 'movement');
 
   useEffect(() => {
+    if (phase === 'movement') { setShowStrike(true); return; }
     if (piecesPlaced === 7 && prevRef.current !== 7) setShowStrike(true);
     prevRef.current = piecesPlaced;
-  }, [piecesPlaced]);
+  }, [piecesPlaced, phase]);
 
   const pieceColor = isRed ? '#ef4444' : (isDark ? '#1e293b' : '#334155');
   const pieceBorder = isRed ? '#b91c1c' : (isDark ? '#475569' : '#64748b');
@@ -65,10 +66,11 @@ function PlacementTracker({ player, piecesPlaced, isDark }: { player: Player; pi
             position: 'absolute',
             top: '50%',
             left: 4,
+            right: 4,
             height: 2,
             background: lineColor,
-            animation: 'strike 300ms ease-out forwards',
-            width: 0,
+            animation: phase === 'movement' ? 'none' : 'strike 300ms ease-out forwards',
+            width: phase === 'movement' ? undefined : 0,
             transform: 'translateY(-50%)',
           }}
         />
@@ -105,19 +107,19 @@ export const PlayerPanel: React.FC<Props> = ({
 
   const pulseClass = showPulse ? 'animate-pulse' : '';
 
-  const moveCell = phase === 'placement'
-    ? <div className={`flex-none ${cell} ${moveCls} whitespace-nowrap flex items-center gap-1.5`}>
-        <span>{formatMoveInfo(lastMove, moveIndex)}</span>
-        <PlacementTracker player={player} piecesPlaced={piecesPlaced} isDark={isDark} />
-      </div>
-    : <div className={`w-40 ${cell} ${moveCls}`}>{formatMoveInfo(lastMove, moveIndex)}</div>;
+  const moveCell = (
+    <div className={`flex-none ${cell} ${moveCls} whitespace-nowrap flex items-center gap-1.5`}>
+      <span>{formatMoveInfo(lastMove, moveIndex)}</span>
+      <PlacementTracker player={player} piecesPlaced={piecesPlaced} isDark={isDark} phase={phase} />
+    </div>
+  );
 
-  const moveCellCompact = phase === 'placement'
-    ? <div className={`flex-none ${cell} ${moveCls} whitespace-nowrap flex items-center gap-1.5`}>
-        <span>{formatMoveInfo(lastMove, moveIndex)}</span>
-        <PlacementTracker player={player} piecesPlaced={piecesPlaced} isDark={isDark} />
-      </div>
-    : <div className={`w-28 flex-shrink-0 ${cell} ${moveCls} truncate`}>{formatMoveInfo(lastMove, moveIndex)}</div>;
+  const moveCellCompact = (
+    <div className={`flex-none ${cell} ${moveCls} whitespace-nowrap flex items-center gap-1.5`}>
+      <span>{formatMoveInfo(lastMove, moveIndex)}</span>
+      <PlacementTracker player={player} piecesPlaced={piecesPlaced} isDark={isDark} phase={phase} />
+    </div>
+  );
 
   if (compact) {
     return (

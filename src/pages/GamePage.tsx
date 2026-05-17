@@ -281,11 +281,14 @@ export default function GamePage() {
   const handleBack    = () => navigate('/');
   const handleSpectate = (gid: string) => navigate(`/game/${gid}`);
 
-  const activeBoardLastMove = useMemo(() => {
-    if (!gameState?.moves.length) return null;
-    const last = gameState.moves[gameState.moves.length - 1];
-    return { from: last.from ?? null, to: last.to };
-  }, [gameState?.moves.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Recomputes on history navigation (curIdx) AND on new live moves — drives replay animation
+  const boardLastMove = useMemo(() => {
+    const s = curIdx >= 0 && curIdx < stateHistory.length ? stateHistory[curIdx] : displayedState;
+    if (!s?.moves.length) return null;
+    const last = s.moves[s.moves.length - 1];
+    if (!last.from) return null; // placement moves don't animate
+    return { from: last.from, to: last.to };
+  }, [curIdx, stateHistory, displayedState]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!gameState || !gameMeta || !displayedState) {
     return (
@@ -451,7 +454,7 @@ export default function GamePage() {
                   phase={gameState.phase}
                   isDark={isDark}
                   pulsePieceColor={pulsePieceColor}
-                  lastMove={activeBoardLastMove}
+                  lastMove={boardLastMove}
                 />
               </div>
               <div className="flex-none flex justify-center">
@@ -522,6 +525,8 @@ export default function GamePage() {
             phase={gameState.phase}
             isDark={isDark}
             responsive
+            lastMove={boardLastMove}
+            pulsePieceColor={pulsePieceColor}
           />
         </div>
 
