@@ -448,6 +448,15 @@ app.put('/api/admin/players/:username/elo', requireAdmin, async (req, res) => {
     const eloVal = Math.max(100, Math.round(Number(req.body.elo)));
     if (isNaN(eloVal)) return res.status(400).json({ error: 'Invalid ELO value' });
     await User.updateOne({ username, isBot: { $ne: true } }, { $set: { elo: eloVal } });
+    // Push to user's live socket if connected
+    for (const [sid, u] of connectedUsers) {
+      if (u.username === username) {
+        u.elo = eloVal;
+        const sock = io.sockets.sockets.get(sid);
+        if (sock) sock.emit('user:flags', { isMuted: u.isMuted || false, soundEnabled: u.soundEnabled !== false, elo: eloVal });
+        break;
+      }
+    }
     res.json({ ok: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
@@ -1218,7 +1227,7 @@ io.on('connection', async (socket) => {
     }
   }
 
-  socket.emit('user:flags', { isMuted: dbUser.isMuted || false, soundEnabled: dbUser.soundEnabled !== false });
+  socket.emit('user:flags', { isMuted: dbUser.isMuted || false, soundEnabled: dbUser.soundEnabled !== false, elo: dbUser.elo });
   socket.emit('lobby:state', lobbySnapshot());
   const pending = pendingLobbyDisconnect.get(socket.username);
   if (pending) {

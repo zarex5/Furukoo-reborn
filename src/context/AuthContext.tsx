@@ -54,9 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       disconnectSocket();
       window.location.replace('/login?reason=banned');
     };
-    const onFlags = ({ isMuted: m, soundEnabled: s }: { isMuted: boolean; soundEnabled?: boolean }) => {
+    const onFlags = ({ isMuted: m, soundEnabled: s, elo: e }: { isMuted: boolean; soundEnabled?: boolean; elo?: number }) => {
       setIsMuted(m);
       if (s !== undefined) setSoundEnabledState(s);
+      if (e !== undefined) {
+        setUser(prev => {
+          if (!prev || prev.elo === e) return prev;
+          const next = { ...prev, elo: e };
+          localStorage.setItem(KEY, JSON.stringify(next));
+          return next;
+        });
+      }
     };
     sock.on('session:kicked', onKicked);
     sock.on('auth:banned', onBanned);
