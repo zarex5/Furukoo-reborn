@@ -338,7 +338,7 @@ export default function GamePage() {
   const iAmOffering  = !!myColor && drawOffer === myColor;
   const opponentOffering = !!myColor && !!drawOffer && drawOffer !== myColor;
 
-  const navBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-slate-200 text-slate-600 hover:bg-slate-300 border border-slate-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:border-gray-600 disabled:opacity-30 transition';
+  const navBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-slate-200 text-slate-600 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 disabled:opacity-30 transition';
   const resignBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition';
   const drawBtnCls = 'px-3 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 transition';
 
