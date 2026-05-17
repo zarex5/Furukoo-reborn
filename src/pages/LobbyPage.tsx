@@ -103,8 +103,21 @@ function RulesBox({ mobile = false }: { mobile?: boolean }) {
   );
 }
 
+// Lock icons (Heroicons solid 20×20)
+const ClosedLockIcon = () => (
+  <svg className="w-3 h-3 flex-none" viewBox="0 0 20 20" fill="currentColor">
+    <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+  </svg>
+);
+const OpenLockIcon = () => (
+  <svg className="w-3 h-3 flex-none" viewBox="0 0 20 20" fill="currentColor">
+    <path fillRule="evenodd" d="M14.5 1A4.5 4.5 0 0010 5.5V9H3a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-1.5V5.5a3 3 0 116 0v2.25a.75.75 0 001.5 0V5.5A4.5 4.5 0 0014.5 1z" clipRule="evenodd" />
+  </svg>
+);
+
 interface ProposalDropdownProps {
   username: string;
+  elo: number;
   isPrivate: boolean;
   onCopyLink: () => void;
   onTogglePrivate: () => void;
@@ -113,7 +126,7 @@ interface ProposalDropdownProps {
   compact?: boolean;
 }
 
-function ProposalDropdown({ username, isPrivate, onCopyLink, onTogglePrivate, onRemove, compact = false }: ProposalDropdownProps) {
+function ProposalDropdown({ username, elo, isPrivate, onCopyLink, onTogglePrivate, onRemove, compact = false }: ProposalDropdownProps) {
   const [open, setOpen] = useState(false);
   const [openUp, setOpenUp] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -142,19 +155,11 @@ function ProposalDropdown({ username, isPrivate, onCopyLink, onTogglePrivate, on
     ? `px-2 py-0.5 rounded text-xs font-bold font-sans transition border bg-slate-100 text-slate-500 border-slate-300 dark:bg-gray-700 dark:text-gray-400 dark:border-gray-600 cursor-pointer hover:bg-slate-200 dark:hover:bg-gray-600 flex items-center gap-1`
     : `px-3 py-0.5 rounded text-xs font-bold transition bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-gray-700 dark:text-gray-200 flex items-center gap-1`;
 
-  const lockIcon = (
-    <Tip content="Private game — only accessible via your shared link">
-      <svg className="w-3 h-3 inline-block" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M8 1a4 4 0 0 1 4 4v1h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h1V5a4 4 0 0 1 4-4zm0 1a3 3 0 0 0-3 3v1h6V5a3 3 0 0 0-3-3zm0 7a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/>
-      </svg>
-    </Tip>
-  );
-
   return (
     <div ref={ref} className="relative inline-block">
       <button ref={btnRef} onClick={toggle} className={triggerClass}>
-        {isPrivate && lockIcon}
-        {compact ? `${username} (play)` : 'Play'}
+        {isPrivate ? <ClosedLockIcon /> : <OpenLockIcon />}
+        {compact ? `${username} (${elo})` : 'Play'}
         <svg className="w-3 h-3 ml-0.5 opacity-60" viewBox="0 0 12 12" fill="currentColor">
           <path d="M6 8L1 3h10z" />
         </svg>
@@ -167,12 +172,12 @@ function ProposalDropdown({ username, isPrivate, onCopyLink, onTogglePrivate, on
           </button>
           <button className={item} onClick={() => { onTogglePrivate(); setOpen(false); }}>
             {isPrivate
-              ? <><svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 16 16" fill="currentColor"><path d="M3 6V5a5 5 0 0 1 10 0v1h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h1zm1 0h8V5a4 4 0 0 0-8 0v1z"/></svg>Make public</>
-              : <><svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a4 4 0 0 1 4 4v1h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h1V5a4 4 0 0 1 4-4zm0 1a3 3 0 0 0-3 3v1h6V5a3 3 0 0 0-3-3zm0 7a1 1 0 1 0 0 2 1 1 0 0 0 0-2z"/></svg>Make private</>
+              ? <><OpenLockIcon />Make game public</>
+              : <><ClosedLockIcon />Make game private</>
             }
           </button>
           <div className="border-t border-slate-100 dark:border-gray-700" />
-          <button className={`${item} text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20`} onClick={() => { onRemove(); setOpen(false); }}>
+          <button className={item} onClick={() => { onRemove(); setOpen(false); }}>
             <svg className="w-3.5 h-3.5 opacity-60" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zM2 5h12v1H2V5zm3.5-3h5a1 1 0 0 1 1 1v1h-7V3a1 1 0 0 1 1-1z"/></svg>
             Remove proposition
           </button>
@@ -192,6 +197,9 @@ export default function LobbyPage() {
   const [hasProposal, setHasProposal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Capture ?join= on mount (before URL is cleared) so it survives socket timing
+  const pendingJoinRef = useRef<string | null>(new URLSearchParams(window.location.search).get('join'));
+
   const messages = useChatMessages();
 
   useEffect(() => {
@@ -200,12 +208,18 @@ export default function LobbyPage() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // Clear ?join= from URL immediately so it doesn't persist on refresh
+  useEffect(() => {
+    if (pendingJoinRef.current) navigate('/', { replace: true });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const myProposal = proposals.find(p => p.username === user?.username);
   const myProposalIsPrivate = myProposal?.isPrivate ?? false;
 
   const handleCopyLink = useCallback(() => {
     const link = `${window.location.origin}/?join=${user?.username}`;
     navigator.clipboard.writeText(link).catch(() => {});
+    setToast('Link copied to clipboard!');
   }, [user?.username]);
 
   const handleTogglePrivate = useCallback(() => {
@@ -220,6 +234,16 @@ export default function LobbyPage() {
       setUsers(u);
       setProposals(p);
       setHasProposal(p.some(pr => pr.username === user?.username));
+      // Process pending ?join= link on first lobby state received (reliable timing)
+      if (pendingJoinRef.current) {
+        const target = pendingJoinRef.current;
+        pendingJoinRef.current = null;
+        if (target === user?.username) {
+          setToast("You can't accept your own game");
+        } else {
+          socket.emit('game:accept', target);
+        }
+      }
     };
     const onStarted = ({ gameId }: { gameId: string }) => navigate(`/game/${gameId}`);
     const onState = (g: { id: string }) => navigate(`/game/${g.id}`);
@@ -230,27 +254,14 @@ export default function LobbyPage() {
 
     // Re-request state on mount — the socket stays connected during navigation
     // so the server won't push a fresh snapshot when we navigate back via browser history.
-    if (socket.connected) {
-      socket.emit('lobby:request');
-
-      const params = new URLSearchParams(window.location.search);
-      const joinUser = params.get('join');
-      if (joinUser) {
-        navigate('/', { replace: true });
-        if (joinUser === user?.username) {
-          setToast("You can't accept your own game");
-        } else {
-          socket.emit('game:accept', joinUser);
-        }
-      }
-    }
+    if (socket.connected) socket.emit('lobby:request');
 
     return () => {
       socket.off('lobby:state',  onLobby);
       socket.off('game:started', onStarted);
       socket.off('game:state',   onState);
     };
-  }, [navigate, user?.username]);
+  }, [navigate, user?.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const me = users.find(u => u.username === user?.username);
@@ -268,12 +279,11 @@ export default function LobbyPage() {
   const handleSpectate = (gameId: string) => navigate(`/game/${gameId}`);
 
   const btn = `px-3 py-0.5 rounded text-xs font-bold transition`;
-  const visibleProposals = proposals.filter(p => !p.isPrivate || p.username === user?.username);
-  const allProposals = visibleProposals; // flat list for mobile
   const [rulesOpen, setRulesOpen] = useState(false);
 
   const dropdownProps = {
     username: user?.username ?? '',
+    elo: myProposal?.elo ?? user?.elo ?? 0,
     isPrivate: myProposalIsPrivate,
     onCopyLink: handleCopyLink,
     onTogglePrivate: handleTogglePrivate,
@@ -334,8 +344,8 @@ export default function LobbyPage() {
                           <th className="px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">
                             <div className="flex items-center justify-between">
                               <span>Waiting</span>
-                              {visibleProposals.length > 0 && (
-                                <span className="text-violet-600 dark:text-violet-400 font-bold">{visibleProposals.length} open</span>
+                              {proposals.length > 0 && (
+                                <span className="text-violet-600 dark:text-violet-400 font-bold">{proposals.length} open</span>
                               )}
                             </div>
                           </th>
@@ -343,7 +353,7 @@ export default function LobbyPage() {
                       </thead>
                       <tbody>
                         {ELO_RANGES.map(range => {
-                          const row = proposals.filter(p => p.eloRange === range && (p.username === user?.username || !p.isPrivate));
+                          const row = proposals.filter(p => p.eloRange === range);
                           return (
                             <tr key={range} className="border-b border-slate-100 dark:border-gray-800 last:border-0">
                               <td className="px-3 py-1 text-slate-500 dark:text-gray-400">{range}</td>
@@ -352,12 +362,18 @@ export default function LobbyPage() {
                                   {row.map(p => (
                                     p.username === user?.username
                                       ? <ProposalDropdown key={p.username} {...dropdownProps} compact />
-                                      : <button key={p.username}
-                                          onClick={() => handleAccept(p.username)}
-                                          className="px-2 py-0.5 rounded text-xs font-bold font-sans transition border bg-green-50 text-green-800 border-green-300 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer"
-                                        >
-                                          {p.username} ({p.elo})
-                                        </button>
+                                      : p.isPrivate
+                                        ? <Tip key={p.username} content="Private game — only accessible via a shared link">
+                                            <span className="px-2 py-0.5 rounded text-xs font-bold font-sans border bg-green-50 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                                              <ClosedLockIcon />{p.username} ({p.elo})
+                                            </span>
+                                          </Tip>
+                                        : <button key={p.username}
+                                            onClick={() => handleAccept(p.username)}
+                                            className="px-2 py-0.5 rounded text-xs font-bold font-sans transition border bg-green-50 text-green-800 border-green-300 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer"
+                                          >
+                                            {p.username} ({p.elo})
+                                          </button>
                                   ))}
                                 </div>
                               </td>
@@ -417,8 +433,8 @@ export default function LobbyPage() {
                 <th className="px-3 py-1 text-slate-500 dark:text-gray-400 font-bold">
                   <div className="flex items-center justify-between">
                     <span>Waiting</span>
-                    {allProposals.length > 0 && (
-                      <span className="text-violet-600 dark:text-violet-400 font-bold">{allProposals.length} open</span>
+                    {proposals.length > 0 && (
+                      <span className="text-violet-600 dark:text-violet-400 font-bold">{proposals.length} open</span>
                     )}
                   </div>
                 </th>
@@ -426,7 +442,7 @@ export default function LobbyPage() {
             </thead>
             <tbody>
               {ELO_RANGES.map(range => {
-                const row = proposals.filter(p => p.eloRange === range && (p.username === user?.username || !p.isPrivate));
+                const row = proposals.filter(p => p.eloRange === range);
                 return (
                   <tr key={range} className="border-b border-slate-100 dark:border-gray-800 last:border-0">
                     <td className="px-3 py-1.5 text-slate-400 dark:text-gray-500 whitespace-nowrap w-28">{range}</td>
@@ -435,12 +451,18 @@ export default function LobbyPage() {
                         {row.map(p => (
                           p.username === user?.username
                             ? <ProposalDropdown key={p.username} {...dropdownProps} compact />
-                            : <button key={p.username}
-                                onClick={() => handleAccept(p.username)}
-                                className="px-2 py-0.5 rounded text-xs font-bold font-sans border transition bg-green-50 text-green-800 border-green-300 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer"
-                              >
-                                {p.username} ({p.elo})
-                              </button>
+                            : p.isPrivate
+                              ? <Tip key={p.username} content="Private game — only accessible via a shared link">
+                                  <span className="px-2 py-0.5 rounded text-xs font-bold font-sans border bg-green-50 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 opacity-50 cursor-not-allowed inline-flex items-center gap-1">
+                                    <ClosedLockIcon />{p.username} ({p.elo})
+                                  </span>
+                                </Tip>
+                              : <button key={p.username}
+                                  onClick={() => handleAccept(p.username)}
+                                  className="px-2 py-0.5 rounded text-xs font-bold font-sans border transition bg-green-50 text-green-800 border-green-300 active:bg-green-100 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700 cursor-pointer"
+                                >
+                                  {p.username} ({p.elo})
+                                </button>
                         ))}
                       </div>
                     </td>

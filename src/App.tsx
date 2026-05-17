@@ -11,7 +11,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login"             element={user ? <Navigate to="/" replace /> : <LoginPage />} />
-      <Route path="/"                  element={user ? <LobbyPage />   : <Navigate to="/login" replace />} />
+      <Route path="/"                  element={user ? <LobbyPage />   : <Navigate to="/login" replace state={{ from: window.location.search }} />} />
       <Route path="/game/:gameId"      element={user ? <GamePage />    : <Navigate to="/login" replace />} />
       <Route path="/profile/:username" element={user ? <ProfilePage /> : <Navigate to="/login" replace />} />
       <Route path="/admin"             element={user?.isAdmin ? <AdminPage /> : <Navigate to="/" replace />} />

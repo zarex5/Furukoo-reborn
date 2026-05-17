@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { FurukooLogo } from '../components/FurukooLogo';
@@ -15,6 +15,8 @@ function makeCaptcha() {
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate  = useNavigate();
+  const location  = useLocation();
+  const fromSearch = (location.state as { from?: string } | null)?.from ?? '';
 
   const { isDark, toggleDark } = useDarkMode();
 
@@ -38,7 +40,7 @@ export default function LoginPage() {
     try {
       const data = await api.guest();
       login(data);
-      navigate('/');
+      navigate('/' + fromSearch);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -60,7 +62,7 @@ export default function LoginPage() {
         ? await api.login(username, password)
         : await api.register(username, password, email);
       login(data);
-      navigate('/');
+      navigate('/' + fromSearch);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error');
     } finally {
