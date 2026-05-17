@@ -50,7 +50,7 @@ function PlacementTracker({ player, piecesPlaced, isDark }: { player: Player; pi
           <div
             key={i}
             style={{
-              width: 6, height: 12,
+              width: 4, height: 12,
               borderRadius: 2,
               background: hasPiece ? pieceColor : emptyColor,
               border: `1px solid ${hasPiece ? pieceBorder : emptyBorder}`,
@@ -106,16 +106,16 @@ export const PlayerPanel: React.FC<Props> = ({
   const pulseClass = showPulse ? 'animate-pulse' : '';
 
   const moveCell = phase === 'placement'
-    ? <div className={`w-40 ${cell} ${moveCls} overflow-hidden flex items-center gap-1.5`}>
+    ? <div className={`flex-none ${cell} ${moveCls} whitespace-nowrap flex items-center gap-1.5`}>
+        <span>{formatMoveInfo(lastMove, moveIndex)}</span>
         <PlacementTracker player={player} piecesPlaced={piecesPlaced} isDark={isDark} />
-        <span className="truncate">{formatMoveInfo(lastMove, moveIndex)}</span>
       </div>
     : <div className={`w-40 ${cell} ${moveCls}`}>{formatMoveInfo(lastMove, moveIndex)}</div>;
 
   const moveCellCompact = phase === 'placement'
-    ? <div className={`w-28 flex-shrink-0 ${cell} ${moveCls} overflow-hidden flex flex-col items-center gap-0.5 py-0.5`}>
+    ? <div className={`flex-none ${cell} ${moveCls} whitespace-nowrap flex items-center gap-1.5`}>
+        <span>{formatMoveInfo(lastMove, moveIndex)}</span>
         <PlacementTracker player={player} piecesPlaced={piecesPlaced} isDark={isDark} />
-        <span className="text-xs leading-none truncate w-full text-center">{formatMoveInfo(lastMove, moveIndex)}</span>
       </div>
     : <div className={`w-28 flex-shrink-0 ${cell} ${moveCls} truncate`}>{formatMoveInfo(lastMove, moveIndex)}</div>;
 
