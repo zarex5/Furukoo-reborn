@@ -1127,7 +1127,13 @@ io.on('connection', async (socket) => {
     if (typeof gameId !== 'string') return;
     const u = connectedUsers.get(socket.id);
     if (!u || u.gameId !== gameId) return;
-    u.gameId = null; u.gameColor = null; u.spectating = false; u.reviewing = false;
+    const activeGame = activeGames.get(gameId);
+    const isActivePlayer = activeGame && !activeGame.winner && !u.spectating;
+    if (!isActivePlayer) {
+      // Spectators and post-game reviewers fully leave
+      u.gameId = null; u.gameColor = null; u.spectating = false; u.reviewing = false;
+    }
+    // Active players keep their gameId so the lobby shows Rejoin
     socket.leave(`game:${gameId}`);
     broadcastLobby();
   });
