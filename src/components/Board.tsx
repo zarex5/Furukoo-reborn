@@ -18,7 +18,7 @@ interface Props {
   uid?: string;
   /** When set, pieces of this color gently pulse to hint the player it's their turn. */
   pulsePieceColor?: Player | null;
-  /** Last move played — used for slot highlights and 300ms piece animation. */
+  /** Last move played — used for slot highlights and 600ms piece animation. */
   lastMove?: { from: SlotId | null; to: SlotId } | null;
 }
 
@@ -104,7 +104,7 @@ export const Board: React.FC<Props> = ({
     redSquare: 'rgba(239,68,68,0.18)', blackSquare: 'rgba(15,23,42,0.15)',
   };
 
-  // --- 300ms piece animation ---
+  // --- 600ms piece animation ---
   const [movingPiece, setMovingPiece] = React.useState<MovingPiece | null>(null);
   const animTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMoveFromKey = lastMove?.from ? slotKey(lastMove.from) : null;
@@ -124,7 +124,7 @@ export const Board: React.FC<Props> = ({
       toCx: to.cx, toCy: to.cy,
       isToV: lastMove.to.type === 'V',
     });
-    animTimerRef.current = setTimeout(() => setMovingPiece(null), 350);
+    animTimerRef.current = setTimeout(() => setMovingPiece(null), 650);
     return () => { if (animTimerRef.current) clearTimeout(animTimerRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMoveFromKey, lastMoveToKey]);
@@ -387,7 +387,7 @@ export const Board: React.FC<Props> = ({
         {/* Slots */}
         {slots.map(renderSlot)}
 
-        {/* Animated piece overlay — travels from previous slot to new slot over 300ms */}
+        {/* Animated piece overlay — travels from previous slot to new slot over 600ms */}
         {movingPiece && (() => {
           const isV = movingPiece.isToV;
           const rw = isV ? SHORT : LONG;
@@ -417,7 +417,7 @@ export const Board: React.FC<Props> = ({
                 type="translate"
                 from={`${dx} ${dy}`}
                 to="0 0"
-                dur="300ms"
+                dur="600ms"
                 fill="freeze"
               />
             </rect>
