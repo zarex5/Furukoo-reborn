@@ -589,6 +589,15 @@ function IssuesSection({ onCountChange }: { onCountChange: (n: number) => void }
     }
   };
 
+  const unacknowledge = async (id: string) => {
+    try {
+      await api.admin.unacknowledgeIssue(id);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to unacknowledge');
+    }
+  };
+
   const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
 
   return (
@@ -609,11 +618,23 @@ function IssuesSection({ onCountChange }: { onCountChange: (n: number) => void }
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300">{issue.page}</span>
                   <span className={SEVERITY_COLORS[issue.severity]}>{issue.severity}</span>
-                  <span className="text-slate-400 dark:text-gray-500">by <strong className="text-slate-600 dark:text-gray-300">{issue.submittedBy}</strong></span>
+                  <span className="text-slate-400 dark:text-gray-500">by{' '}
+                    <a href={`/profile/${encodeURIComponent(issue.submittedBy)}`}
+                      className="font-bold text-violet-600 dark:text-violet-400 hover:underline">
+                      {issue.submittedBy}
+                    </a>
+                  </span>
                   <span className="text-slate-400 dark:text-gray-500">{fmt(issue.submittedAt)}</span>
                 </div>
                 {issue.acknowledgedAt ? (
-                  <span className="flex-none text-green-600 dark:text-green-400 whitespace-nowrap">✓ {issue.acknowledgedBy}</span>
+                  <div className="flex items-center gap-1.5 flex-none">
+                    <span className="text-green-600 dark:text-green-400 whitespace-nowrap">✓ {issue.acknowledgedBy}</span>
+                    <button
+                      onClick={() => unacknowledge(issue.id)}
+                      className="px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-gray-700 dark:text-gray-400 transition whitespace-nowrap">
+                      Undo
+                    </button>
+                  </div>
                 ) : (
                   <button
                     onClick={() => acknowledge(issue.id)}
@@ -641,6 +662,11 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('players');
   const [issueCount, setIssueCount] = useState(0);
   const { isDark, toggleDark } = useDarkMode();
+
+  // Fetch badge count on mount so the tab badge is visible before opening Issues
+  useEffect(() => {
+    api.admin.issuesUnacknowledgedCount().then(d => setIssueCount(d.count)).catch(() => {});
+  }, []);
 
   if (!user?.isAdmin) {
     return (

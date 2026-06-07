@@ -218,7 +218,8 @@ export const api = {
       putAuth(`/admin/players/${encodeURIComponent(username)}/elo`, { elo }),
     issues: () => getAuth<ReportedIssue[]>('/admin/issues'),
     issuesUnacknowledgedCount: () => getAuth<{ count: number }>('/admin/issues/unacknowledged-count'),
-    acknowledgeIssue: (id: string) => putAuth(`/admin/issues/${encodeURIComponent(id)}/acknowledge`, {}),
+    acknowledgeIssue:   (id: string) => putAuth(`/admin/issues/${encodeURIComponent(id)}/acknowledge`, {}),
+    unacknowledgeIssue: (id: string) => putAuth(`/admin/issues/${encodeURIComponent(id)}/unacknowledge`, {}),
     deletePlayer: (username: string) => {
       const headers = { ...authHeaders(), 'Content-Type': 'application/json' };
       return fetch(`/api/admin/players/${encodeURIComponent(username)}`, { method: 'DELETE', headers })

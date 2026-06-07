@@ -542,6 +542,18 @@ app.put('/api/admin/issues/:id/acknowledge', requireAdmin, async (req, res) => {
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
 
+app.put('/api/admin/issues/:id/unacknowledge', requireAdmin, async (req, res) => {
+  try {
+    const issue = await ReportedIssue.findByIdAndUpdate(
+      req.params.id,
+      { $set: { acknowledgedAt: null, acknowledgedBy: null } },
+      { new: true }
+    );
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
 // ── Profile & Leaderboard REST ───────────────────────────────────────────────
 
 function gamePlayerMeta(g, username) {
