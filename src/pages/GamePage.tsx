@@ -484,10 +484,10 @@ export default function GamePage() {
                 </div>
               </div>
               <div className="flex-none flex items-center justify-center gap-1.5 flex-wrap">
-                <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>⏮</button>
+                <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>|◀</button>
                 <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>◀</button>
                 <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>▶</button>
-                <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>⏭</button>
+                <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>▶|</button>
                 <span className="text-xs font-mono text-slate-400 dark:text-gray-500 mx-1">{curIdx}/{histLen - 1}</span>
                 <button role="switch" aria-checked={soundEnabled} onClick={() => setSoundEnabled(!soundEnabled)}
                   className="flex items-center gap-1.5 focus:outline-none select-none" title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}>
@@ -561,10 +561,10 @@ export default function GamePage() {
         <div className="flex flex-col items-center gap-1.5 mt-3 px-3">
           {/* Row 1: nav buttons + counter */}
           <div className="flex items-center justify-center gap-1.5">
-            <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>⏮</button>
+            <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>|◀</button>
             <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>◀</button>
             <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>▶</button>
-            <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>⏭</button>
+            <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>▶|</button>
             <span className="text-xs font-mono text-slate-400 dark:text-gray-500 mx-1">{curIdx}/{histLen - 1}</span>
           </div>
           {/* Row 2: sound + draw/resign */}
