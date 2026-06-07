@@ -146,6 +146,15 @@ export const Board: React.FC<Props> = ({
     setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isFromV, isToV, fromAngle });
 
     const DURATION = 1000;
+    // Quadratic Bézier detour for cross-orientation (H↔V) moves.
+    // Detour directions (all 8 cases):
+    //   H→V: flip X sign  → (-sign(dx), sign(dy))
+    //   V→H: flip Y sign  → ( sign(dx), -sign(dy))
+    const isCross = isFromV !== isToV;
+    const DETOUR  = CELL * 1.5;
+    const ctrlCx  = (fromPos.cx + toPos.cx) / 2 + (isCross ? (isFromV ? 1 : -1) * Math.sign(dx) * DETOUR : 0);
+    const ctrlCy  = (fromPos.cy + toPos.cy) / 2 + (isCross ? (isFromV ? -1 : 1) * Math.sign(dy) * DETOUR : 0);
+
     const startTime = performance.now();
     function easeInOut(t: number) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
 
@@ -158,9 +167,11 @@ export const Board: React.FC<Props> = ({
       }
       const t = Math.min(1, (now - startTime) / DURATION);
       const e = easeInOut(t);
-      const cx    = fromPos.cx + (toPos.cx - fromPos.cx) * e;
-      const cy    = fromPos.cy + (toPos.cy - fromPos.cy) * e;
-      const angle = fromAngle  + (toAngle  - fromAngle)  * e;
+      const u  = 1 - e;
+      // Quadratic Bézier: P = u²·P0 + 2ue·P1 + e²·P2
+      const cx    = u*u*fromPos.cx + 2*u*e*ctrlCx + e*e*toPos.cx;
+      const cy    = u*u*fromPos.cy + 2*u*e*ctrlCy + e*e*toPos.cy;
+      const angle = fromAngle + (toAngle - fromAngle) * e;
       g.setAttribute('transform', `translate(${cx} ${cy}) rotate(${angle})`);
       if (t < 1) {
         animRafRef.current = requestAnimationFrame(tick);
