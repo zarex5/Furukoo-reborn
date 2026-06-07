@@ -117,9 +117,12 @@ interface ChatBoxProps {
   myUsername: string;
   origin: string;
   muted?: boolean;
+  collapsible?: boolean;
+  isOpen?: boolean;
+  onToggleOpen?: () => void;
 }
 
-export function ChatBox({ messages, onSend, myUsername, origin, muted = false }: ChatBoxProps) {
+export function ChatBox({ messages, onSend, myUsername, origin, muted = false, collapsible, isOpen, onToggleOpen }: ChatBoxProps) {
   const [draft, setDraft] = useState('');
   const [filtered, setFiltered] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -158,41 +161,48 @@ export function ChatBox({ messages, onSend, myUsername, origin, muted = false }:
             filtered ? 'translate-x-3.5' : 'translate-x-0.5'
           }`} />
         </button>
+        {collapsible && (
+          <button onClick={onToggleOpen} className="ml-1 text-slate-400 dark:text-gray-500 text-xs">
+            {isOpen ? '▲' : '▼'}
+          </button>
+        )}
       </div>
-      <div ref={scrollRef} className="flex-1 overflow-y-scroll overscroll-contain px-2 py-1 space-y-0.5 min-h-0">
-        {visible.map(m => (
-          <div key={m.id} className={`text-xs font-mono leading-snug ${
-            m.type === 'system' ? 'text-slate-400 dark:text-gray-500 italic' :
-            m.spectator ? 'text-slate-400 dark:text-gray-500' :
-            'text-slate-700 dark:text-gray-200'
-          }`}>
-            {m.type === 'system'
-              ? m.text
-              : <>
-                  <span className={`font-bold ${
-                    m.spectator ? 'text-slate-400 dark:text-gray-500' :
-                    m.username === myUsername ? 'text-violet-600 dark:text-violet-400' :
-                    'text-slate-600 dark:text-gray-300'
-                  }`}>{m.username}: </span>
-                  {m.text}
-                </>}
-          </div>
-        ))}
-      </div>
-      <div className="flex gap-1 px-2 py-1 border-t border-slate-100 dark:border-gray-800 flex-none">
-        <input
-          className="flex-1 text-xs font-mono px-2 py-0.5 rounded border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-800 dark:text-white focus:outline-none focus:border-violet-400 disabled:opacity-60 disabled:cursor-not-allowed"
-          value={muted ? '' : draft} onChange={e => !muted && setDraft(e.target.value)}
-          onKeyDown={e => !muted && e.key === 'Enter' && send()}
-          placeholder={muted ? 'You are muted' : 'Message…'}
-          disabled={muted}
-          readOnly={muted}
-        />
-        <button onClick={send} disabled={muted}
-          className="px-2 py-0.5 rounded text-xs bg-violet-600 text-white hover:bg-violet-700 transition font-bold disabled:opacity-40 disabled:cursor-not-allowed">
-          Send
-        </button>
-      </div>
+      {(!collapsible || isOpen) && <>
+        <div ref={scrollRef} className="flex-1 overflow-y-scroll overscroll-contain px-2 py-1 space-y-0.5 min-h-0">
+          {visible.map(m => (
+            <div key={m.id} className={`text-xs font-mono leading-snug ${
+              m.type === 'system' ? 'text-slate-400 dark:text-gray-500 italic' :
+              m.spectator ? 'text-slate-400 dark:text-gray-500' :
+              'text-slate-700 dark:text-gray-200'
+            }`}>
+              {m.type === 'system'
+                ? m.text
+                : <>
+                    <span className={`font-bold ${
+                      m.spectator ? 'text-slate-400 dark:text-gray-500' :
+                      m.username === myUsername ? 'text-violet-600 dark:text-violet-400' :
+                      'text-slate-600 dark:text-gray-300'
+                    }`}>{m.username}: </span>
+                    {m.text}
+                  </>}
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-1 px-2 py-1 border-t border-slate-100 dark:border-gray-800 flex-none">
+          <input
+            className="flex-1 text-xs font-mono px-2 py-0.5 rounded border border-slate-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-slate-800 dark:text-white focus:outline-none focus:border-violet-400 disabled:opacity-60 disabled:cursor-not-allowed"
+            value={muted ? '' : draft} onChange={e => !muted && setDraft(e.target.value)}
+            onKeyDown={e => !muted && e.key === 'Enter' && send()}
+            placeholder={muted ? 'You are muted' : 'Message…'}
+            disabled={muted}
+            readOnly={muted}
+          />
+          <button onClick={send} disabled={muted}
+            className="px-2 py-0.5 rounded text-xs bg-violet-600 text-white hover:bg-violet-700 transition font-bold disabled:opacity-40 disabled:cursor-not-allowed">
+            Send
+          </button>
+        </div>
+      </>}
     </div>
   );
 }

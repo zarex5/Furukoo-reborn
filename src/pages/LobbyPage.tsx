@@ -502,19 +502,11 @@ export default function LobbyPage() {
         </div>
 
         {/* Chat — collapsible */}
-        <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
-          <button
-            onClick={() => setChatOpen(o => !o)}
-            className="w-full flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-gray-800 text-xs font-bold text-slate-500 dark:text-gray-400"
-          >
-            <span>Chat</span>
-            <span className="text-slate-400 dark:text-gray-500">{chatOpen ? '▲' : '▼'}</span>
-          </button>
-          {chatOpen && (
-            <div style={{ height: 200 }} className="flex flex-col">
-              <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} />
-            </div>
-          )}
+        <div className="mx-3 mt-3 rounded-xl overflow-hidden" style={chatOpen ? { height: 220 } : undefined}>
+          <ChatBox
+            messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted}
+            collapsible isOpen={chatOpen} onToggleOpen={() => setChatOpen(o => !o)}
+          />
         </div>
 
         {/* Players — auto-height, no fixed constraint */}
