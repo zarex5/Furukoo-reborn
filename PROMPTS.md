@@ -784,3 +784,28 @@ When we hover the admin that acknowledged the issue, can we have a tooltip that 
 ```
 Can you commit the updated prompts
 ```
+```
+For the non playing player box, can we have a bit more opacity after all, maybe 0.7
+```
+```
+For the mobile version (ONLY on mobile):
+-For the actions in a game (rewind previous moves etc) let's have 2 lines, with the sound, Draw offer and resign offer on another one just below.
+-On iPhone at least, maybe everywhere, when I join a game, go back to lobby etc, it always scroll down to the very bottom of the page, can we not do that
+```
+```
+Also on iOS, the move to first/last move icon that we use is an emoji, it's ugly, let's use one like next/previous that is just an unicode
+```
+```
+It continues to scroll down.. I resume the game by clicking to join and it scrolls me down to the bottom of the page! why?
+```
+```
+-Let's make sure than when the game ends the player is not scrolled down to the bottom of the page (mobile)
+
+-Let's have the 0.7 opacity to 0.8 (mobile + desktop)
+
+-On mobile, How to play should be opened by default after all
+
+-Would be nice if we could also open/close the chat (from the lobby only)
+
+-And if those two choices (rules + chat open/closed) could be remembered when we leave the lobby and go back to it (localstorage maybe). 
+```
