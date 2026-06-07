@@ -134,8 +134,11 @@ export const Board: React.FC<Props> = ({
     const toPos   = slotPos(lastMove.to);
     const isFromV = lastMove.from.type === 'V';
     const isToV   = lastMove.to.type === 'V';
-    // CW (-90) only when moving to upper-left quadrant; CCW (+90) for all other directions
-    const hAngle    = (toPos.cy <= fromPos.cy && toPos.cx <= fromPos.cx) ? -90 : 90;
+    // Rotation for H slots: CW (-90) when dy and dx have opposite signs, CCW (+90) when same sign.
+    // This satisfies all 8 H↔V combos (up-right CW, up-left CCW, down-right CCW, down-left CW for H→V; mirrored for V→H).
+    const dy = toPos.cy - fromPos.cy;
+    const dx = toPos.cx - fromPos.cx;
+    const hAngle    = (dy * dx < 0) ? -90 : 90;
     const fromAngle = isFromV ? 0 : hAngle;
     const toAngle   = isToV   ? 0 : hAngle;
 
