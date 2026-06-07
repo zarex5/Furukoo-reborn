@@ -557,34 +557,40 @@ export default function GamePage() {
           <PlayerPanel {...playerPanelProps(bottomPlayer)} compact />
         </div>
 
-        {/* History nav + controls */}
-        <div className="flex items-center justify-center gap-1.5 mt-3 flex-wrap px-3">
-          <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>⏮</button>
-          <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>◀</button>
-          <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>▶</button>
-          <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>⏭</button>
-          <span className="text-xs font-mono text-slate-400 dark:text-gray-500 mx-1">{curIdx}/{histLen - 1}</span>
-          <button role="switch" aria-checked={soundEnabled} onClick={() => setSoundEnabled(!soundEnabled)}
-            className="flex items-center gap-1.5 focus:outline-none select-none" title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={soundEnabled ? (isDark ? '#a78bfa' : '#475569') : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-            </svg>
-            <span className={`relative inline-block w-8 h-4 rounded-full transition-colors ${soundEnabled ? 'bg-slate-500' : 'bg-slate-300 dark:bg-gray-600'}`}>
-              <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${soundEnabled ? 'translate-x-4' : ''}`} />
-            </span>
-          </button>
-          {!isSpectating && !gameOver && !iAmOffering && !opponentOffering && (
-            <button className={drawBtnCls} onClick={handleOfferDraw}>Offer draw</button>
-          )}
-          {!isSpectating && !gameOver && iAmOffering && (
-            <button className={drawBtnCls} onClick={handleRetractDraw}>Retract draw</button>
-          )}
-          {!isSpectating && !gameOver && opponentOffering && (
-            <button className={`${drawBtnCls} animate-pulse`} onClick={handleAcceptDraw}>Accept draw</button>
-          )}
-          {!isSpectating && !gameOver && (
-            <button className={resignBtnCls} onClick={handleResign}>Resign</button>
-          )}
+        {/* History nav + controls — 2 rows on mobile */}
+        <div className="flex flex-col items-center gap-1.5 mt-3 px-3">
+          {/* Row 1: nav buttons + counter */}
+          <div className="flex items-center justify-center gap-1.5">
+            <button className={navBtnCls} onClick={navFirst} disabled={curIdx === 0}>⏮</button>
+            <button className={navBtnCls} onClick={navPrev}  disabled={curIdx === 0}>◀</button>
+            <button className={navBtnCls} onClick={navNext}  disabled={isAtLatest}>▶</button>
+            <button className={`${navBtnCls} ${showPulse ? 'animate-pulse ring-2 ring-violet-400' : ''}`} onClick={navLast} disabled={isAtLatest}>⏭</button>
+            <span className="text-xs font-mono text-slate-400 dark:text-gray-500 mx-1">{curIdx}/{histLen - 1}</span>
+          </div>
+          {/* Row 2: sound + draw/resign */}
+          <div className="flex items-center justify-center gap-1.5">
+            <button role="switch" aria-checked={soundEnabled} onClick={() => setSoundEnabled(!soundEnabled)}
+              className="flex items-center gap-1.5 focus:outline-none select-none" title={soundEnabled ? 'Mute sounds' : 'Enable sounds'}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={soundEnabled ? (isDark ? '#a78bfa' : '#475569') : '#94a3b8'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              </svg>
+              <span className={`relative inline-block w-8 h-4 rounded-full transition-colors ${soundEnabled ? 'bg-slate-500' : 'bg-slate-300 dark:bg-gray-600'}`}>
+                <span className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform ${soundEnabled ? 'translate-x-4' : ''}`} />
+              </span>
+            </button>
+            {!isSpectating && !gameOver && !iAmOffering && !opponentOffering && (
+              <button className={drawBtnCls} onClick={handleOfferDraw}>Offer draw</button>
+            )}
+            {!isSpectating && !gameOver && iAmOffering && (
+              <button className={drawBtnCls} onClick={handleRetractDraw}>Retract draw</button>
+            )}
+            {!isSpectating && !gameOver && opponentOffering && (
+              <button className={`${drawBtnCls} animate-pulse`} onClick={handleAcceptDraw}>Accept draw</button>
+            )}
+            {!isSpectating && !gameOver && (
+              <button className={resignBtnCls} onClick={handleResign}>Resign</button>
+            )}
+          </div>
         </div>
 
         {/* Chat */}
