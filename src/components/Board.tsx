@@ -295,14 +295,14 @@ export const Board: React.FC<Props> = ({
           <stop offset="0%" stopColor="#505e6a" />
           <stop offset="100%" stopColor="#7e96a6" />
         </radialGradient>
-        {/* Highlighted empty slot (previous position) — more pronounced gradient */}
+        {/* Highlighted empty slot (previous position) — just a touch more than regular empty */}
         <radialGradient id={`${uid}-hi-l`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#7fb0d0" />
-          <stop offset="100%" stopColor="#c0dff0" />
+          <stop offset="0%" stopColor="#bfd6ea" />
+          <stop offset="100%" stopColor="#e8f4fa" />
         </radialGradient>
         <radialGradient id={`${uid}-hi-d`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#1e3a52" />
-          <stop offset="100%" stopColor="#4a6e88" />
+          <stop offset="0%" stopColor="#42545f" />
+          <stop offset="100%" stopColor="#708898" />
         </radialGradient>
         {/* Colored pieces */}
         <radialGradient id={`${uid}-red`} cx="50%" cy="50%" r="70%">
