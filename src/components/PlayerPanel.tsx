@@ -85,7 +85,7 @@ export const PlayerPanel: React.FC<Props> = ({
   phase, piecesPlaced = 0, isDark = false,
 }) => {
   const isRed = player === 'red';
-  const borderColor = isRed ? 'border-red-400 dark:border-red-500' : 'border-slate-400 dark:border-gray-600';
+  const borderColor = 'border-slate-200 dark:border-gray-700';
   const wrapBg = isActive
     ? 'bg-white dark:bg-gray-800'
     : 'bg-slate-50 dark:bg-gray-900 opacity-40';
@@ -101,9 +101,11 @@ export const PlayerPanel: React.FC<Props> = ({
     ? 'bg-red-50 text-red-700 border-red-400 dark:bg-red-900 dark:text-red-300 dark:border-red-500'
     : 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600';
 
+  // Shadow in player colour: pronounced on active turn, subtle otherwise
+  const shadowColor = isRed ? '#ef4444' : (isDark ? '#94a3b8' : '#475569');
   const activeStyle: React.CSSProperties = isActive
-    ? { boxShadow: 'inset 0 0 0 2px #22d3ee' }
-    : {};
+    ? { boxShadow: `0 0 0 2px ${shadowColor}, 0 0 10px ${shadowColor}99` }
+    : { boxShadow: `0 0 0 1px ${shadowColor}55` };
 
   const pulseClass = showPulse ? 'animate-pulse' : '';
 
