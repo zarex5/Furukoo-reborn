@@ -563,5 +563,200 @@ I keep seeing messages even after disconnecting for more than 15 secs and reconn
 ```
 In the admin page the back button should also be "Back to lobby" without an arrow
 ```
+```
 Can you commit the updated promts
+```
+```
+Before we start, know that I expect you to do each change (these and future ones) one by one with a commit for each, with a nice and short commit message (keep it under 15 words and feel free to start the message with an emoji related to the change).
+
+In the admin page:
+- the first tab should be the players not the bots.
+- it should be possible to manually edit the ELO of a bot, and of a player.
+- it should be possible to fully delete a player (like we can with bot).
+- renaming a bot should not reset their number of game (it should keep the existing user but just have a different display name - we could later decide to enable this feature for regular players too).
+```
+```
+When we’re proposing a game, we should be enable to click our own game offering in the Waiting table, and it should be like a dropdown button that expends down by default (or up if there is not enough space down). It should offer 3 options: 
+- copy link to game
+- toggle private/public game (public by default)
+- remove the proposition
+The remove button should be renamed to Play and offer the exact same 3 options, copy link, make game private/public, remove proposition (with the exact same style, see if you can reuse part of the component).
+These changes imply 2 new features:
+- we should have direct links to the lobby including the game_id in get params, to accept game and would then send the opponent (and player) to the game. If the player initiating the game uses the link he should be sent to the lobby with a toast message saying he can’t accept its own game.
+- we should have private games that are only accessible with this shared link and not the global “waiting” table. If the game private the offering badge should have a small lock icon with a tooltip that explains why other others can’t click it. Also when proposing a game it should take 1 second before it appears to others so the player has a bit of time to toggle the private mode before someone else accepts it.
+```
+```
+In the actual game:
+- black/red should be randomized (it should not always be the player proposing a game that gets a color, and the player accepting that gets the other).
+- The player should always see himself of the top position (no need to rotate the board like in chess though).
+It’s not always very clear when it’s our turn to play.
+- There should be more difference between an active (its turn to play) vs non active player box, more opacity change and more border for that active (without making the board move! maybe use box-shadow or something?). Maybe if it’s my turn to play and I didn’t for 5 seconds, my box should start pulsing very slightly to remind me? (it should not be to distracting from the game, just a subtle reminder).
+It’s not clear for everyone when we switch to “move phase” (once the 7 pieces are placed)
+- We could display 7 small slots/pieces inside the 2nd box (nb moves/last move) of the player’s box, pieces would be remove (the slot stays) when a user uses it. That way it’s clear how many are left to place. When placing the last one, the 7 slots should be crossed (all at once in a line) so it’s obvious there’s no more.
+- When it’s the first move, if the player did not play after 15 seconds, its own pieces should pulse so it’s a hint he can click on them (to then move them).
+It’s not always clear what was the last move played by the opponent.
+- Pieces could have a transition effect (from one slot to another), quite short tho, like 300ms.
+- Slots of the board should be slightly lighter, and when a piece is moved, its previous and new slots should have a darker color (the existing one). When in “place mode” (original 7 pieces), only the new slot is darker.
+- We could have a sound played when a piece is placed/moved (not loud), and it should be possible to disable the sound (in the actions below the 2nd player box) - that preference should be stored in the user db for future games.
+```
+```
+In the game’s board replay buttons (under the second player’s box):
+- the buttons should be a bit larger (like the buttons in the header) and have the button style not just the icon.
+- the resign button should move from the header to there (right of the moves count)
+- there should be a new button “Offer draw”, that becomes “Accept draw” for the other user. It should be possible to retract our draw offer (as long as it’s not accepted). Proposing and accepting a draw should have confirmation modals. And both actions should be displayed in the chat so users are notified.
+```
+```
+It seems the bots are very strong at not losing, but even the lvl 10 doesn’t seem particularly aggressive, so players end up losing to the time which is frustrating. Each move the bot is not defending because a threat is there or coming, he should push hard for a win.
+```
+```
+Changing my ELO doesn’t not seem to work, I put 3189 but it still says 1189 in my UI, even after disconnecting/re-connecting.
+```
+```
+Can you write “Make game public/private” (add game), also no need to put Remove proposition in red, and would be nice if the lock icon would change/open when it’s make game public. In the “waiting” table, not keep the previous style meaning do not write (play) but keep the ELO just like other players. Also, it seems other players can’t see private games, they should see them but not be able to click them (we said: the offering badge should have a small lock icon with a tooltip that explains why other others can’t click it). Clicking the copy button should let the user know it was copied, like a toast message. The direct link doesn’t not seem to work when I test it with another user in private window.
+```
+```
+If I go back to lobby and I have a game in progress it should say Rejoin (just like it does when I deconnect/reconnect), and certainly not allow me to create a new game proposal.
+```
+```
+For the action bar (under the second player's box), I never asked to add "First, Prev, Next, Last". But I did ask that button style should be visible even when not hovering, so it's not just an icon. Also, mute should should be the first option after the move count (and should be a switch toggle like the dark mode), followed by Draw (please remove the 1/2 and write Offer draw), and finally the resign button.
+```
+```
+The sound toggle should be gray like the dark mode, no reason to put it purple. Also the 4 replay icons are still not button style when not hovering...
+```
+```
+No need for these buttons to have a border tho
+```
+```
+Back to the main game, when I said "We could display 7 small slots/pieces inside the 2nd box (nb moves/last move) " I meant in addition to the existing text not instead.  Also these displayed pieces can have less width.
+```
+```
+For the pieces transition effect, 300ms seems too short after all, let's try 600
+```
+```
+Back to the pieces display, make them less width, and to the right of the text. Also extend the width of the box if it doesn't fully fit...
+```
+```
+they should stay visible, tho barred when we're in the move phase. also, increase the transition to 1000, it's still to quick. Also this transition should be visible when replaying the moves. But it should not transition when I refresh the page (it currently does).
+```
+```
+The pieces blinking after 15sec should be more subtle, and only do it for the first time a user moves in the game (after that he knows what to do). Also, it should stop blinking as soon a player clicks on a piece (he understood).
+```
+```
+The transitions are not visible, on move or on move replay, only when we refresh the page. It should be the opposite.
+```
+```
+Give more width to the player name input (so that when it’s a bit long / in multiple words, it doesn’t take 2 lines - unless it’s really long).
+```
+```
+Add a confirmation modal on resign button click (just like we have to offer draw).
+```
+```
+The currently playing user box has a border (red) + box-shadow (blue), it should only have a box-shadow, of the color of the player (black/red). Quite pronounced when it’s its turn, and a bit less when it’s not.
+```
+```
+Remove color borders for the pieces. We should never have, apart from the slots.
+The empty slots used to have a bit of gradient, re-add it please.
+And when we move a piece, to show the previous and current position, we should only play with this gradient. The previous slot gradient should be more pronounced, and the current piece should have more gradient too.
+```
+```
+Slots border should be less, just a tiny bit. And empty slots gradient should be much lighter too.
+```
+```
+Nice, now the previous slot (when there's a move) should be lighted too. Just a bit more than regular empty.
+```
+```
+For the piece that just move let's try just a bit less difference with regular pieces
+```
+```
+A bit to little difference now, lets do inbetween ?
+```
+```
+Lets give more width to the player name input in the player boxes, we can't even the full name without ..., make the min-size 50% more than currently or something
+```
+```
+still very tiny as the parent is max-w-sm
+```
+```
+ok now the child name box can have 25% less width
+```
+```
+the slot from move should be a slighly more dark, and piece moved a bit more different that others
+```
+```
+the piece becomes lighter only around 1 second after it's moved
+```
+```
+I still can't see the move animation btw
+```
+```
+Great, just when a piece is moved from a vertical to horizontal slot (or vise versa) the transition should pivot the piece
+```
+```
+in some cases the animation is not displayed
+```
+```
+when a horizontal is placed to a vertical right above, the animation should rotate in the other way so it's more natural
+```
+```
+Same for when horizontal to vertical down left, rotate other way
+```
+```
+I'll give you the full list so it's easier:
+If you start from an horizontal slot, and go vertical:
+- up right: rotate clockwise
+- up left: rotate counter clockwise
+- down right: rotate counter clockwise
+- down left: rotate clockwise
+from a vertical slot, and go horizontal:
+- up right: rotate counter clockwise
+- up left: rotate clockwise
+- down right: rotate clockwise
+- down left: rotate counter clockwise
+```
+```
+When there's a rotate transition, no need to move to the corner, rotate directly from slot to slot.
+```
+```
+wtf no its 100% worse rollback, you didn't understand, keep the rotate as is but without moving the piece near the corner then moving it from the corner (eg. when moving from horizontal to top right, right towards corner then up towards slot)
+```
+```
+the direction of the center of the piece is good but it should start rotating as soon as it starts moving, and finish the rotation when it finishes the move
+```
+```
+for the sliding lets to a small detour 
+I'll give you the full list so it's easier:
+If you start from an horizontal slot, and go vertical:
+- up right: rotate clockwise (detour up left)
+- up left: rotate counter clockwise (detour up right)
+- down right: rotate counter clockwise (detour down left)
+- down left: rotate clockwise (detour down right)
+from a vertical slot, and go horizontal:
+- up right: rotate counter clockwise (detour down right)
+- up left: rotate clockwise (detour down left)
+- down right: rotate clockwise (detour up right)
+- down left: rotate counter clockwise (detour up left)
+```
+```
+detour is too wide yeah
+```
+```
+just a tiny bit less wide again, it's almost perfect
+```
+```
+perfect, now lets speed up a bit the animation, lets try 400ms
+```
+```
+lets try 200ms
+```
+```
+when we use the history to see the previous move, it should not redo the same animation (from a turn before), but rather do the opposite one from this current turn (from current piece to previous piece)
+```
+```
+when we place the 7th and last piece, the slashing animation (over the 7 small empty slots) goes a bit too far, further than the last one.  The issue is only that turn, the next one it stops at the last piece as it should.
+```
+```
+sometimes when I have an open tab open in my browser with a game that is finished, and I unlock the mac I hear a piece played sound, can we avoid that? a finished game shouldn't ever play sound
+```
+```
+Can you commit the updated prompts
 ```
