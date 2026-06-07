@@ -146,6 +146,10 @@ export const Board: React.FC<Props> = ({
     setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isFromV, isToV, fromAngle });
 
     const DURATION = 1000;
+    // For cross-orientation (H↔V) moves: slide straight first, rotate at destination.
+    // This prevents the piece's long edge from visually sweeping toward the board corner.
+    const isCross  = isFromV !== isToV;
+    const SLIDE_END = isCross ? 0.55 : 1.0; // fraction of DURATION used for translation
     const startTime = performance.now();
     function easeInOut(t: number) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
 
@@ -157,10 +161,22 @@ export const Board: React.FC<Props> = ({
         return;
       }
       const t = Math.min(1, (now - startTime) / DURATION);
-      const e = easeInOut(t);
-      const cx    = fromPos.cx + (toPos.cx - fromPos.cx) * e;
-      const cy    = fromPos.cy + (toPos.cy - fromPos.cy) * e;
-      const angle = fromAngle  + (toAngle  - fromAngle)  * e;
+
+      let cx: number, cy: number, angle: number;
+      if (t < SLIDE_END) {
+        // Phase 1: straight slide in from-orientation (no rotation — avoids corner sweep)
+        const t1 = easeInOut(t / SLIDE_END);
+        cx    = fromPos.cx + (toPos.cx - fromPos.cx) * t1;
+        cy    = fromPos.cy + (toPos.cy - fromPos.cy) * t1;
+        angle = fromAngle;
+      } else {
+        // Phase 2: rotate in place at destination (cross-orientation only)
+        const t2 = easeInOut((t - SLIDE_END) / (1 - SLIDE_END));
+        cx    = toPos.cx;
+        cy    = toPos.cy;
+        angle = fromAngle + (toAngle - fromAngle) * t2;
+      }
+
       g.setAttribute('transform', `translate(${cx} ${cy}) rotate(${angle})`);
       if (t < 1) {
         animRafRef.current = requestAnimationFrame(tick);
