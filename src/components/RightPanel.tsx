@@ -122,12 +122,14 @@ interface ChatBoxProps {
 export function ChatBox({ messages, onSend, myUsername, origin, muted = false }: ChatBoxProps) {
   const [draft, setDraft] = useState('');
   const [filtered, setFiltered] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const visible = filtered ? messages.filter(m => m.origin === origin) : messages;
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll the chat container directly — avoids iOS scrollIntoView bubbling to the page
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [visible]);
 
   const send = () => {
@@ -157,7 +159,7 @@ export function ChatBox({ messages, onSend, myUsername, origin, muted = false }:
           }`} />
         </button>
       </div>
-      <div className="flex-1 overflow-y-scroll overscroll-contain px-2 py-1 space-y-0.5 min-h-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-scroll overscroll-contain px-2 py-1 space-y-0.5 min-h-0">
         {visible.map(m => (
           <div key={m.id} className={`text-xs font-mono leading-snug ${
             m.type === 'system' ? 'text-slate-400 dark:text-gray-500 italic' :
@@ -176,7 +178,6 @@ export function ChatBox({ messages, onSend, myUsername, origin, muted = false }:
                 </>}
           </div>
         ))}
-        <div ref={bottomRef} />
       </div>
       <div className="flex gap-1 px-2 py-1 border-t border-slate-100 dark:border-gray-800 flex-none">
         <input
