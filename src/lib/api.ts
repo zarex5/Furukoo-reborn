@@ -164,11 +164,24 @@ export interface AdminPlayersPage {
   totalPages: number;
 }
 
+export interface ReportedIssue {
+  id:             string;
+  page:           'Login' | 'Lobby' | 'Game' | 'Profile' | 'Other';
+  severity:       'Critical' | 'High' | 'Medium' | 'Low' | 'Note';
+  description:    string;
+  submittedBy:    string;
+  submittedAt:    string;
+  acknowledgedAt: string | null;
+  acknowledgedBy: string | null;
+}
+
 export const api = {
   register: (username: string, password: string, email: string) =>
     post('/register', { username, password, email }),
   login:    (username: string, password: string) => post('/login', { username, password }),
   guest:    () => post('/guest', {}),
+  reportIssue: (page: string, severity: string, description: string) =>
+    postAuth<{ ok: boolean }>('/issues', { page, severity, description }),
 
   profile:     (username: string) => get<ProfileData>(`/profile/${encodeURIComponent(username)}`),
   leaderboard: (username?: string) => get<LeaderboardData>(`/leaderboard${username ? `?username=${encodeURIComponent(username)}` : ''}`),
@@ -203,6 +216,9 @@ export const api = {
       putAuth(`/admin/players/${encodeURIComponent(username)}/ban`, { isBanned }),
     setPlayerElo: (username: string, elo: number) =>
       putAuth(`/admin/players/${encodeURIComponent(username)}/elo`, { elo }),
+    issues: () => getAuth<ReportedIssue[]>('/admin/issues'),
+    issuesUnacknowledgedCount: () => getAuth<{ count: number }>('/admin/issues/unacknowledged-count'),
+    acknowledgeIssue: (id: string) => putAuth(`/admin/issues/${encodeURIComponent(id)}/acknowledge`, {}),
     deletePlayer: (username: string) => {
       const headers = { ...authHeaders(), 'Content-Type': 'application/json' };
       return fetch(`/api/admin/players/${encodeURIComponent(username)}`, { method: 'DELETE', headers })

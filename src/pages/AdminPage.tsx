@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { api, type AdminBot, type AdminPlayer, type AdminPlayersPage } from '../lib/api';
+import { api, type AdminBot, type AdminPlayer, type AdminPlayersPage, type ReportedIssue } from '../lib/api';
 import { useDarkMode } from '../lib/darkMode';
 import { DarkToggle } from '../components/DarkToggle';
 import { FurukooLogo } from '../components/FurukooLogo';
@@ -550,14 +550,96 @@ function PlayersSection() {
   );
 }
 
+// ── Issues section ────────────────────────────────────────────────────────────
+
+const SEVERITY_COLORS: Record<string, string> = {
+  Critical: 'text-red-600 dark:text-red-400 font-bold',
+  High:     'text-orange-500 dark:text-orange-400 font-bold',
+  Medium:   'text-amber-500 dark:text-amber-400',
+  Low:      'text-blue-500 dark:text-blue-400',
+  Note:     'text-slate-400 dark:text-gray-500',
+};
+
+function IssuesSection({ onCountChange }: { onCountChange: (n: number) => void }) {
+  const [issues,  setIssues]  = useState<ReportedIssue[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState('');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api.admin.issues();
+      setIssues(data);
+      onCountChange(data.filter(i => !i.acknowledgedAt).length);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load issues');
+    } finally {
+      setLoading(false);
+    }
+  }, [onCountChange]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const acknowledge = async (id: string) => {
+    try {
+      await api.admin.acknowledgeIssue(id);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to acknowledge');
+    }
+  };
+
+  const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+
+  return (
+    <div>
+      {error && <ErrorBanner msg={error} onDismiss={() => setError('')} />}
+      {loading ? (
+        <p className="text-xs text-slate-400 dark:text-gray-500 py-4 text-center">Loading…</p>
+      ) : issues.length === 0 ? (
+        <p className="text-xs text-slate-400 dark:text-gray-500 py-4 text-center">No reported issues</p>
+      ) : (
+        <div className="space-y-3">
+          {issues.map(issue => (
+            <div key={issue.id}
+              className={`rounded-lg border p-3 text-xs font-mono ${issue.acknowledgedAt
+                ? 'border-slate-100 dark:border-gray-800 bg-slate-50 dark:bg-gray-900/50 opacity-60'
+                : 'border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-900'}`}>
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-gray-300">{issue.page}</span>
+                  <span className={SEVERITY_COLORS[issue.severity]}>{issue.severity}</span>
+                  <span className="text-slate-400 dark:text-gray-500">by <strong className="text-slate-600 dark:text-gray-300">{issue.submittedBy}</strong></span>
+                  <span className="text-slate-400 dark:text-gray-500">{fmt(issue.submittedAt)}</span>
+                </div>
+                {issue.acknowledgedAt ? (
+                  <span className="flex-none text-green-600 dark:text-green-400 whitespace-nowrap">✓ {issue.acknowledgedBy}</span>
+                ) : (
+                  <button
+                    onClick={() => acknowledge(issue.id)}
+                    className="flex-none px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300 transition whitespace-nowrap">
+                    Acknowledge
+                  </button>
+                )}
+              </div>
+              <p className="text-slate-700 dark:text-gray-200 whitespace-pre-wrap leading-relaxed">{issue.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-type Tab = 'bots' | 'players';
+type Tab = 'bots' | 'players' | 'issues';
 
 export default function AdminPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>('players');
+  const [issueCount, setIssueCount] = useState(0);
   const { isDark, toggleDark } = useDarkMode();
 
   if (!user?.isAdmin) {
@@ -605,12 +687,21 @@ export default function AdminPage() {
         {/* Tabs */}
         <div className="flex border-b border-slate-200 dark:border-gray-700 mb-6">
           <button className={tabCls('players')} onClick={() => setTab('players')}>Players</button>
-          <button className={tabCls('bots')}   onClick={() => setTab('bots')}>Bots</button>
+          <button className={tabCls('bots')}    onClick={() => setTab('bots')}>Bots</button>
+          <button className={`${tabCls('issues')} relative`} onClick={() => setTab('issues')}>
+            Reported Issues
+            {issueCount > 0 && (
+              <span className="absolute -top-0.5 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">
+                {issueCount}
+              </span>
+            )}
+          </button>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-700 p-5">
           {tab === 'bots'    && <BotsSection />}
           {tab === 'players' && <PlayersSection />}
+          {tab === 'issues'  && <IssuesSection onCountChange={setIssueCount} />}
         </div>
       </div>
     </div>

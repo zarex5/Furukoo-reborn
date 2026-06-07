@@ -11,6 +11,8 @@ import { ConnectionBanner } from '../components/ConnectionBanner';
 import { DarkToggle } from '../components/DarkToggle';
 import { useDarkMode } from '../lib/darkMode';
 import { Tip } from '../components/Tip';
+import { ReportIssueModal } from '../components/ReportIssueModal';
+import { api } from '../lib/api';
 
 interface Proposal { username: string; elo: number; eloRange: string; isBot?: boolean; botLevel?: number; isPrivate?: boolean; }
 
@@ -55,11 +57,14 @@ function InviteTicker() {
   );
 }
 
-const CREDITS = (
-  <div className="px-3 pb-1 border-t border-slate-100 dark:border-gray-800 text-xs font-mono text-slate-400 dark:text-gray-500 pt-2">
-    <p>Coded with ♥ by <span className="text-slate-500 dark:text-gray-400">iNo_</span> & <span className="text-violet-500 dark:text-violet-400">Claude</span> — Original game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span> & <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
-  </div>
-);
+function Credits({ onReport }: { onReport: () => void }) {
+  return (
+    <div className="px-3 pb-1 border-t border-slate-100 dark:border-gray-800 text-xs font-mono text-slate-400 dark:text-gray-500 pt-2 flex items-center justify-between gap-2 flex-wrap">
+      <p>Coded with ♥ by <span className="text-slate-500 dark:text-gray-400">iNo_</span> & <span className="text-violet-500 dark:text-violet-400">Claude</span> — Original game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span> & <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
+      <button onClick={onReport} className="text-violet-500 dark:text-violet-400 hover:underline whitespace-nowrap flex-none">Report any issue</button>
+    </div>
+  );
+}
 
 function RulesBox({ mobile = false }: { mobile?: boolean }) {
   const rulesContent = (
@@ -83,7 +88,7 @@ function RulesBox({ mobile = false }: { mobile?: boolean }) {
     return (
       <div className="px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
         {rulesContent}
-        <div className="mt-3">{CREDITS}</div>
+        <div className="mt-3"><Credits onReport={() => setShowReportModal(true)} /></div>
         <InviteTicker />
       </div>
     );
@@ -97,7 +102,7 @@ function RulesBox({ mobile = false }: { mobile?: boolean }) {
       <div className="flex-1 overflow-y-auto px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
         {rulesContent}
       </div>
-      {CREDITS}
+      <Credits onReport={() => setShowReportModal(true)} />
       <InviteTicker />
     </div>
   );
@@ -192,10 +197,12 @@ export default function LobbyPage() {
   const navigate = useNavigate();
 
   const { isDark, toggleDark } = useDarkMode();
-  const [users,     setUsers]     = useState<OnlineUser[]>([]);
-  const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [hasProposal, setHasProposal] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [users,           setUsers]           = useState<OnlineUser[]>([]);
+  const [proposals,       setProposals]       = useState<Proposal[]>([]);
+  const [hasProposal,     setHasProposal]     = useState(false);
+  const [toast,           setToast]           = useState<string | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [issueCount,      setIssueCount]      = useState(0);
 
   // Capture ?join= on mount (before URL is cleared) so it survives socket timing
   const pendingJoinRef = useRef<string | null>(new URLSearchParams(window.location.search).get('join'));
@@ -212,6 +219,12 @@ export default function LobbyPage() {
   useEffect(() => {
     if (pendingJoinRef.current) navigate('/', { replace: true });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch unacknowledged issue count for admins
+  useEffect(() => {
+    if (!user?.isAdmin) return;
+    api.admin.issuesUnacknowledgedCount().then(d => setIssueCount(d.count)).catch(() => {});
+  }, [user?.isAdmin]);
 
   const myProposal = proposals.find(p => p.username === user?.username);
   const myProposalIsPrivate = myProposal?.isPrivate ?? false;
@@ -314,7 +327,10 @@ export default function LobbyPage() {
                 : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
             }
             {user?.isAdmin && (
-              <button onClick={() => navigate('/admin')} className={`${btn} bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300`}>Admin</button>
+              <button onClick={() => navigate('/admin')} className={`${btn} relative bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300`}>
+                Admin
+                {issueCount > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">{issueCount}</span>}
+              </button>
             )}
             <button onClick={logout} className={`${btn} bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300`}>Logout</button>
           </div>
@@ -419,7 +435,10 @@ export default function LobbyPage() {
               : <button onClick={handlePlay}   className={`${btn} bg-violet-600 text-white hover:bg-violet-700`}>Play</button>
           }
           {user?.isAdmin && (
-            <button onClick={() => navigate('/admin')} className={`${btn} bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300`}>Admin</button>
+            <button onClick={() => navigate('/admin')} className={`${btn} relative bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300`}>
+              Admin
+              {issueCount > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center leading-none">{issueCount}</span>}
+            </button>
           )}
           <button onClick={logout} className={`${btn} bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300`}>Logout</button>
         </div>
@@ -507,6 +526,8 @@ export default function LobbyPage() {
           {toast}
         </div>
       )}
+
+      {showReportModal && <ReportIssueModal onClose={() => setShowReportModal(false)} />}
     </div>
     </div>
   );

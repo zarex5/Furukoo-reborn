@@ -131,6 +131,16 @@ const EloHistorySchema = new mongoose.Schema({
 EloHistorySchema.index({ userId: 1, date: 1 }, { unique: true });
 const EloHistory = mongoose.model('EloHistory', EloHistorySchema);
 
+const ReportedIssueSchema = new mongoose.Schema({
+  page:           { type: String, enum: ['Login','Lobby','Game','Profile','Other'], required: true },
+  severity:       { type: String, enum: ['Critical','High','Medium','Low','Note'], required: true },
+  description:    { type: String, required: true, maxlength: 2000 },
+  submittedBy:    { type: String, default: 'anonymous' },
+  acknowledgedAt: { type: Date, default: null },
+  acknowledgedBy: { type: String, default: null },
+}, { timestamps: true });
+const ReportedIssue = mongoose.model('ReportedIssue', ReportedIssueSchema);
+
 // Fire-and-forget: persist game state after every move or status change
 function saveGame(game) {
   Game.findOneAndUpdate(
@@ -475,6 +485,59 @@ app.delete('/api/admin/players/:username', requireAdmin, async (req, res) => {
       }
     }
     await User.deleteOne({ _id: user._id });
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+// ── Reported Issues ──────────────────────────────────────────────────────────
+
+app.post('/api/issues', async (req, res) => {
+  try {
+    const { page, severity, description } = req.body;
+    if (!['Login','Lobby','Game','Profile','Other'].includes(page)) return res.status(400).json({ error: 'Invalid page' });
+    if (!['Critical','High','Medium','Low','Note'].includes(severity))  return res.status(400).json({ error: 'Invalid severity' });
+    if (!description || description.trim().length < 10) return res.status(400).json({ error: 'Description too short (min 10 chars)' });
+    if (description.length > 2000) return res.status(400).json({ error: 'Description too long' });
+    let submittedBy = 'anonymous';
+    try {
+      const auth = req.headers.authorization;
+      if (auth) {
+        const decoded = jwt.verify(auth.replace('Bearer ', ''), process.env.JWT_SECRET || 'secret');
+        submittedBy = decoded.username || 'anonymous';
+      }
+    } catch { /* not logged in */ }
+    await ReportedIssue.create({ page, severity, description: description.trim(), submittedBy });
+    res.json({ ok: true });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.get('/api/admin/issues', requireAdmin, async (req, res) => {
+  try {
+    const issues = await ReportedIssue.find().sort({ createdAt: -1 }).lean();
+    res.json(issues.map(i => ({
+      id: i._id.toString(),
+      page: i.page, severity: i.severity, description: i.description,
+      submittedBy: i.submittedBy, submittedAt: i.createdAt,
+      acknowledgedAt: i.acknowledgedAt, acknowledgedBy: i.acknowledgedBy,
+    })));
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.get('/api/admin/issues/unacknowledged-count', requireAdmin, async (req, res) => {
+  try {
+    const count = await ReportedIssue.countDocuments({ acknowledgedAt: null });
+    res.json({ count });
+  } catch { res.status(500).json({ error: 'Server error' }); }
+});
+
+app.put('/api/admin/issues/:id/acknowledge', requireAdmin, async (req, res) => {
+  try {
+    const issue = await ReportedIssue.findByIdAndUpdate(
+      req.params.id,
+      { $set: { acknowledgedAt: new Date(), acknowledgedBy: req.adminUsername } },
+      { new: true }
+    );
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
     res.json({ ok: true });
   } catch { res.status(500).json({ error: 'Server error' }); }
 });
