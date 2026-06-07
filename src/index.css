@@ -31,7 +31,7 @@ body { margin: 0; font-family: system-ui, sans-serif; }
 
 @keyframes strike {
   from { width: 0 }
-  to   { width: 100% }
+  to   { width: calc(100% - 8px) }
 }
 
 @keyframes ticker {
