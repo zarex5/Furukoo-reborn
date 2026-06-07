@@ -195,20 +195,18 @@ export const Board: React.FC<Props> = ({
     let fillId: string;
     if (isSelected) fillId = `url(#${uid}-sel)`;
     else if (isLegal) fillId = `url(#${uid}-leg)`;
-    else if (owner === 'red') fillId = `url(#${uid}-red)`;
-    else if (owner === 'black') fillId = isDark ? `url(#${uid}-blk-d)` : `url(#${uid}-blk-l)`;
+    else if (owner === 'red') fillId = isHighlighted ? `url(#${uid}-red-hi)` : `url(#${uid}-red)`;
+    else if (owner === 'black') fillId = isHighlighted
+      ? (isDark ? `url(#${uid}-blk-d-hi)` : `url(#${uid}-blk-l-hi)`)
+      : (isDark ? `url(#${uid}-blk-d)` : `url(#${uid}-blk-l)`);
     else if (isHighlighted) fillId = isDark ? `url(#${uid}-hi-d)` : `url(#${uid}-hi-l)`;
     else fillId = isDark ? `url(#${uid}-empty-d)` : `url(#${uid}-empty-l)`;
 
     let strokeColor = C.emptyStroke;
     if (isSelected) strokeColor = '#d97706';
     else if (isLegal) strokeColor = '#16a34a';
-    else if (owner === 'red') strokeColor = isHighlighted ? '#ef4444' : '#b91c1c';
-    else if (owner === 'black') strokeColor = isHighlighted
-      ? (isDark ? '#9ca3af' : '#64748b')
-      : (isDark ? '#374151' : '#334155');
 
-    const strokeWidth = isHighlighted && !isSelected ? 2.5 : 1.5;
+    const strokeWidth = 1.5;
 
     const label = `${slotId.line}${slotId.type}${slotId.slot}`;
     const isV = slotId.type === 'V';
@@ -288,38 +286,54 @@ export const Board: React.FC<Props> = ({
       style={{ display: 'block' }}
     >
       <defs>
-        {/* Empty slots: slightly lighter */}
+        {/* Empty slots */}
         <radialGradient id={`${uid}-empty-l`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#e8f1f8" />
-          <stop offset="100%" stopColor="#f9fdff" />
+          <stop offset="0%" stopColor="#bdd4e7" />
+          <stop offset="100%" stopColor="#e8f4fb" />
         </radialGradient>
         <radialGradient id={`${uid}-empty-d`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#606f7e" />
-          <stop offset="100%" stopColor="#8fa0b0" />
+          <stop offset="0%" stopColor="#3e5060" />
+          <stop offset="100%" stopColor="#6e8898" />
         </radialGradient>
-        {/* Highlighted empty slots (last-move indicator): darker */}
+        {/* Highlighted empty slot (previous position) — more pronounced gradient */}
         <radialGradient id={`${uid}-hi-l`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#b8cfe0" />
-          <stop offset="100%" stopColor="#d8eaf5" />
+          <stop offset="0%" stopColor="#7fb0d0" />
+          <stop offset="100%" stopColor="#c0dff0" />
         </radialGradient>
         <radialGradient id={`${uid}-hi-d`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#3d5060" />
-          <stop offset="100%" stopColor="#6a8090" />
+          <stop offset="0%" stopColor="#1e3a52" />
+          <stop offset="100%" stopColor="#4a6e88" />
         </radialGradient>
-        {/* Colored pieces: moderate highlight center */}
+        {/* Colored pieces */}
         <radialGradient id={`${uid}-red`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#fca5a5" />
           <stop offset="100%" stopColor="#dc2626" />
+        </radialGradient>
+        {/* Highlighted piece (destination) — enhanced gradient */}
+        <radialGradient id={`${uid}-red-hi`} cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#ffe8e8" />
+          <stop offset="55%" stopColor="#fca5a5" />
+          <stop offset="100%" stopColor="#ef4444" />
         </radialGradient>
         <radialGradient id={`${uid}-blk-l`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#94a3b8" />
           <stop offset="55%" stopColor="#475569" />
           <stop offset="100%" stopColor="#0f172a" />
         </radialGradient>
+        <radialGradient id={`${uid}-blk-l-hi`} cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#c8d8e8" />
+          <stop offset="55%" stopColor="#7090a8" />
+          <stop offset="100%" stopColor="#1e2d3e" />
+        </radialGradient>
         <radialGradient id={`${uid}-blk-d`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#6b7280" />
           <stop offset="55%" stopColor="#374151" />
           <stop offset="100%" stopColor="#030712" />
+        </radialGradient>
+        <radialGradient id={`${uid}-blk-d-hi`} cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stopColor="#9aa4b0" />
+          <stop offset="55%" stopColor="#4e5c6e" />
+          <stop offset="100%" stopColor="#0a1020" />
         </radialGradient>
         <radialGradient id={`${uid}-sel`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#fffbeb" />
