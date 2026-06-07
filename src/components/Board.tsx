@@ -146,6 +146,8 @@ export const Board: React.FC<Props> = ({
     setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isFromV, isToV, fromAngle });
 
     const DURATION = 1000;
+    const isCross = isFromV !== isToV;
+    const ROTATE_END = 0.35; // fraction of DURATION spent rotating in-place (cross-orientation only)
     const startTime = performance.now();
     function easeInOut(t: number) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
 
@@ -157,10 +159,23 @@ export const Board: React.FC<Props> = ({
         return;
       }
       const t = Math.min(1, (now - startTime) / DURATION);
-      const e = easeInOut(t);
-      const cx    = fromPos.cx + (toPos.cx - fromPos.cx) * e;
-      const cy    = fromPos.cy + (toPos.cy - fromPos.cy) * e;
-      const angle = fromAngle  + (toAngle  - fromAngle)  * e;
+
+      let cx: number, cy: number, angle: number;
+      if (isCross && t < ROTATE_END) {
+        // Phase 1 (cross-orientation only): rotate in place at FROM slot
+        const t1 = easeInOut(t / ROTATE_END);
+        cx    = fromPos.cx;
+        cy    = fromPos.cy;
+        angle = fromAngle + (toAngle - fromAngle) * t1;
+      } else {
+        // Phase 2: translate straight from FROM to TO with final orientation
+        const raw = isCross ? (t - ROTATE_END) / (1 - ROTATE_END) : t;
+        const t2  = easeInOut(raw);
+        cx    = fromPos.cx + (toPos.cx - fromPos.cx) * t2;
+        cy    = fromPos.cy + (toPos.cy - fromPos.cy) * t2;
+        angle = toAngle;
+      }
+
       g.setAttribute('transform', `translate(${cx} ${cy}) rotate(${angle})`);
       if (t < 1) {
         animRafRef.current = requestAnimationFrame(tick);
