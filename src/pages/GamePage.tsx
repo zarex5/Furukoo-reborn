@@ -69,6 +69,7 @@ export default function GamePage() {
   const [selectedSlot, setSelectedSlot] = useState<SlotId | null>(null);
   const [lobbyUsers, setLobbyUsers] = useState<OnlineUser[]>([]);
   const [myTurnIdleMs, setMyTurnIdleMs] = useState(0);
+  const [hasClickedPiece, setHasClickedPiece] = useState(false);
   const lastMoveTimeRef = useRef<number>(Date.now());
   const prevMovesLengthRef = useRef(0);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -237,11 +238,11 @@ export default function GamePage() {
         setSelectedSlot(null);
         return;
       }
-      if (gameState.pieces[key] === myColor) { setSelectedSlot(slot); return; }
+      if (gameState.pieces[key] === myColor) { setHasClickedPiece(true); setSelectedSlot(slot); return; }
       setSelectedSlot(null);
       return;
     }
-    if (gameState.pieces[key] === myColor) setSelectedSlot(slot);
+    if (gameState.pieces[key] === myColor) { setHasClickedPiece(true); setSelectedSlot(slot); }
   }, [gameState, myColor, selectedSlot, gameOver, gameId]);
 
   // History navigation
@@ -316,8 +317,13 @@ export default function GamePage() {
 
   const isMyTurn = !!myColor && !gameOver && gameState?.currentPlayer === myColor;
   const showMyTurnPulse = isMyTurn && myTurnIdleMs > 5000;
-  const pulsePieceColor = (isMyTurn && myTurnIdleMs > 15000 && gameState?.phase === 'movement' && isAtLatest)
-    ? myColor : null;
+  const myMovementMoveCount = myColor
+    ? gameState.moves.filter(m => m.player === myColor && m.from !== null).length
+    : 0;
+  const pulsePieceColor = (
+    isMyTurn && myTurnIdleMs > 15000 && gameState?.phase === 'movement' && isAtLatest &&
+    myMovementMoveCount === 0 && !hasClickedPiece
+  ) ? myColor : null;
 
   function playerPanelProps(player: Player) {
     const s = viewedState ?? displayedState;
