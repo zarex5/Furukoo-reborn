@@ -309,10 +309,11 @@ export const Board: React.FC<Props> = ({
           <stop offset="0%" stopColor="#fca5a5" />
           <stop offset="100%" stopColor="#dc2626" />
         </radialGradient>
-        {/* Highlighted piece (destination) — darker than regular */}
+        {/* Highlighted piece (destination) — enhanced gradient */}
         <radialGradient id={`${uid}-red-hi`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#e05555" />
-          <stop offset="100%" stopColor="#7f1d1d" />
+          <stop offset="0%" stopColor="#ffe8e8" />
+          <stop offset="55%" stopColor="#fca5a5" />
+          <stop offset="100%" stopColor="#ef4444" />
         </radialGradient>
         <radialGradient id={`${uid}-blk-l`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#94a3b8" />
@@ -320,9 +321,9 @@ export const Board: React.FC<Props> = ({
           <stop offset="100%" stopColor="#0f172a" />
         </radialGradient>
         <radialGradient id={`${uid}-blk-l-hi`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#606e80" />
-          <stop offset="55%" stopColor="#2a3545" />
-          <stop offset="100%" stopColor="#00050e" />
+          <stop offset="0%" stopColor="#c8d8e8" />
+          <stop offset="55%" stopColor="#7090a8" />
+          <stop offset="100%" stopColor="#1e2d3e" />
         </radialGradient>
         <radialGradient id={`${uid}-blk-d`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#6b7280" />
@@ -330,9 +331,9 @@ export const Board: React.FC<Props> = ({
           <stop offset="100%" stopColor="#030712" />
         </radialGradient>
         <radialGradient id={`${uid}-blk-d-hi`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#484f5c" />
-          <stop offset="55%" stopColor="#1e2530" />
-          <stop offset="100%" stopColor="#000000" />
+          <stop offset="0%" stopColor="#9aa4b0" />
+          <stop offset="55%" stopColor="#4e5c6e" />
+          <stop offset="100%" stopColor="#0a1020" />
         </radialGradient>
         <radialGradient id={`${uid}-sel`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#fffbeb" />
