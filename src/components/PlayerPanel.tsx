@@ -88,7 +88,7 @@ export const PlayerPanel: React.FC<Props> = ({
   const borderColor = 'border-slate-200 dark:border-gray-700';
   const wrapBg = isActive
     ? 'bg-white dark:bg-gray-800'
-    : 'bg-slate-50 dark:bg-gray-900 opacity-40';
+    : 'bg-slate-50 dark:bg-gray-900 opacity-70';
   const cell = 'px-2 py-0.5 rounded text-xs font-mono text-center border';
 
   const nameCls = isActive
