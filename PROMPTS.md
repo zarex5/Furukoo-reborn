@@ -760,3 +760,27 @@ sometimes when I have an open tab open in my browser with a game that is finishe
 ```
 Can you commit the updated prompts
 ```
+```
+On the very right on the line “Coded by” there should be a “Report any issue” purple link (same as Claude) that should open a modal to report an issue.
+Users should be able to select the impacted page/feature (Login, Lobby, Game, Profile, Other), the Severity (Critical, High, Medium, Low, Note) and have a textarea to explain what the issue is, there should also be an easy captcha to prevent spam just like the one we have for login (reuse the same component). When they submit it should tell them that admins will be notified, and store the issue in a new database table.
+The admin tab should contain a new section (just like players and bots) called Reported issues where they can see them all, and mark them as acknowledged.
+As long as they are not acknowledged, the count of unacknowledged ones should be displayed in the Admin button as a badge, so admins are notified and can check.
+```
+```
+-The count badge in the Reported Issues tab is only displayed when we go to that tab (it stays if we go back to another, but doesn't load as long as we didn't visit Issues). 
+-In the reports, the name of the reported should be a link to its profile (so we can check if he's an active player or not easily).
+-It would be nice to be able to "Unacknowledge" an issue (if we clicked the button by mistake, or if we thought we fixed it but it's not the case after all).
+-Report an issue should not be a link on hover (just the cursor pointer), also can we add a strike (eclair en francais) icon (like we have the heart in the previous message) at the start of the Report message.
+```
+```
+Can the text say "Report an issue" instead of any
+```
+```
+Can the strike icon be a bit larger
+```
+```
+When we hover the admin that acknowledged the issue, can we have a tooltip that says at what time/date (stored in db of course)
+```
+```
+Can you commit the updated prompts
+```
