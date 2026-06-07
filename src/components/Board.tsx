@@ -79,6 +79,7 @@ interface MovingPiece {
   toSlotKey: string;
   fromCx: number; fromCy: number;
   toCx: number; toCy: number;
+  isFromV: boolean;
   isToV: boolean;
 }
 
@@ -106,8 +107,8 @@ export const Board: React.FC<Props> = ({
 
   // --- 1000ms piece animation (RAF-driven, no SMIL) ---
   const [movingPiece, setMovingPiece] = React.useState<MovingPiece | null>(null);
-  const animRectRef = React.useRef<SVGRectElement | null>(null);
-  const animRafRef  = React.useRef<number | null>(null);
+  const animGRef   = React.useRef<SVGGElement | null>(null);
+  const animRafRef = React.useRef<number | null>(null);
   // Tracks keys from the previous effect run; null = never run (first mount).
   const prevKeysRef = React.useRef<{ from: string | null; to: string | null } | null>(null);
   const lastMoveFromKey = lastMove?.from ? slotKey(lastMove.from) : null;
@@ -130,24 +131,28 @@ export const Board: React.FC<Props> = ({
 
     const fromPos = slotPos(lastMove.from);
     const toPos   = slotPos(lastMove.to);
+    const isFromV = lastMove.from.type === 'V';
     const isToV   = lastMove.to.type === 'V';
-    const rw = isToV ? SHORT : LONG;
-    const rh = isToV ? LONG  : SHORT;
+    // Rotation: V=0°, H=90° — interpolated for cross-orientation moves
+    const fromAngle = isFromV ? 0 : 90;
+    const toAngle   = isToV   ? 0 : 90;
 
-    // Mount the overlay rect at the FROM position; RAF will drive it to TO.
-    setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isToV });
+    // Mount the overlay group at the FROM position; RAF drives translate + rotate.
+    setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isFromV, isToV });
 
     const DURATION = 1000;
     const startTime = performance.now();
     function easeInOut(t: number) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
 
     function tick(now: number) {
-      const rect = animRectRef.current;
-      if (!rect) return;
+      const g = animGRef.current;
+      if (!g) return;
       const t = Math.min(1, (now - startTime) / DURATION);
       const e = easeInOut(t);
-      rect.setAttribute('x', String(fromPos.cx + (toPos.cx - fromPos.cx) * e - rw / 2));
-      rect.setAttribute('y', String(fromPos.cy + (toPos.cy - fromPos.cy) * e - rh / 2));
+      const cx    = fromPos.cx + (toPos.cx - fromPos.cx) * e;
+      const cy    = fromPos.cy + (toPos.cy - fromPos.cy) * e;
+      const angle = fromAngle  + (toAngle  - fromAngle)  * e;
+      g.setAttribute('transform', `translate(${cx} ${cy}) rotate(${angle})`);
       if (t < 1) {
         animRafRef.current = requestAnimationFrame(tick);
       } else {
@@ -432,29 +437,32 @@ export const Board: React.FC<Props> = ({
         {/* Slots */}
         {slots.map(renderSlot)}
 
-        {/* Animated piece overlay — position driven by RAF, starts at FROM slot */}
+        {/* Animated piece overlay — RAF drives translate+rotate; rect centered at origin */}
         {movingPiece && (() => {
-          const isV = movingPiece.isToV;
-          const rw = isV ? SHORT : LONG;
-          const rh = isV ? LONG  : SHORT;
           const rr = Math.round(SHORT / 2);
           const fillId = movingPiece.player === 'red'
             ? `url(#${uid}-red-hi)`
             : isDark ? `url(#${uid}-blk-d-hi)` : `url(#${uid}-blk-l-hi)`;
+          const initAngle = movingPiece.isFromV ? 0 : 90;
           return (
-            <rect
-              ref={animRectRef}
-              x={movingPiece.fromCx - rw / 2}
-              y={movingPiece.fromCy - rh / 2}
-              width={rw}
-              height={rh}
-              rx={rr}
-              ry={rr}
-              fill={fillId}
-              stroke={C.emptyStroke}
-              strokeWidth={1}
+            <g
+              ref={animGRef}
+              transform={`translate(${movingPiece.fromCx} ${movingPiece.fromCy}) rotate(${initAngle})`}
               style={{ pointerEvents: 'none' }}
-            />
+            >
+              {/* Rect centered at origin; rotation pivots it around its center */}
+              <rect
+                x={-SHORT / 2}
+                y={-LONG  / 2}
+                width={SHORT}
+                height={LONG}
+                rx={rr}
+                ry={rr}
+                fill={fillId}
+                stroke={C.emptyStroke}
+                strokeWidth={1}
+              />
+            </g>
           );
         })()}
       </g>
