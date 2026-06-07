@@ -206,7 +206,7 @@ export const Board: React.FC<Props> = ({
     if (isSelected) strokeColor = '#d97706';
     else if (isLegal) strokeColor = '#16a34a';
 
-    const strokeWidth = 1.5;
+    const strokeWidth = 1;
 
     const label = `${slotId.line}${slotId.type}${slotId.slot}`;
     const isV = slotId.type === 'V';
@@ -288,12 +288,12 @@ export const Board: React.FC<Props> = ({
       <defs>
         {/* Empty slots */}
         <radialGradient id={`${uid}-empty-l`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#bdd4e7" />
-          <stop offset="100%" stopColor="#e8f4fb" />
+          <stop offset="0%" stopColor="#d8eaf5" />
+          <stop offset="100%" stopColor="#f4fafd" />
         </radialGradient>
         <radialGradient id={`${uid}-empty-d`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#3e5060" />
-          <stop offset="100%" stopColor="#6e8898" />
+          <stop offset="0%" stopColor="#505e6a" />
+          <stop offset="100%" stopColor="#7e96a6" />
         </radialGradient>
         {/* Highlighted empty slot (previous position) — more pronounced gradient */}
         <radialGradient id={`${uid}-hi-l`} cx="50%" cy="50%" r="70%">
