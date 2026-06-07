@@ -104,11 +104,11 @@ export const Board: React.FC<Props> = ({
     redSquare: 'rgba(239,68,68,0.18)', blackSquare: 'rgba(15,23,42,0.15)',
   };
 
-  // --- 1000ms piece animation ---
+  // --- 1000ms piece animation (RAF-driven, no SMIL) ---
   const [movingPiece, setMovingPiece] = React.useState<MovingPiece | null>(null);
-  const animTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Tracks the keys seen on the previous effect run; null = effect has never run (first mount).
-  // Animates only when keys change after the first mount, suppressing page-load animation.
+  const animRectRef = React.useRef<SVGRectElement | null>(null);
+  const animRafRef  = React.useRef<number | null>(null);
+  // Tracks keys from the previous effect run; null = never run (first mount).
   const prevKeysRef = React.useRef<{ from: string | null; to: string | null } | null>(null);
   const lastMoveFromKey = lastMove?.from ? slotKey(lastMove.from) : null;
   const lastMoveToKey   = lastMove ? slotKey(lastMove.to) : null;
@@ -120,21 +120,44 @@ export const Board: React.FC<Props> = ({
     if (prev === null) return;
     // Keys unchanged (e.g. React StrictMode double-invoke) — nothing to do.
     if (prev.from === lastMoveFromKey && prev.to === lastMoveToKey) return;
+
+    // Cancel any running animation.
+    if (animRafRef.current !== null) { cancelAnimationFrame(animRafRef.current); animRafRef.current = null; }
+
     if (!lastMove?.from) { setMovingPiece(null); return; }
     const owner = pieces[slotKey(lastMove.to)];
     if (!owner) { setMovingPiece(null); return; }
-    const from = slotPos(lastMove.from);
-    const to   = slotPos(lastMove.to);
-    if (animTimerRef.current) clearTimeout(animTimerRef.current);
-    setMovingPiece({
-      player: owner,
-      toSlotKey: slotKey(lastMove.to),
-      fromCx: from.cx, fromCy: from.cy,
-      toCx: to.cx, toCy: to.cy,
-      isToV: lastMove.to.type === 'V',
-    });
-    animTimerRef.current = setTimeout(() => setMovingPiece(null), 1050);
-    return () => { if (animTimerRef.current) clearTimeout(animTimerRef.current); };
+
+    const fromPos = slotPos(lastMove.from);
+    const toPos   = slotPos(lastMove.to);
+    const isToV   = lastMove.to.type === 'V';
+    const rw = isToV ? SHORT : LONG;
+    const rh = isToV ? LONG  : SHORT;
+
+    // Mount the overlay rect at the FROM position; RAF will drive it to TO.
+    setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isToV });
+
+    const DURATION = 1000;
+    const startTime = performance.now();
+    function easeInOut(t: number) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+
+    function tick(now: number) {
+      const rect = animRectRef.current;
+      if (!rect) return;
+      const t = Math.min(1, (now - startTime) / DURATION);
+      const e = easeInOut(t);
+      rect.setAttribute('x', String(fromPos.cx + (toPos.cx - fromPos.cx) * e - rw / 2));
+      rect.setAttribute('y', String(fromPos.cy + (toPos.cy - fromPos.cy) * e - rh / 2));
+      if (t < 1) {
+        animRafRef.current = requestAnimationFrame(tick);
+      } else {
+        animRafRef.current = null;
+        setMovingPiece(null);
+      }
+    }
+    animRafRef.current = requestAnimationFrame(tick);
+
+    return () => { if (animRafRef.current !== null) { cancelAnimationFrame(animRafRef.current); animRafRef.current = null; } };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastMoveFromKey, lastMoveToKey]);
 
@@ -409,40 +432,29 @@ export const Board: React.FC<Props> = ({
         {/* Slots */}
         {slots.map(renderSlot)}
 
-        {/* Animated piece overlay — travels from previous slot to new slot over 600ms */}
+        {/* Animated piece overlay — position driven by RAF, starts at FROM slot */}
         {movingPiece && (() => {
           const isV = movingPiece.isToV;
           const rw = isV ? SHORT : LONG;
-          const rh = isV ? LONG : SHORT;
+          const rh = isV ? LONG  : SHORT;
           const rr = Math.round(SHORT / 2);
-          const dx = movingPiece.fromCx - movingPiece.toCx;
-          const dy = movingPiece.fromCy - movingPiece.toCy;
           const fillId = movingPiece.player === 'red'
             ? `url(#${uid}-red-hi)`
             : isDark ? `url(#${uid}-blk-d-hi)` : `url(#${uid}-blk-l-hi)`;
-          const stroke = C.emptyStroke;
           return (
             <rect
-              x={movingPiece.toCx - rw / 2}
-              y={movingPiece.toCy - rh / 2}
+              ref={animRectRef}
+              x={movingPiece.fromCx - rw / 2}
+              y={movingPiece.fromCy - rh / 2}
               width={rw}
               height={rh}
               rx={rr}
               ry={rr}
               fill={fillId}
-              stroke={stroke}
-              strokeWidth={1.5}
+              stroke={C.emptyStroke}
+              strokeWidth={1}
               style={{ pointerEvents: 'none' }}
-            >
-              <animateTransform
-                attributeName="transform"
-                type="translate"
-                from={`${dx} ${dy}`}
-                to="0 0"
-                dur="1000ms"
-                fill="freeze"
-              />
-            </rect>
+            />
           );
         })()}
       </g>
