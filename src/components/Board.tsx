@@ -107,12 +107,19 @@ export const Board: React.FC<Props> = ({
   // --- 1000ms piece animation ---
   const [movingPiece, setMovingPiece] = React.useState<MovingPiece | null>(null);
   const animTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isInitialRef = React.useRef(true); // suppress animation on first render (page load)
+  // Tracks the keys seen on the previous effect run; null = effect has never run (first mount).
+  // Animates only when keys change after the first mount, suppressing page-load animation.
+  const prevKeysRef = React.useRef<{ from: string | null; to: string | null } | null>(null);
   const lastMoveFromKey = lastMove?.from ? slotKey(lastMove.from) : null;
   const lastMoveToKey   = lastMove ? slotKey(lastMove.to) : null;
 
   React.useEffect(() => {
-    if (isInitialRef.current) { isInitialRef.current = false; return; }
+    const prev = prevKeysRef.current;
+    prevKeysRef.current = { from: lastMoveFromKey, to: lastMoveToKey };
+    // First mount — board appeared with an existing move; don't animate.
+    if (prev === null) return;
+    // Keys unchanged (e.g. React StrictMode double-invoke) — nothing to do.
+    if (prev.from === lastMoveFromKey && prev.to === lastMoveToKey) return;
     if (!lastMove?.from) { setMovingPiece(null); return; }
     const owner = pieces[slotKey(lastMove.to)];
     if (!owner) { setMovingPiece(null); return; }
