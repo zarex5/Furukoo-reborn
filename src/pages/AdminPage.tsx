@@ -628,7 +628,7 @@ function IssuesSection({ onCountChange }: { onCountChange: (n: number) => void }
                 </div>
                 {issue.acknowledgedAt ? (
                   <div className="flex items-center gap-1.5 flex-none">
-                    <span className="text-green-600 dark:text-green-400 whitespace-nowrap">✓ {issue.acknowledgedBy}</span>
+                    <span className="text-green-600 dark:text-green-400 whitespace-nowrap cursor-default" title={issue.acknowledgedAt ? fmt(issue.acknowledgedAt) : ''}>✓ {issue.acknowledgedBy}</span>
                     <button
                       onClick={() => unacknowledge(issue.id)}
                       className="px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-gray-700 dark:text-gray-400 transition whitespace-nowrap">
