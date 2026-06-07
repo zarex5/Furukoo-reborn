@@ -66,7 +66,7 @@ function Credits({ onReport }: { onReport: () => void }) {
   );
 }
 
-function RulesBox({ mobile = false }: { mobile?: boolean }) {
+function RulesBox({ mobile = false, onReport }: { mobile?: boolean; onReport: () => void }) {
   const rulesContent = (
     <div className="space-y-1.5">
       <div className="flex gap-3 items-start">
@@ -88,7 +88,7 @@ function RulesBox({ mobile = false }: { mobile?: boolean }) {
     return (
       <div className="px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
         {rulesContent}
-        <div className="mt-3"><Credits onReport={() => setShowReportModal(true)} /></div>
+        <div className="mt-3"><Credits onReport={onReport} /></div>
         <InviteTicker />
       </div>
     );
@@ -102,7 +102,7 @@ function RulesBox({ mobile = false }: { mobile?: boolean }) {
       <div className="flex-1 overflow-y-auto px-3 py-2 text-xs font-mono text-slate-600 dark:text-gray-300 leading-relaxed">
         {rulesContent}
       </div>
-      <Credits onReport={() => setShowReportModal(true)} />
+      <Credits onReport={onReport} />
       <InviteTicker />
     </div>
   );
@@ -350,7 +350,7 @@ export default function LobbyPage() {
               <ResizableSplit
                 direction="vertical"
                 initialFirstPct={65}
-                first={<div className="h-full"><RulesBox /></div>}
+                first={<div className="h-full"><RulesBox onReport={() => setShowReportModal(true)} /></div>}
                 second={
                   <div className="h-full"><div className="flex flex-col h-full bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-lg overflow-hidden">
                     <table className="w-full text-xs font-mono">
@@ -513,7 +513,7 @@ export default function LobbyPage() {
           </button>
           {rulesOpen && (
             <div className="px-4 py-3">
-              <RulesBox mobile />
+              <RulesBox mobile onReport={() => setShowReportModal(true)} />
             </div>
           )}
         </div>
