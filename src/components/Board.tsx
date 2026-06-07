@@ -81,6 +81,7 @@ interface MovingPiece {
   toCx: number; toCy: number;
   isFromV: boolean;
   isToV: boolean;
+  fromAngle: number;
 }
 
 export const Board: React.FC<Props> = ({
@@ -133,15 +134,13 @@ export const Board: React.FC<Props> = ({
     const toPos   = slotPos(lastMove.to);
     const isFromV = lastMove.from.type === 'V';
     const isToV   = lastMove.to.type === 'V';
-    // Choose H rotation sign based on direction of travel:
-    //   moving right  (toCx > fromCx) → +90° (clockwise spin feels natural)
-    //   moving left/up (toCx ≤ fromCx) → −90° (counter-clockwise feels natural)
-    const hAngle    = toPos.cx > fromPos.cx ? 90 : -90;
+    // CW (-90) only when moving to upper-left quadrant; CCW (+90) for all other directions
+    const hAngle    = (toPos.cy <= fromPos.cy && toPos.cx <= fromPos.cx) ? -90 : 90;
     const fromAngle = isFromV ? 0 : hAngle;
     const toAngle   = isToV   ? 0 : hAngle;
 
     // Mount the overlay group at the FROM position; RAF drives translate + rotate.
-    setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isFromV, isToV });
+    setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isFromV, isToV, fromAngle });
 
     const DURATION = 1000;
     const startTime = performance.now();
@@ -450,7 +449,7 @@ export const Board: React.FC<Props> = ({
           const fillId = movingPiece.player === 'red'
             ? `url(#${uid}-red-hi)`
             : isDark ? `url(#${uid}-blk-d-hi)` : `url(#${uid}-blk-l-hi)`;
-          const initAngle = movingPiece.isFromV ? 0 : 90;
+          const initAngle = movingPiece.fromAngle;
           return (
             <g
               ref={animGRef}
