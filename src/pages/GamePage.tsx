@@ -150,7 +150,7 @@ export default function GamePage() {
       setMyTurnIdleMs(0);
       if (g.moves.length > prevMovesLengthRef.current) {
         const last = g.moves[g.moves.length - 1];
-        playMoveSound(last.from ? 'move' : 'place');
+        if (!g.winner) playMoveSound(last.from ? 'move' : 'place');
         if (last.from) setAnimateMove({ from: last.from, to: last.to });
         else setAnimateMove(null);
       }
