@@ -18,8 +18,10 @@ interface Props {
   uid?: string;
   /** When set, pieces of this color gently pulse to hint the player it's their turn. */
   pulsePieceColor?: Player | null;
-  /** Last move played — used for slot highlights and 600ms piece animation. */
+  /** Last move played — used for slot highlights only. */
   lastMove?: { from: SlotId | null; to: SlotId } | null;
+  /** Explicit move to animate (may be reversed for history backward navigation). */
+  animateMove?: { from: SlotId; to: SlotId } | null;
 }
 
 /**
@@ -97,6 +99,7 @@ export const Board: React.FC<Props> = ({
   uid = 'b',
   pulsePieceColor = null,
   lastMove = null,
+  animateMove = null,
 }) => {
   const C = isDark ? {
     emptyFill: '#4b5563', emptyStroke: '#6b7280', labelFill: '#d1d5db',
@@ -112,28 +115,28 @@ export const Board: React.FC<Props> = ({
   const animRafRef = React.useRef<number | null>(null);
   // Tracks keys from the previous effect run; null = never run (first mount).
   const prevKeysRef = React.useRef<{ from: string | null; to: string | null } | null>(null);
-  const lastMoveFromKey = lastMove?.from ? slotKey(lastMove.from) : null;
-  const lastMoveToKey   = lastMove ? slotKey(lastMove.to) : null;
+  const animFromKey = animateMove ? slotKey(animateMove.from) : null;
+  const animToKey   = animateMove ? slotKey(animateMove.to)   : null;
 
   React.useEffect(() => {
     const prev = prevKeysRef.current;
-    prevKeysRef.current = { from: lastMoveFromKey, to: lastMoveToKey };
+    prevKeysRef.current = { from: animFromKey, to: animToKey };
     // First mount — board appeared with an existing move; don't animate.
     if (prev === null) return;
     // Keys unchanged (e.g. React StrictMode double-invoke) — nothing to do.
-    if (prev.from === lastMoveFromKey && prev.to === lastMoveToKey) return;
+    if (prev.from === animFromKey && prev.to === animToKey) return;
 
     // Cancel any running animation.
     if (animRafRef.current !== null) { cancelAnimationFrame(animRafRef.current); animRafRef.current = null; }
 
-    if (!lastMove?.from) { setMovingPiece(null); return; }
-    const owner = pieces[slotKey(lastMove.to)];
+    if (!animateMove) { setMovingPiece(null); return; }
+    const owner = pieces[slotKey(animateMove.to)];
     if (!owner) { setMovingPiece(null); return; }
 
-    const fromPos = slotPos(lastMove.from);
-    const toPos   = slotPos(lastMove.to);
-    const isFromV = lastMove.from.type === 'V';
-    const isToV   = lastMove.to.type === 'V';
+    const fromPos = slotPos(animateMove.from);
+    const toPos   = slotPos(animateMove.to);
+    const isFromV = animateMove.from.type === 'V';
+    const isToV   = animateMove.to.type === 'V';
     // Rotation for H slots: CW (-90) when dy and dx have opposite signs, CCW (+90) when same sign.
     // This satisfies all 8 H↔V combos (up-right CW, up-left CCW, down-right CCW, down-left CW for H→V; mirrored for V→H).
     const dy = toPos.cy - fromPos.cy;
@@ -143,7 +146,7 @@ export const Board: React.FC<Props> = ({
     const toAngle   = isToV   ? 0 : hAngle;
 
     // Mount the overlay group at the FROM position; RAF drives translate + rotate.
-    setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isFromV, isToV, fromAngle });
+    setMovingPiece({ player: owner, toSlotKey: slotKey(animateMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isFromV, isToV, fromAngle });
 
     const DURATION = 200;
     // Quadratic Bézier detour for cross-orientation (H↔V) moves.
@@ -184,7 +187,7 @@ export const Board: React.FC<Props> = ({
 
     return () => { if (animRafRef.current !== null) { cancelAnimationFrame(animRafRef.current); animRafRef.current = null; } };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastMoveFromKey, lastMoveToKey]);
+  }, [animFromKey, animToKey]);
 
   // --- Slot highlights (last-move indicator) ---
   const highlightedSlots = React.useMemo(() => {

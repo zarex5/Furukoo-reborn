@@ -102,6 +102,7 @@ export default function GamePage() {
     } catch { return []; }
   });
   const [viewIndex, setViewIndex] = useState(-1); // -1 = latest
+  const [animateMove, setAnimateMove] = useState<{ from: SlotId; to: SlotId } | null>(null);
 
   useEffect(() => {
     if (gameId && stateHistory.length > 0)
@@ -150,6 +151,8 @@ export default function GamePage() {
       if (g.moves.length > prevMovesLengthRef.current) {
         const last = g.moves[g.moves.length - 1];
         playMoveSound(last.from ? 'move' : 'place');
+        if (last.from) setAnimateMove({ from: last.from, to: last.to });
+        else setAnimateMove(null);
       }
       prevMovesLengthRef.current = g.moves.length;
     };
@@ -248,10 +251,19 @@ export default function GamePage() {
   // History navigation
   const histLen  = stateHistory.length;
   const curIdx   = viewIndex === -1 ? histLen - 1 : viewIndex;
-  const navFirst = () => histLen > 0 && setViewIndex(0);
-  const navPrev  = () => setViewIndex(Math.max(0, curIdx - 1));
-  const navNext  = () => { const ni = curIdx + 1; setViewIndex(ni >= histLen - 1 ? -1 : ni); };
-  const navLast  = () => setViewIndex(-1);
+  const navFirst = () => { setAnimateMove(null); histLen > 0 && setViewIndex(0); };
+  const navPrev  = () => {
+    const move = stateHistory[curIdx]?.moves.slice(-1)[0];
+    setAnimateMove(move?.from ? { from: move.to, to: move.from } : null); // reversed
+    setViewIndex(Math.max(0, curIdx - 1));
+  };
+  const navNext  = () => {
+    const ni = curIdx + 1;
+    const move = stateHistory[ni]?.moves.slice(-1)[0];
+    setAnimateMove(move?.from ? { from: move.from, to: move.to } : null); // forward
+    setViewIndex(ni >= histLen - 1 ? -1 : ni);
+  };
+  const navLast  = () => { setAnimateMove(null); setViewIndex(-1); };
   const isAtLatest = viewIndex === -1;
   const showPulse  = !isAtLatest && !gameOver && gameState?.currentPlayer === myColor;
 
@@ -463,6 +475,7 @@ export default function GamePage() {
                   isDark={isDark}
                   pulsePieceColor={pulsePieceColor}
                   lastMove={boardLastMove}
+                  animateMove={animateMove}
                 />
               </div>
               <div className="flex-none flex justify-center">
@@ -534,6 +547,7 @@ export default function GamePage() {
             isDark={isDark}
             responsive
             lastMove={boardLastMove}
+            animateMove={animateMove}
             pulsePieceColor={pulsePieceColor}
           />
         </div>
