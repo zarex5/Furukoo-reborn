@@ -418,9 +418,9 @@ export const Board: React.FC<Props> = ({
           const dx = movingPiece.fromCx - movingPiece.toCx;
           const dy = movingPiece.fromCy - movingPiece.toCy;
           const fillId = movingPiece.player === 'red'
-            ? `url(#${uid}-red)`
-            : isDark ? `url(#${uid}-blk-d)` : `url(#${uid}-blk-l)`;
-          const stroke = movingPiece.player === 'red' ? '#b91c1c' : isDark ? '#374151' : '#334155';
+            ? `url(#${uid}-red-hi)`
+            : isDark ? `url(#${uid}-blk-d-hi)` : `url(#${uid}-blk-l-hi)`;
+          const stroke = C.emptyStroke;
           return (
             <rect
               x={movingPiece.toCx - rw / 2}
