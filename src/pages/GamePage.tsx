@@ -220,6 +220,8 @@ export default function GamePage() {
     return () => clearInterval(id);
   }, [myColor, gameState?.currentPlayer, !!gameState?.winner, !!gameOver]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => { if (gameOver) window.scrollTo(0, 0); }, [gameOver]);
+
   const handleSlotClick = useCallback((slot: SlotId) => {
     if (!gameState || !myColor || gameState.currentPlayer !== myColor || gameOver) return;
     const socket = getSocket();

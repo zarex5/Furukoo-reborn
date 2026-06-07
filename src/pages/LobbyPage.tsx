@@ -292,7 +292,16 @@ export default function LobbyPage() {
   const handleSpectate = (gameId: string) => navigate(`/game/${gameId}`);
 
   const btn = `px-3 py-0.5 rounded text-xs font-bold transition`;
-  const [rulesOpen, setRulesOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(() => {
+    const saved = localStorage.getItem('lobby_rulesOpen');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [chatOpen, setChatOpen] = useState(() => {
+    const saved = localStorage.getItem('lobby_chatOpen');
+    return saved !== null ? saved === 'true' : true;
+  });
+  useEffect(() => { localStorage.setItem('lobby_rulesOpen', String(rulesOpen)); }, [rulesOpen]);
+  useEffect(() => { localStorage.setItem('lobby_chatOpen', String(chatOpen)); }, [chatOpen]);
 
   const dropdownProps = {
     username: user?.username ?? '',
@@ -492,9 +501,20 @@ export default function LobbyPage() {
           </table>
         </div>
 
-        {/* Chat */}
-        <div className="mx-3 mt-3 flex flex-col bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden" style={{ height: 240 }}>
-          <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} />
+        {/* Chat — collapsible */}
+        <div className="mx-3 mt-3 bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl overflow-hidden">
+          <button
+            onClick={() => setChatOpen(o => !o)}
+            className="w-full flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-gray-800 text-xs font-bold text-slate-500 dark:text-gray-400"
+          >
+            <span>Chat</span>
+            <span className="text-slate-400 dark:text-gray-500">{chatOpen ? '▲' : '▼'}</span>
+          </button>
+          {chatOpen && (
+            <div style={{ height: 200 }} className="flex flex-col">
+              <ChatBox messages={messages} onSend={handleSend} myUsername={user?.username ?? ''} origin="lobby" muted={isMuted} />
+            </div>
+          )}
         </div>
 
         {/* Players — auto-height, no fixed constraint */}
