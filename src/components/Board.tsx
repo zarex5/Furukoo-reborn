@@ -151,7 +151,7 @@ export const Board: React.FC<Props> = ({
     //   H→V: flip X sign  → (-sign(dx), sign(dy))
     //   V→H: flip Y sign  → ( sign(dx), -sign(dy))
     const isCross = isFromV !== isToV;
-    const DETOUR  = CELL * 1.5;
+    const DETOUR  = CELL * 0.6;
     const ctrlCx  = (fromPos.cx + toPos.cx) / 2 + (isCross ? (isFromV ? 1 : -1) * Math.sign(dx) * DETOUR : 0);
     const ctrlCy  = (fromPos.cy + toPos.cy) / 2 + (isCross ? (isFromV ? -1 : 1) * Math.sign(dy) * DETOUR : 0);
 
