@@ -61,7 +61,7 @@ function Credits({ onReport }: { onReport: () => void }) {
   return (
     <div className="px-3 pb-1 border-t border-slate-100 dark:border-gray-800 text-xs font-mono text-slate-400 dark:text-gray-500 pt-2 flex items-center justify-between gap-2 flex-wrap">
       <p>Coded with ♥ by <span className="text-slate-500 dark:text-gray-400">iNo_</span> & <span className="text-violet-500 dark:text-violet-400">Claude</span> — Original game by <span className="text-slate-500 dark:text-gray-400">Jean François Loiseleux</span> & <span className="text-slate-500 dark:text-gray-400">@Navedac</span></p>
-      <button onClick={onReport} className="text-violet-500 dark:text-violet-400 whitespace-nowrap flex-none cursor-pointer">⚡ Report any issue</button>
+      <button onClick={onReport} className="text-violet-500 dark:text-violet-400 whitespace-nowrap flex-none cursor-pointer">⚡ Report an issue</button>
     </div>
   );
 }
