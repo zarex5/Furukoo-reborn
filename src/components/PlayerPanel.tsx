@@ -151,7 +151,7 @@ export const PlayerPanel: React.FC<Props> = ({
         className="w-3 h-3 rounded-full flex-shrink-0"
         style={isRed ? { background: '#ef4444' } : { background: '#1e293b', border: '1.5px solid #475569' }}
       />
-      <div className={`w-56 ${cell} font-bold ${nameCls} truncate`}>
+      <div className={`flex-1 min-w-0 ${cell} font-bold ${nameCls} truncate`}>
         {isWinner && <span className="mr-1">👑</span>}{name}
       </div>
       {moveCell}

@@ -446,7 +446,7 @@ export default function GamePage() {
                 </div>
               )}
               <div className="flex-none flex justify-center">
-                <div className="w-full max-w-sm">
+                <div className="w-full max-w-lg">
                   <PlayerPanel {...playerPanelProps(topPlayer)} />
                 </div>
               </div>
@@ -466,7 +466,7 @@ export default function GamePage() {
                 />
               </div>
               <div className="flex-none flex justify-center">
-                <div className="w-full max-w-sm">
+                <div className="w-full max-w-lg">
                   <PlayerPanel {...playerPanelProps(bottomPlayer)} />
                 </div>
               </div>
