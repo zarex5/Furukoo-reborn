@@ -145,7 +145,7 @@ function BotRow({ bot, onUpdated, onError }: { bot: AdminBot; onUpdated: () => v
   const [saving, setSaving] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
 
-  const update = async (updates: { username?: string; level?: number; enabled?: boolean }) => {
+  const update = async (updates: { username?: string; level?: number; enabled?: boolean; elo?: number }) => {
     setSaving(true);
     try {
       await api.admin.updateBot(bot.username, updates);
