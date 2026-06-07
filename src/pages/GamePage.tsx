@@ -268,8 +268,10 @@ export default function GamePage() {
   const showResult    = !!resultWinner;
 
   const [drawModal, setDrawModal] = useState<'offer' | 'accept' | null>(null);
+  const [resignModal, setResignModal] = useState(false);
 
-  const handleResign    = () => getSocket()?.emit('game:resign', { gameId });
+  const handleResign    = () => setResignModal(true);
+  const confirmResign   = () => { getSocket()?.emit('game:resign', { gameId }); setResignModal(false); };
   const handleOfferDraw = () => setDrawModal('offer');
   const handleRetractDraw = () => getSocket()?.emit('game:retractDraw', { gameId });
   const handleAcceptDraw  = () => setDrawModal('accept');
@@ -582,6 +584,25 @@ export default function GamePage() {
         </div>
 
       </div>
+
+      {/* Resign confirmation modal */}
+      {resignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 border border-slate-200 dark:border-gray-700 rounded-xl shadow-xl px-6 py-5 flex flex-col items-center gap-4 max-w-xs w-full mx-4">
+            <p className="text-sm font-bold text-slate-700 dark:text-gray-200 text-center">
+              Are you sure you want to resign?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={confirmResign} className="px-4 py-1 rounded text-sm font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300 transition">
+                Resign
+              </button>
+              <button onClick={() => setResignModal(false)} className="px-4 py-1 rounded text-sm font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Draw confirmation modal */}
       {drawModal && (
