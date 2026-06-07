@@ -145,7 +145,7 @@ export const Board: React.FC<Props> = ({
     // Mount the overlay group at the FROM position; RAF drives translate + rotate.
     setMovingPiece({ player: owner, toSlotKey: slotKey(lastMove.to), fromCx: fromPos.cx, fromCy: fromPos.cy, toCx: toPos.cx, toCy: toPos.cy, isFromV, isToV, fromAngle });
 
-    const DURATION = 400;
+    const DURATION = 200;
     // Quadratic Bézier detour for cross-orientation (H↔V) moves.
     // Detour directions (all 8 cases):
     //   H→V: flip X sign  → (-sign(dx), sign(dy))
