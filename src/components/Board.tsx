@@ -295,24 +295,24 @@ export const Board: React.FC<Props> = ({
           <stop offset="0%" stopColor="#505e6a" />
           <stop offset="100%" stopColor="#7e96a6" />
         </radialGradient>
-        {/* Highlighted empty slot (previous position) — just a touch more than regular empty */}
+        {/* Highlighted empty slot (previous position) — slightly darker than regular empty */}
         <radialGradient id={`${uid}-hi-l`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#bfd6ea" />
-          <stop offset="100%" stopColor="#e8f4fa" />
+          <stop offset="0%" stopColor="#a8c8e0" />
+          <stop offset="100%" stopColor="#daeef8" />
         </radialGradient>
         <radialGradient id={`${uid}-hi-d`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#42545f" />
-          <stop offset="100%" stopColor="#708898" />
+          <stop offset="0%" stopColor="#344858" />
+          <stop offset="100%" stopColor="#5e7888" />
         </radialGradient>
         {/* Colored pieces */}
         <radialGradient id={`${uid}-red`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#fca5a5" />
           <stop offset="100%" stopColor="#dc2626" />
         </radialGradient>
-        {/* Highlighted piece (destination) — noticeably but not drastically brighter */}
+        {/* Highlighted piece (destination) — more clearly brighter than regular */}
         <radialGradient id={`${uid}-red-hi`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#fedbdb" />
-          <stop offset="100%" stopColor="#e83838" />
+          <stop offset="0%" stopColor="#fecece" />
+          <stop offset="100%" stopColor="#ef4444" />
         </radialGradient>
         <radialGradient id={`${uid}-blk-l`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#94a3b8" />
@@ -320,9 +320,9 @@ export const Board: React.FC<Props> = ({
           <stop offset="100%" stopColor="#0f172a" />
         </radialGradient>
         <radialGradient id={`${uid}-blk-l-hi`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#b8c8d8" />
-          <stop offset="55%" stopColor="#60788a" />
-          <stop offset="100%" stopColor="#192838" />
+          <stop offset="0%" stopColor="#c4d8ea" />
+          <stop offset="55%" stopColor="#6a8898" />
+          <stop offset="100%" stopColor="#1e3048" />
         </radialGradient>
         <radialGradient id={`${uid}-blk-d`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#6b7280" />
@@ -330,9 +330,9 @@ export const Board: React.FC<Props> = ({
           <stop offset="100%" stopColor="#030712" />
         </radialGradient>
         <radialGradient id={`${uid}-blk-d-hi`} cx="50%" cy="50%" r="70%">
-          <stop offset="0%" stopColor="#888ea0" />
-          <stop offset="55%" stopColor="#445060" />
-          <stop offset="100%" stopColor="#07101c" />
+          <stop offset="0%" stopColor="#9298b0" />
+          <stop offset="55%" stopColor="#4a5870" />
+          <stop offset="100%" stopColor="#08121e" />
         </radialGradient>
         <radialGradient id={`${uid}-sel`} cx="50%" cy="50%" r="70%">
           <stop offset="0%" stopColor="#fffbeb" />
