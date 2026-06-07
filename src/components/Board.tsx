@@ -146,7 +146,11 @@ export const Board: React.FC<Props> = ({
 
     function tick(now: number) {
       const g = animGRef.current;
-      if (!g) return;
+      if (!g) {
+        // React hasn't committed the overlay element yet — retry next frame.
+        animRafRef.current = requestAnimationFrame(tick);
+        return;
+      }
       const t = Math.min(1, (now - startTime) / DURATION);
       const e = easeInOut(t);
       const cx    = fromPos.cx + (toPos.cx - fromPos.cx) * e;
